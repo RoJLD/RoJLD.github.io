@@ -1,1038 +1,515 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark" data-lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robin Denis</title>
+    <title>Robin Denis — Ingénierie Financière & Quantitative</title>
+    <meta property="og:title" content="Robin Denis — Ingénierie Financière & Quantitative">
+    <meta property="og:description" content="Quantitative Researcher · ECE Paris 2026 · Python, ML, Finance de marché">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://robin-denis.com">
+    <meta property="og:image" content="https://robin-denis.com/photo.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Robin Denis — Quant Finance">
+    <meta name="twitter:description" content="Quantitative Researcher · ECE Paris 2026">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-primary: #0a0f1a;
-            --bg-secondary: #0f1628;
-            --bg-card: #131c32;
-            --bg-card-hover: #17223d;
-            --border: #1e2d52;
-            --border-light: #253761;
-            --text-primary: #e8ecf4;
-            --text-secondary: #8c99b8;
-            --text-muted: #5a6a8f;
-            --accent: #4f8ff7;
-            --accent-glow: rgba(79, 143, 247, 0.15);
-            --accent-warm: #f59e42;
-            --accent-green: #34d399;
-            --accent-rose: #f472b6;
-            --serif: 'Instrument Serif', Georgia, serif;
-            --sans: 'DM Sans', -apple-system, sans-serif;
-            --radius: 12px;
-            --radius-sm: 8px;
-            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: var(--sans);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.7;
-            font-size: 15px;
-            font-weight: 400;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* ═══ GRAIN OVERLAY ═══ */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        /* ═══ AMBIENT GLOW ═══ */
-        .ambient-glow {
-            position: fixed;
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.07;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .glow-1 { top: -200px; right: -100px; background: var(--accent); }
-        .glow-2 { bottom: -200px; left: -100px; background: var(--accent-warm); }
-
-        /* ═══ NAVIGATION ═══ */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 100;
-            padding: 16px 0;
-            background: rgba(10, 15, 26, 0.8);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid transparent;
-            transition: var(--transition);
-        }
-        nav.scrolled {
-            border-bottom-color: var(--border);
-        }
-        nav .nav-inner {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        nav .nav-name {
-            font-family: var(--serif);
-            font-size: 20px;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-        }
-        nav .nav-links {
-            display: flex;
-            gap: 24px;
-        }
-        nav .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-            transition: var(--transition);
-            position: relative;
-        }
-        nav .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 1.5px;
-            background: var(--accent);
-            transition: var(--transition);
-        }
-        nav .nav-links a:hover { color: var(--text-primary); }
-        nav .nav-links a:hover::after { width: 100%; }
-
-        /* ═══ MAIN CONTAINER ═══ */
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 32px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* ═══ HERO SECTION ═══ */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 120px 0 80px;
-        }
-        .hero-content {
-            animation: fadeUp 1s ease-out;
-        }
-        .hero-photo {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid var(--border);
-            margin-bottom: 32px;
-            filter: grayscale(10%);
-            transition: var(--transition);
-        }
-        .hero-photo:hover {
-            border-color: var(--accent);
-            transform: scale(1.05);
-            filter: grayscale(0%);
-        }
-        .hero h1 {
-            font-family: var(--serif);
-            font-size: clamp(40px, 7vw, 64px);
-            font-weight: 400;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .hero-tagline {
-            font-size: 17px;
-            color: var(--text-secondary);
-            font-weight: 300;
-            margin-bottom: 8px;
-            letter-spacing: 0.01em;
-        }
-        .hero-sub {
-            font-size: 13px;
-            color: var(--text-muted);
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            margin-bottom: 36px;
-        }
-        .hero-links {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .hero-links a {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border: 1px solid var(--border);
-            border-radius: 100px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: var(--transition);
-            background: transparent;
-        }
-        .hero-links a:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--accent-glow);
-            transform: translateY(-2px);
-        }
-        .hero-links a svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* ═══ SECTIONS ═══ */
-        section {
-            padding: 80px 0 40px;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 40px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .section-header:hover .section-icon {
-            background: var(--accent-glow);
-            border-color: var(--accent);
-        }
-        .section-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            transition: var(--transition);
-            flex-shrink: 0;
-        }
-        .section-title {
-            font-family: var(--serif);
-            font-size: 28px;
-            font-weight: 400;
-            letter-spacing: -0.02em;
-        }
-        .section-toggle {
-            margin-left: auto;
-            color: var(--text-muted);
-            font-size: 20px;
-            transition: var(--transition);
-        }
-        .section-header[aria-expanded="true"] .section-toggle {
-            transform: rotate(180deg);
-        }
-        .section-body {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .section-body.open {
-            display: block;
-        }
-
-        /* ═══ TIMELINE CARDS ═══ */
-        .timeline {
-            position: relative;
-            padding-left: 28px;
-        }
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 8px;
-            bottom: 8px;
-            width: 1px;
-            background: linear-gradient(to bottom, var(--accent) 0%, var(--border) 100%);
-        }
-        .timeline-item {
-            position: relative;
-            margin-bottom: 36px;
-        }
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -32px;
-            top: 8px;
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: var(--bg-primary);
-            border: 2px solid var(--accent);
-        }
-        .timeline-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-            transition: var(--transition);
-        }
-        .timeline-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-light);
-            transform: translateX(4px);
-        }
-        .timeline-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            margin-bottom: 8px;
-        }
-        .timeline-logo {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-sm);
-            object-fit: cover;
-            border: 1px solid var(--border);
-            flex-shrink: 0;
-            background: var(--bg-secondary);
-        }
-        .timeline-info h3 {
-            font-size: 16px;
-            font-weight: 600;
-            line-height: 1.3;
-        }
-        .timeline-info .org {
-            font-size: 14px;
-            color: var(--accent);
-            font-weight: 400;
-        }
-        .timeline-info .period {
-            font-size: 12px;
-            color: var(--text-muted);
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            margin-top: 2px;
-        }
-        .timeline-body {
-            margin-top: 14px;
-        }
-        .timeline-body ul {
-            list-style: none;
-            padding: 0;
-        }
-        .timeline-body li {
-            position: relative;
-            padding-left: 16px;
-            margin-bottom: 6px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        .timeline-body li::before {
-            content: '›';
-            position: absolute;
-            left: 0;
-            color: var(--accent);
-            font-weight: 600;
-        }
-
-        /* ═══ EDUCATION DETAILS ═══ */
-        .edu-details {
-            margin-top: 12px;
-        }
-        .edu-toggle {
-            font-size: 13px;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: var(--transition);
-            border: none;
-            background: none;
-            font-family: var(--sans);
-            padding: 4px 0;
-        }
-        .edu-toggle:hover { color: var(--accent); }
-        .edu-toggle .arrow {
-            transition: var(--transition);
-            font-size: 10px;
-        }
-        .edu-toggle.open .arrow {
-            transform: rotate(90deg);
-        }
-        .edu-courses {
-            display: none;
-            margin-top: 10px;
-            padding: 14px 18px;
-            background: rgba(79, 143, 247, 0.04);
-            border-radius: var(--radius-sm);
-            border-left: 2px solid var(--accent);
-        }
-        .edu-courses.open { display: block; }
-        .edu-courses p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        /* ═══ SKILLS GRID ═══ */
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-        .skill-category {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            transition: var(--transition);
-        }
-        .skill-category:hover {
-            border-color: var(--border-light);
-            transform: translateY(-2px);
-        }
-        .skill-category h4 {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-        .skill-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        .skill-tag {
-            padding: 4px 12px;
-            border-radius: 100px;
-            font-size: 12px;
-            font-weight: 500;
-            background: rgba(79, 143, 247, 0.08);
-            color: var(--accent);
-            border: 1px solid rgba(79, 143, 247, 0.15);
-        }
-        .skill-tag.warm {
-            background: rgba(245, 158, 66, 0.08);
-            color: var(--accent-warm);
-            border-color: rgba(245, 158, 66, 0.15);
-        }
-        .skill-tag.green {
-            background: rgba(52, 211, 153, 0.08);
-            color: var(--accent-green);
-            border-color: rgba(52, 211, 153, 0.15);
-        }
-        .skill-tag.rose {
-            background: rgba(244, 114, 182, 0.08);
-            color: var(--accent-rose);
-            border-color: rgba(244, 114, 182, 0.15);
-        }
-
-        /* ═══ PROJECTS GRID ═══ */
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 16px;
-        }
-        .project-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-            transition: var(--transition);
-            display: flex;
-            flex-direction: column;
-        }
-        .project-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-light);
-            transform: translateY(-3px);
-        }
-        .project-card h4 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        .project-card p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            flex: 1;
-            margin-bottom: 16px;
-        }
-        .project-links {
-            display: flex;
-            gap: 10px;
-        }
-        .project-links a {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--accent);
-            text-decoration: none;
-            padding: 5px 14px;
-            border: 1px solid rgba(79, 143, 247, 0.25);
-            border-radius: 100px;
-            transition: var(--transition);
-        }
-        .project-links a:hover {
-            background: var(--accent-glow);
-        }
-
-        /* ═══ LANGUAGES ═══ */
-        .languages-row {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-        .lang-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px 20px;
-            min-width: 180px;
-            transition: var(--transition);
-        }
-        .lang-item:hover {
-            border-color: var(--border-light);
-        }
-        .lang-flag {
-            font-size: 24px;
-        }
-        .lang-info {
-            display: flex;
-            flex-direction: column;
-        }
-        .lang-name {
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .lang-level {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        /* ═══ CONTACT SECTION ═══ */
-        .contact-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-        .contact-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 24px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-            transition: var(--transition);
-        }
-        .contact-item:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--accent-glow);
-            transform: translateY(-2px);
-        }
-        .contact-item svg {
-            width: 18px;
-            height: 18px;
-            flex-shrink: 0;
-        }
-
-        /* ═══ FOOTER ═══ */
-        footer {
-            text-align: center;
-            padding: 60px 0 40px;
-            color: var(--text-muted);
-            font-size: 12px;
-            border-top: 1px solid var(--border);
-            margin-top: 60px;
-        }
-
-        /* ═══ ANIMATIONS ═══ */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* ═══ RESPONSIVE ═══ */
-        @media (max-width: 640px) {
-            .container { padding: 0 20px; }
-            nav .nav-links { gap: 16px; }
-            nav .nav-links a { font-size: 11px; }
-            .hero { padding: 100px 0 60px; }
-            .hero-photo { width: 110px; height: 110px; }
-            .projects-grid { grid-template-columns: 1fr; }
-            .skills-grid { grid-template-columns: 1fr; }
-            .timeline { padding-left: 22px; }
-            .languages-row { flex-direction: column; }
-        }
+        :root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px;--radius-sm:8px;--ease:cubic-bezier(.4,0,.2,1)}
+        [data-theme="dark"]{--bg-0:#060a12;--bg-1:#0a1020;--bg-2:#111a2e;--bg-3:#162244;--border:#1a2847;--border-hi:#253a68;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--accent-g:rgba(59,130,246,.12);--accent-d:rgba(59,130,246,.05);--warm:#f59e42;--warm-g:rgba(245,158,66,.10);--green:#22c55e;--green-g:rgba(34,197,94,.10);--rose:#e879a8;--rose-g:rgba(232,121,168,.10);--violet:#a78bfa;--violet-g:rgba(167,139,250,.10);--glass:rgba(10,16,32,.75);--shadow:rgba(0,0,0,.3)}
+        [data-theme="light"]{--bg-0:#f5f7fa;--bg-1:#edf0f5;--bg-2:#ffffff;--bg-3:#f0f3f8;--border:#d8dfe9;--border-hi:#c2cbda;--tx-1:#1a2035;--tx-2:#546178;--tx-3:#8594ad;--accent:#2563eb;--accent-g:rgba(37,99,235,.08);--accent-d:rgba(37,99,235,.03);--warm:#d97706;--warm-g:rgba(217,119,6,.08);--green:#16a34a;--green-g:rgba(22,163,74,.08);--rose:#db2777;--rose-g:rgba(219,39,119,.08);--violet:#7c3aed;--violet-g:rgba(124,58,237,.08);--glass:rgba(245,247,250,.8);--shadow:rgba(0,0,0,.06)}
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
+        body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+        .blob{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0;transition:opacity .5s var(--ease)}.b1{width:700px;height:700px;top:-300px;right:-200px;background:var(--accent);opacity:.04}.b2{width:500px;height:500px;bottom:-200px;left:-150px;background:var(--warm);opacity:.03}.b3{width:400px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--violet);opacity:.02}
+        [data-theme="light"] .blob{opacity:.025!important}
+        nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid transparent;transition:border-color .4s var(--ease),background .5s var(--ease)}
+        nav.scrolled{border-bottom-color:var(--border)}
+        .nav-i{max-width:860px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+        .nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em}.nav-brand b{color:var(--accent)}
+        .nav-r{display:flex;align-items:center;gap:24px}
+        .nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease);position:relative}
+        .nav-r a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1.5px;background:var(--accent);transition:width .3s var(--ease)}
+        .nav-r a:hover{color:var(--tx-1)}.nav-r a:hover::after{width:100%}
+        .nav-btns{display:flex;gap:8px;align-items:center}
+        .ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease);flex-shrink:0}
+        .ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
+        .lang-btn{font-size:13px;font-weight:700;font-family:var(--sans);color:var(--tx-2);letter-spacing:.02em}
+        .lang-btn:hover{color:var(--accent)}
+        .box{max-width:860px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+        .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:100px 0 50px}
+        .hero-in{animation:heroIn .9s ease-out both}
+        .status{display:inline-flex;align-items:center;gap:8px;padding:7px 18px;border-radius:100px;background:var(--green-g);border:1px solid rgba(34,197,94,.2);font-size:12px;font-weight:600;color:var(--green);margin-bottom:28px}
+        .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+        .avatar-ring{width:148px;height:148px;border-radius:50%;padding:3px;background:conic-gradient(from 180deg,var(--accent),var(--violet),var(--rose),var(--warm),var(--accent));margin:0 auto 32px;animation:ringHue 8s linear infinite}
+        .avatar-ring img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid var(--bg-0)}
+        .hero h1{font-family:var(--serif);font-size:clamp(42px,7vw,66px);font-weight:400;letter-spacing:-.04em;line-height:1.05;margin-bottom:12px}
+        .hero-tag{font-size:18px;color:var(--tx-2);font-weight:300;margin-bottom:6px}
+        .hero-sub{font-size:13px;color:var(--tx-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:32px}
+        .pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+        .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border:1px solid var(--border);border-radius:100px;color:var(--tx-2);text-decoration:none;font-size:13px;font-weight:500;transition:all .3s var(--ease);background:rgba(17,26,46,.3);backdrop-filter:blur(6px)}
+        .pill:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-g);transform:translateY(-2px);box-shadow:0 8px 24px var(--shadow)}
+        .pill svg{width:15px;height:15px}
+        section{padding:70px 0 30px}
+        .sh{display:flex;align-items:center;gap:16px;margin-bottom:36px;cursor:pointer;user-select:none;padding:8px 0}
+        .sh:hover .si{border-color:var(--accent);background:var(--accent-g)}
+        .si{width:42px;height:42px;border-radius:11px;border:1px solid var(--border);display:grid;place-items:center;font-size:19px;transition:all .3s var(--ease);flex-shrink:0}
+        .st{font-family:var(--serif);font-size:28px;font-weight:400;letter-spacing:-.02em}
+        .sc{margin-left:auto;color:var(--tx-3);font-size:11px;transition:transform .35s var(--ease)}
+        .sh[aria-expanded="true"] .sc{transform:rotate(180deg)}
+        .sb{display:grid;grid-template-rows:0fr;transition:grid-template-rows .5s var(--ease)}.sb.open{grid-template-rows:1fr}.sb-in{overflow:hidden}
+        .tl{position:relative;padding-left:30px}.tl::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:1.5px;background:linear-gradient(to bottom,var(--accent),var(--border) 80%,transparent)}
+        .tl-i{position:relative;margin-bottom:26px}.tl-i:last-child{margin-bottom:8px}.tl-i::before{content:'';position:absolute;left:-34.5px;top:10px;width:9px;height:9px;border-radius:50%;background:var(--bg-0);border:2px solid var(--accent);z-index:2}
+        .cd{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .3s var(--ease)}
+        .cd:hover{background:var(--bg-3);border-color:var(--border-hi);transform:translateX(5px)}
+        .cd-h{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px}
+        .cd-info h3{font-size:16px;font-weight:600;line-height:1.35}.cd-info .org{font-size:14px;color:var(--accent);font-weight:400}.cd-info .per{font-size:11.5px;color:var(--tx-3);letter-spacing:.05em;text-transform:uppercase;margin-top:2px;display:block}
+        .cd-b{margin-top:14px}.cd-b ul{list-style:none}.cd-b li{position:relative;padding-left:18px;margin-bottom:5px;color:var(--tx-2);font-size:13.5px;line-height:1.65}.cd-b li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;font-size:16px;line-height:1.5}
+        .stg{font-size:12.5px;color:var(--tx-3);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:color .3s var(--ease);border:none;background:none;font-family:var(--sans);padding:6px 0;font-weight:500}
+        .stg:hover{color:var(--accent)}.stg .ar{transition:transform .3s var(--ease);font-size:9px}.stg.on .ar{transform:rotate(90deg)}
+        .sp{display:none;margin-top:10px;padding:14px 18px;background:var(--accent-d);border-radius:var(--radius-sm);border-left:2px solid var(--accent)}.sp.on{display:block;animation:fadeIn .3s ease}.sp p{font-size:13px;color:var(--tx-2);margin-bottom:3px;line-height:1.5}
+        .htl-wrap{overflow-x:auto;padding:20px 0 24px;margin:-10px -8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+        .htl-wrap::-webkit-scrollbar{height:6px}.htl-wrap::-webkit-scrollbar-track{background:transparent}.htl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+        .htl{display:flex;gap:0;min-width:max-content;position:relative;padding:0 8px}.htl::before{content:'';position:absolute;top:40px;left:8px;right:8px;height:2px;background:linear-gradient(90deg,var(--accent),var(--violet),var(--rose),var(--warm));border-radius:1px}
+        .ht-item{display:flex;flex-direction:column;align-items:center;min-width:130px;position:relative}.ht-year{font-size:11px;font-weight:700;color:var(--tx-3);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase}
+        .ht-dot{width:12px;height:12px;border-radius:50%;border:2.5px solid var(--accent);background:var(--bg-0);z-index:2;margin-bottom:14px;transition:all .3s var(--ease)}
+        .ht-item:hover .ht-dot{background:var(--accent);transform:scale(1.4);box-shadow:0 0 16px var(--accent-g)}
+        .ht-label{font-size:11.5px;font-weight:600;color:var(--tx-1);text-align:center;max-width:120px;line-height:1.35;margin-bottom:4px}
+        .ht-sub{font-size:10px;color:var(--tx-3);text-align:center;max-width:120px;line-height:1.3}
+        .ht-item.edu .ht-dot{border-color:var(--violet)}.ht-item.edu:hover .ht-dot{background:var(--violet);box-shadow:0 0 16px var(--violet-g)}
+        .ht-item.proj .ht-dot{border-color:var(--warm)}.ht-item.proj:hover .ht-dot{background:var(--warm);box-shadow:0 0 16px var(--warm-g)}
+        .radar-section{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+        .radar-box{flex:1;min-width:280px;display:flex;justify-content:center}.radar-box canvas{max-width:340px;width:100%}
+        .skills-side{flex:1;min-width:260px}
+        .sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+        .sk{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:all .3s var(--ease)}
+        .sk:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+        .sk h4{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--tx-3);margin-bottom:10px;font-weight:600}
+        .tgs{display:flex;flex-wrap:wrap;gap:6px}
+        .tg{padding:4px 12px;border-radius:100px;font-size:12px;font-weight:500}
+        .tg.b{background:var(--accent-g);color:var(--accent);border:1px solid rgba(59,130,246,.18)}
+        .tg.w{background:var(--warm-g);color:var(--warm);border:1px solid rgba(245,158,66,.18)}
+        .tg.g{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.18)}
+        .tg.v{background:var(--violet-g);color:var(--violet);border:1px solid rgba(167,139,250,.18)}
+        .certs{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+        .cert{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--tx-2);transition:all .3s var(--ease)}
+        .cert:hover{border-color:var(--warm);color:var(--warm);transform:translateY(-2px)}
+        .demos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:16px}
+        .demo-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .3s var(--ease)}
+        .demo-card:hover{border-color:var(--border-hi);transform:translateY(-3px);box-shadow:0 12px 32px var(--shadow)}
+        .demo-preview{background:var(--bg-1);padding:24px;border-bottom:1px solid var(--border);min-height:200px;display:flex;align-items:center;justify-content:center}
+        .demo-info{padding:20px}.demo-info h4{font-size:16px;font-weight:600;margin-bottom:6px}.demo-info p{font-size:13px;color:var(--tx-2);line-height:1.6;margin-bottom:14px}
+        .demo-links{display:flex;gap:8px}.demo-links a{font-size:12px;font-weight:500;color:var(--accent);text-decoration:none;padding:5px 14px;border:1px solid rgba(59,130,246,.25);border-radius:100px;transition:all .3s var(--ease)}.demo-links a:hover{background:var(--accent-g)}
+        .bs-mini{width:100%;max-width:340px}.bs-mini label{display:flex;justify-content:space-between;font-size:11px;color:var(--tx-3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+        .bs-mini input[type=range]{width:100%;margin-bottom:12px;accent-color:var(--accent);height:4px}
+        .bs-result{display:flex;gap:16px;margin-top:8px}.bs-val{text-align:center;flex:1;padding:10px;background:var(--bg-0);border-radius:var(--radius-sm);border:1px solid var(--border)}
+        .bs-val .num{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--accent)}.bs-val .lbl{font-size:10px;color:var(--tx-3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+        .mc-mini{width:100%;max-width:340px;text-align:center}.mc-mini canvas{width:100%;height:180px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-0)}
+        .mc-controls{display:flex;gap:8px;margin-top:10px;justify-content:center}
+        .mc-btn{padding:6px 16px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-2);font-size:12px;font-weight:600;cursor:pointer;transition:all .3s var(--ease);font-family:var(--sans)}
+        .mc-btn:hover,.mc-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-g)}
+        .testi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+        .testi{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:all .3s var(--ease);position:relative}
+        .testi:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+        .testi::before{content:'"';font-family:var(--serif);font-size:64px;color:var(--accent);opacity:.15;position:absolute;top:8px;left:20px;line-height:1}
+        .testi-text{font-size:14px;color:var(--tx-2);line-height:1.7;font-style:italic;margin-bottom:18px;position:relative;z-index:1}
+        .testi-author{display:flex;align-items:center;gap:12px}
+        .testi-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-g);border:1px solid var(--border);display:grid;place-items:center;font-size:16px;font-weight:700;color:var(--accent)}
+        .testi-name{font-size:14px;font-weight:600}.testi-role{font-size:12px;color:var(--tx-3)}
+        .blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+        .blog-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .3s var(--ease);text-decoration:none;color:inherit;display:block}
+        .blog-card:hover{border-color:var(--border-hi);transform:translateY(-3px);box-shadow:0 12px 32px var(--shadow)}
+        .blog-date{font-size:11px;color:var(--tx-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+        .blog-card h4{font-size:17px;font-weight:600;margin-bottom:8px;line-height:1.35}.blog-card p{font-size:13px;color:var(--tx-2);line-height:1.6;margin-bottom:14px}
+        .blog-tags{display:flex;gap:6px;flex-wrap:wrap}.blog-tag{font-size:11px;padding:3px 10px;border-radius:100px;background:var(--accent-g);color:var(--accent);font-weight:500}
+        .langs{display:flex;gap:14px;flex-wrap:wrap}
+        .lang{display:flex;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 22px;min-width:160px;transition:all .3s var(--ease)}.lang:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+        .lf{font-size:26px}.ln{font-size:14px;font-weight:600}.ll{font-size:12px;color:var(--tx-3)}
+        .ints{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+        .int{padding:8px 18px;background:var(--bg-2);border:1px solid var(--border);border-radius:100px;font-size:13px;color:var(--tx-2);display:inline-flex;align-items:center;gap:7px;transition:all .3s var(--ease)}.int:hover{border-color:var(--border-hi);transform:translateY(-1px)}
+        .cc-grid{display:flex;gap:12px;flex-wrap:wrap}
+        .cc{display:inline-flex;align-items:center;gap:10px;padding:16px 24px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--tx-2);text-decoration:none;font-size:14px;transition:all .3s var(--ease)}
+        .cc:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-g);transform:translateY(-3px);box-shadow:0 8px 24px var(--shadow)}
+        .cc svg{width:18px;height:18px;flex-shrink:0}
+        .fab{position:fixed;bottom:28px;right:28px;z-index:90;width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;display:grid;place-items:center;box-shadow:0 8px 28px rgba(59,130,246,.35);transition:all .3s var(--ease);text-decoration:none}
+        .fab:hover{transform:scale(1.1) translateY(-2px);box-shadow:0 12px 36px rgba(59,130,246,.45)}
+        .fab svg{width:22px;height:22px}
+        .fab-tip{position:absolute;right:64px;top:50%;transform:translateY(-50%);background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--tx-2);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .3s var(--ease);font-family:var(--sans)}
+        .fab:hover .fab-tip{opacity:1}
+        footer{text-align:center;padding:50px 0 36px;color:var(--tx-3);font-size:12px;border-top:1px solid var(--border);margin-top:50px;letter-spacing:.03em}
+        .label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--tx-3);font-weight:600;margin:24px 0 14px}
+        @keyframes heroIn{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes ringHue{to{filter:hue-rotate(360deg)}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        .rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}.rv.vis{opacity:1;transform:translateY(0)}
+        @media(max-width:768px){.box{padding:0 18px}.nav-r a{font-size:10px;letter-spacing:.04em}.nav-r{gap:14px}.hero{padding:90px 0 40px}.avatar-ring{width:120px;height:120px}.sg{grid-template-columns:1fr}.tl{padding-left:24px}.tl-i::before{left:-28.5px}.langs{flex-direction:column}.cd{padding:18px}.demos-grid{grid-template-columns:1fr}.testi-grid{grid-template-columns:1fr}.blog-grid{grid-template-columns:1fr}.radar-section{flex-direction:column}.fab{bottom:20px;right:20px;width:48px;height:48px}.fab svg{width:20px;height:20px}}
+        @media(max-width:480px){.nav-r a:not(:nth-child(-n+3)){display:none}}
     </style>
 </head>
 <body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 
-<!-- Ambient Glows -->
-<div class="ambient-glow glow-1"></div>
-<div class="ambient-glow glow-2"></div>
-
-<!-- Navigation -->
-<nav id="navbar">
-    <div class="nav-inner">
-        <span class="nav-name">R. Denis</span>
-        <div class="nav-links">
-            <a href="#education">Éducation</a>
-            <a href="#experience">Expérience</a>
-            <a href="#projects">Projets</a>
-            <a href="#contact">Contact</a>
+<!-- NAV -->
+<nav id="nav"><div class="nav-i">
+    <span class="nav-brand">R<b>.</b> Denis</span>
+    <div class="nav-r">
+        <a href="#experience" data-i18n="nav_exp">Expérience</a>
+        <a href="#education" data-i18n="nav_edu">Formation</a>
+        <a href="#skills" data-i18n="nav_skills">Compétences</a>
+        <a href="#demos" data-i18n="nav_demos">Démos</a>
+        <a href="#blog">Blog</a>
+        <a href="#contact">Contact</a>
+        <div class="nav-btns">
+            <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Switch language">FR</button>
+            <button class="ctrl-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">🌙</button>
         </div>
     </div>
-</nav>
+</div></nav>
 
-<!-- ═══════════ HERO ═══════════ -->
-<div class="container">
-    <div class="hero" id="hero">
-        <div class="hero-content">
-            <img src="photo.jpg" alt="Robin Denis" class="hero-photo">
-            <h1>Robin Denis</h1>
-            <p class="hero-tagline">Ingénieur · Finance Quantitative · Data Science</p>
-            <p class="hero-sub">ECE Paris · Ingénierie Financière & Quantitative · Promo 2026</p>
-            <div class="hero-links">
-                <a href="https://www.linkedin.com/in/robin-denis-finance/" target="_blank">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-                    LinkedIn
-                </a>
-                <a href="https://github.com/RoJLD" target="_blank">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-                    GitHub
-                </a>
-                <a href="mailto:robin.denis1207@gmail.com">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
-                    Contact
-                </a>
-            </div>
-        </div>
+<div class="box">
+
+<!-- HERO -->
+<div class="hero" id="hero"><div class="hero-in">
+    <div class="status"><span class="status-dot"></span><span data-i18n="status">Actuellement : Quant Researcher DeFi @ ALTEN</span></div>
+    <div class="avatar-ring"><img src="photo.jpg" alt="Robin Denis"></div>
+    <h1>Robin Denis</h1>
+    <p class="hero-tag" data-i18n="hero_tag">Ingénierie Financière & Quantitative</p>
+    <p class="hero-sub">ECE Paris · Promo 2026 · Paris</p>
+    <div class="pills">
+        <a class="pill" href="https://www.linkedin.com/in/robin-denis-finance/" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
+        <a class="pill" href="https://github.com/RoJLD" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>GitHub</a>
+        <a class="pill" href="cv/Robin_Denis_CV.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span data-i18n="pill_cv">CV</span></a>
+        <a class="pill" href="mailto:robin.denis1207@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>Email</a>
     </div>
+</div></div>
 
-    <!-- ═══════════ ÉDUCATION ═══════════ -->
-    <section id="education" class="reveal">
-        <div class="section-header" aria-expanded="true" onclick="toggleSection(this)">
-            <div class="section-icon">🎓</div>
-            <h2 class="section-title">Éducation</h2>
-            <span class="section-toggle">▾</span>
-        </div>
-        <div class="section-body open">
-            <div class="timeline">
+<!-- TIMELINE HORIZONTALE -->
+<section class="rv" id="parcours"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🗺️</div><h2 class="st" data-i18n="sec_parcours">Mon Parcours</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
+    <div class="htl-wrap"><div class="htl">
+        <div class="ht-item edu"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_prepa">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
+        <div class="ht-item edu"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_ece_sub">Cycle Ingénieur</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_jun24">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_feb25">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_bt">Trésorier & Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
+        <div class="ht-item proj"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_pfe">PFE avec EY</div><div class="ht-sub" data-i18n="ht_pfe_sub">Couverture dynamique</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_feb26">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&D</div></div>
+        <div class="ht-item edu"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_diplome">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
+    </div></div>
+</div></div></section>
 
-                <div class="timeline-item">
-                    <div class="timeline-card">
-                        <div class="timeline-header">
-                            <div class="timeline-info">
-                                <h3>ECE Paris — Cycle Ingénieur</h3>
-                                <span class="org">Majeure en Ingénierie Financière et Quantitative</span>
-                                <span class="period">2021 – 2026 · Paris</span>
-                            </div>
-                        </div>
-                        <div class="edu-details">
-                            <button class="edu-toggle" onclick="toggleCourses(this, event)">
-                                <span class="arrow">▸</span> Voir les cours
-                            </button>
-                            <div class="edu-courses">
-                                <p>Calcul stochastique & EDS</p>
-                                <p>Finance de marché & pricing de dérivés</p>
-                                <p>Recherche opérationnelle & optimisation numérique</p>
-                                <p>Machine Learning appliqué</p>
-                                <p>Contrôle optimal et Hamiltonien</p>
-                                <p>Modèles DSGE</p>
-                                <p>Projet de fin d'études (avec EY) — Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<!-- EXPÉRIENCE -->
+<section id="experience" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">💼</div><h2 class="st" data-i18n="sec_exp">Expérience Professionnelle</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="tl">
+    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3>Quantitative Researcher DeFi</h3><span class="org">ALTEN — Lab R&D, Sèvres</span><span class="per" data-i18n="per_alten">Février – Août 2026</span></div></div><div class="cd-b"><ul>
+        <li data-i18n="alten1">Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d'actifs sur protocoles émergents</li>
+        <li data-i18n="alten2">Développement de modèles statistiques et ML pour l'exploration de patterns et l'analyse de corrélations</li>
+        <li data-i18n="alten3">Data Engineering : automatisation de la collecte de métriques on-chain (TVL, APY, Volume) via Python</li>
+    </ul></div></div></div>
+    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3 data-i18n="bt_title">Trésorier & Développeur Full Stack</h3><span class="org" data-i18n="bt_org">Bouygues Telecom — Département Financier, Vélizy</span><span class="per" data-i18n="per_bt">Février – Août 2025</span></div></div><div class="cd-b"><ul>
+        <li data-i18n="bt1">Conception d'un Treasury Management System (Python/SQL/VBA, ODBC) : gain de ~4h/jour</li>
+        <li data-i18n="bt2">Automatisation des prévisions de trésorerie et intégration du pricing de swaps de taux</li>
+        <li data-i18n="bt3">Orchestration d'ETL (Dataiku/BigQuery) et automatisation des contrôles qualité des données</li>
+    </ul></div></div></div>
+    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3>Risk Manager</h3><span class="org">ManCo Paris</span><span class="per" data-i18n="per_manco">Juin – Décembre 2024</span></div></div><div class="cd-b"><ul>
+        <li data-i18n="mc1">Suivi de plus de 250 règles d'investissement réglementaires et statutaires</li>
+        <li data-i18n="mc2">Préparation des comités de risques (mensuels, trimestriels, annuels)</li>
+        <li data-i18n="mc3">Analyse des risques de marché, liquidité, contrepartie et opérationnels</li>
+        <li data-i18n="mc4">Calculs actuariels, amélioration d'outils et automatisation (Excel, VBA, Access)</li>
+    </ul></div></div></div>
+</div></div></div></section>
 
-                <div class="timeline-item">
-                    <div class="timeline-card">
-                        <div class="timeline-header">
-                            <div class="timeline-info">
-                                <h3>Classes Préparatoires MPSI – MP</h3>
-                                <span class="org">Mathématiques, Physique et Sciences de l'Ingénieur</span>
-                                <span class="period">2019 – 2021 · Bourg-en-Bresse</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<!-- FORMATION -->
+<section id="education" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🎓</div><h2 class="st" data-i18n="sec_edu">Formation</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="tl">
+    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3 data-i18n="ece_title">ECE Paris — Cycle Ingénieur</h3><span class="org" data-i18n="ece_major">Majeure Ingénierie Financière et Quantitative</span><span class="per">2021 – 2026</span></div></div>
+        <div style="margin-top:12px"><button class="stg" onclick="sub(this,event)"><span class="ar">▸</span> <span data-i18n="cours_cles">Cours clés</span></button><div class="sp"><p>Calcul stochastique & SDE</p><p data-i18n="cours2">Finance de marché</p><p data-i18n="cours3">Recherche opérationnelle & optimisation numérique</p><p data-i18n="cours4">Machine Learning appliqué</p><p data-i18n="cours5">Contrôle optimal et Hamiltonien</p><p data-i18n="cours6">Modèles DSGE</p></div></div>
+        <div style="margin-top:8px"><button class="stg" onclick="sub(this,event)"><span class="ar">▸</span> <span data-i18n="pfe_label">Projet de fin d'études (avec EY)</span></button><div class="sp"><p><strong data-i18n="pfe_role">Chef de projet</strong> — <span data-i18n="pfe_desc">Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque</span></p></div></div>
+    </div></div>
+    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3 data-i18n="prepa_title">Classes Préparatoires MPSI – MP</h3><span class="org" data-i18n="prepa_desc">Mathématiques, Physique et Sciences de l'Ingénieur</span><span class="per">2019 – 2021 · Bourg-en-Bresse</span></div></div></div></div>
+</div></div></div></section>
 
-            </div>
-        </div>
-    </section>
+<!-- COMPÉTENCES + RADAR -->
+<section id="skills" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">⚡</div><h2 class="st" data-i18n="sec_skills">Compétences</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
+    <div class="radar-section">
+        <div class="radar-box"><canvas id="radarChart"></canvas></div>
+        <div class="skills-side"><div class="sg">
+            <div class="sk"><h4 data-i18n="sk_lang">Langages</h4><div class="tgs"><span class="tg b">Python</span><span class="tg b">SQL</span><span class="tg b">VBA</span><span class="tg b">Java</span><span class="tg b">C/C++</span><span class="tg b">C#</span></div></div>
+            <div class="sk"><h4>Data & ML</h4><div class="tgs"><span class="tg w">NumPy</span><span class="tg w">Pandas</span><span class="tg w">Keras</span><span class="tg w">Matplotlib</span></div></div>
+            <div class="sk"><h4 data-i18n="sk_infra">Infrastructure</h4><div class="tgs"><span class="tg g">Git</span><span class="tg g">DevOps</span><span class="tg g">CI/CD</span><span class="tg g">API</span><span class="tg g">ODBC</span></div></div>
+            <div class="sk"><h4>Data Engineering</h4><div class="tgs"><span class="tg v">Dataiku</span><span class="tg v">BigQuery</span><span class="tg v">ETL</span></div></div>
+        </div></div>
+    </div>
+    <div class="label" style="margin-top:28px" data-i18n="lbl_certs">Certifications</div>
+    <div class="certs"><div class="cert">📋 Google Project Management</div><div class="cert">📊 Business Analyst</div><div class="cert">🧠 Data Scientist</div><div class="cert">🇬🇧 TOEIC 925/990</div></div>
+</div></div></section>
 
-    <!-- ═══════════ EXPÉRIENCE ═══════════ -->
-    <section id="experience" class="reveal">
-        <div class="section-header" aria-expanded="true" onclick="toggleSection(this)">
-            <div class="section-icon">💼</div>
-            <h2 class="section-title">Expérience Professionnelle</h2>
-            <span class="section-toggle">▾</span>
-        </div>
-        <div class="section-body open">
-            <div class="timeline">
+<!-- DÉMOS INTERACTIVES -->
+<section id="demos" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🧪</div><h2 class="st" data-i18n="sec_demos">Démos Interactives</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="demos-grid">
+    <div class="demo-card"><div class="demo-preview"><div class="bs-mini">
+        <label>Spot (S) <span id="bsS">100</span></label><input type="range" min="50" max="200" value="100" id="slS" oninput="bsCalc()">
+        <label>Strike (K) <span id="bsK">100</span></label><input type="range" min="50" max="200" value="100" id="slK" oninput="bsCalc()">
+        <label data-i18n="bs_vol">Volatilité (σ)</label> <span id="bsV">20%</span><input type="range" min="5" max="80" value="20" id="slV" oninput="bsCalc()">
+        <label data-i18n="bs_mat">Maturité (T)</label> <span id="bsT">1.0</span><input type="range" min="1" max="36" value="12" id="slT" oninput="bsCalc()">
+        <div class="bs-result"><div class="bs-val"><div class="num" id="callP">–</div><div class="lbl">Call</div></div><div class="bs-val"><div class="num" id="putP">–</div><div class="lbl">Put</div></div><div class="bs-val"><div class="num" id="deltaV">–</div><div class="lbl">Δ Call</div></div></div>
+    </div></div><div class="demo-info"><h4>Black-Scholes Pricer</h4><p data-i18n="bs_desc">Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.</p><div class="demo-links"><a href="#" data-i18n="code_src">💻 Code source</a></div></div></div>
+    <div class="demo-card"><div class="demo-preview"><div class="mc-mini"><canvas id="mcCanvas"></canvas><div class="mc-controls"><button class="mc-btn active" onclick="mcRun(50)" id="mc50">50 paths</button><button class="mc-btn" onclick="mcRun(200)" id="mc200">200 paths</button><button class="mc-btn" onclick="mcRun(1000)" id="mc1000">1000 paths</button></div></div></div><div class="demo-info"><h4>Simulation Monte Carlo — GBM</h4><p data-i18n="mc_desc">Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.</p><div class="demo-links"><a href="#" data-i18n="code_src">💻 Code source</a></div></div></div>
+</div></div></div></section>
 
-                <div class="timeline-item">
-                    <div class="timeline-card">
-                        <div class="timeline-header">
-                            <div class="timeline-info">
-                                <h3>Quantitative Researcher DeFi</h3>
-                                <span class="org">ALTEN – Lab R&D · Sèvres</span>
-                                <span class="period">Février – Août 2026</span>
-                            </div>
-                        </div>
-                        <div class="timeline-body">
-                            <ul>
-                                <li>Pilotage du projet <strong>CryptoExploration</strong> : détection et évaluation des fluctuations d'actifs sur protocoles DeFi émergents</li>
-                                <li><strong>Recherche quantitative</strong> : développement de modèles statistiques et ML pour l'exploration de patterns et l'analyse de corrélations (indices/événements externes)</li>
-                                <li><strong>Data Engineering</strong> : automatisation de la collecte de métriques on-chain (TVL, APY, Volume) via Python et construction d'une base de faits</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+<!-- TÉMOIGNAGES -->
+<section id="testimonials" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">💬</div><h2 class="st" data-i18n="sec_testi">Recommandations</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
+    <div class="testi-grid">
+        <div class="testi"><p class="testi-text" data-i18n="testi1">Robin a fait preuve d'une grande autonomie et d'un sens aigu de l'optimisation. Son TMS a transformé notre workflow quotidien — un gain de temps considérable pour l'équipe.</p><div class="testi-author"><div class="testi-avatar">JD</div><div><div class="testi-name" data-i18n="testi1_name">Prénom Nom</div><div class="testi-role">Manager — Bouygues Telecom</div></div></div></div>
+        <div class="testi"><p class="testi-text" data-i18n="testi2">Excellent sens de l'analyse et rigueur dans le suivi réglementaire. Robin a su monter rapidement en compétences sur les problématiques complexes de risk management.</p><div class="testi-author"><div class="testi-avatar">ML</div><div><div class="testi-name" data-i18n="testi2_name">Prénom Nom</div><div class="testi-role" data-i18n="testi2_role">Directeur des Risques — ManCo Paris</div></div></div></div>
+    </div>
+    <p style="font-size:12px;color:var(--tx-3);margin-top:14px;font-style:italic" data-i18n="testi_note">* Remplace par de vrais témoignages de tes managers/collègues</p>
+</div></div></section>
 
-                <div class="timeline-item">
-                    <div class="timeline-card">
-                        <div class="timeline-header">
-                            <div class="timeline-info">
-                                <h3>Trésorier & Développeur Full Stack</h3>
-                                <span class="org">Bouygues Telecom – Département Financier · Vélizy-Villacoublay</span>
-                                <span class="period">Février – Août 2025</span>
-                            </div>
-                        </div>
-                        <div class="timeline-body">
-                            <ul>
-                                <li>Conception d'un <strong>Treasury Management System</strong> (Python/SQL/VBA, ODBC) permettant un gain de ~4h/jour</li>
-                                <li><strong>Pricing & Prévisions</strong> : automatisation des prévisions de trésorerie et intégration du pricing de swaps de taux</li>
-                                <li><strong>Data Stack</strong> : orchestration d'ETL (Dataiku/BigQuery) et automatisation des contrôles qualité des données</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+<!-- BLOG -->
+<section id="blog" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">✍️</div><h2 class="st" data-i18n="sec_blog">Articles & Notes</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="blog-grid">
+    <a class="blog-card" href="articles/couverture-dynamique.html"><div class="blog-date" data-i18n="blog1_date">Mars 2026</div><h4 data-i18n="blog1_title">Couverture dynamique : théorie vs pratique en assurance</h4><p data-i18n="blog1_desc">Retour d'expérience sur mon PFE avec EY — comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.</p><div class="blog-tags"><span class="blog-tag">Finance</span><span class="blog-tag">Hedging</span><span class="blog-tag">PFE</span></div></a>
+    <a class="blog-card" href="articles/on-chain-analytics.html"><div class="blog-date" data-i18n="blog2_date">Avril 2026</div><h4 data-i18n="blog2_title">Analyse on-chain : détecter les signaux faibles en DeFi</h4><p data-i18n="blog2_desc">Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.</p><div class="blog-tags"><span class="blog-tag">DeFi</span><span class="blog-tag">Data</span><span class="blog-tag">Python</span></div></a>
+</div></div></div></section>
 
-                <div class="timeline-item">
-                    <div class="timeline-card">
-                        <div class="timeline-header">
-                            <div class="timeline-info">
-                                <h3>Risk Manager</h3>
-                                <span class="org">Manco Paris · Paris 8e</span>
-                                <span class="period">Juin – Décembre 2024</span>
-                            </div>
-                        </div>
-                        <div class="timeline-body">
-                            <ul>
-                                <li>Suivi de plus de <strong>250 règles d'investissement</strong> réglementaires et statutaires</li>
-                                <li>Préparation des <strong>comités de risques</strong> (mensuels, trimestriels, annuels)</li>
-                                <li>Analyse des risques de marché, de liquidité, de contrepartie et opérationnels</li>
-                                <li>Calculs actuariels et automatisation de processus (Excel, VBA, Access)</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+<!-- LANGUES & INTÉRÊTS -->
+<section id="interests" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🌍</div><h2 class="st" data-i18n="sec_interests">Langues & Centres d'intérêt</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
+    <div class="langs">
+        <div class="lang"><span class="lf">🇫🇷</span><div><div class="ln" data-i18n="lang_fr">Français</div><div class="ll" data-i18n="lang_fr_lvl">Langue maternelle</div></div></div>
+        <div class="lang"><span class="lf">🇬🇧</span><div><div class="ln" data-i18n="lang_en">Anglais</div><div class="ll" data-i18n="lang_en_lvl">Courant — C1</div></div></div>
+        <div class="lang"><span class="lf">🇪🇸</span><div><div class="ln" data-i18n="lang_es">Espagnol</div><div class="ll" data-i18n="lang_es_lvl">Intermédiaire — B1</div></div></div>
+        <div class="lang"><span class="lf">🇨🇳</span><div><div class="ln" data-i18n="lang_cn">Chinois</div><div class="ll" data-i18n="lang_cn_lvl">Notions — A1</div></div></div>
+    </div>
+    <div class="label" data-i18n="lbl_interests">Centres d'intérêt</div>
+    <div class="ints">
+        <span class="int" data-i18n="int_chess">♟️ Échecs</span>
+        <span class="int" data-i18n="int_qf">📚 Finance quantitative</span>
+        <span class="int" data-i18n="int_psy">🧠 Psychologie & Discipline</span>
+        <span class="int" data-i18n="int_3d">🖨️ Impression 3D</span>
+        <span class="int">💻 Open-source</span>
+        <span class="int" data-i18n="int_wind">🏄 Planche à voile</span>
+        <span class="int" data-i18n="int_moto">🏍️ Moto & Mécanique</span>
+    </div>
+</div></div></section>
 
-            </div>
-        </div>
-    </section>
+<!-- CONTACT -->
+<section id="contact" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">📬</div><h2 class="st">Contact</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="cc-grid">
+    <a href="mailto:robin.denis1207@gmail.com" class="cc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>robin.denis1207@gmail.com</a>
+    <a href="https://www.linkedin.com/in/robin-denis-finance/" class="cc" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
+    <a href="https://github.com/RoJLD" class="cc" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>GitHub</a>
+    <a href="tel:+33651748192" class="cc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>+33 6 51 74 81 92</a>
+</div></div></div></section>
 
-    <!-- ═══════════ COMPÉTENCES ═══════════ -->
-    <section id="skills" class="reveal">
-        <div class="section-header" aria-expanded="true" onclick="toggleSection(this)">
-            <div class="section-icon">⚡</div>
-            <h2 class="section-title">Compétences</h2>
-            <span class="section-toggle">▾</span>
-        </div>
-        <div class="section-body open">
-            <div class="skills-grid">
-                <div class="skill-category">
-                    <h4>Langages</h4>
-                    <div class="skill-tags">
-                        <span class="skill-tag">Python</span>
-                        <span class="skill-tag">VBA</span>
-                        <span class="skill-tag">SQL</span>
-                        <span class="skill-tag">C</span>
-                        <span class="skill-tag">C++</span>
-                        <span class="skill-tag">C#</span>
-                        <span class="skill-tag">Java</span>
-                    </div>
-                </div>
-                <div class="skill-category">
-                    <h4>Data & ML</h4>
-                    <div class="skill-tags">
-                        <span class="skill-tag warm">NumPy</span>
-                        <span class="skill-tag warm">Pandas</span>
-                        <span class="skill-tag warm">Matplotlib</span>
-                        <span class="skill-tag warm">Keras</span>
-                        <span class="skill-tag warm">Scikit-learn</span>
-                        <span class="skill-tag warm">Dataiku</span>
-                        <span class="skill-tag warm">BigQuery</span>
-                    </div>
-                </div>
-                <div class="skill-category">
-                    <h4>Outils & DevOps</h4>
-                    <div class="skill-tags">
-                        <span class="skill-tag green">Git</span>
-                        <span class="skill-tag green">CI/CD</span>
-                        <span class="skill-tag green">API</span>
-                        <span class="skill-tag green">ODBC</span>
-                        <span class="skill-tag green">DevOps</span>
-                        <span class="skill-tag green">LaTeX</span>
-                    </div>
-                </div>
-                <div class="skill-category">
-                    <h4>Finance & Quant</h4>
-                    <div class="skill-tags">
-                        <span class="skill-tag rose">Excel / VBA</span>
-                        <span class="skill-tag rose">Pricing dérivés</span>
-                        <span class="skill-tag rose">Gestion des risques</span>
-                        <span class="skill-tag rose">Calcul stochastique</span>
-                        <span class="skill-tag rose">Modèles DSGE</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══════════ PROJETS ═══════════ -->
-    <section id="projects" class="reveal">
-        <div class="section-header" aria-expanded="true" onclick="toggleSection(this)">
-            <div class="section-icon">🚀</div>
-            <h2 class="section-title">Projets & Intérêts</h2>
-            <span class="section-toggle">▾</span>
-        </div>
-        <div class="section-body open">
-            <div class="projects-grid">
-
-                <div class="project-card">
-                    <h4>CryptoExploration</h4>
-                    <p>Détection et évaluation des fluctuations d'actifs sur protocoles DeFi émergents. Modèles statistiques et ML pour l'analyse de corrélations on-chain (TVL, APY, Volume).</p>
-                    <div class="project-links">
-                        <a href="https://github.com/RoJLD" target="_blank">💻 GitHub</a>
-                    </div>
-                </div>
-
-                <div class="project-card">
-                    <h4>Treasury Management System</h4>
-                    <p>Système de gestion de trésorerie (Python/SQL/VBA, ODBC) développé chez Bouygues Telecom. Automatisation du pricing de swaps de taux et des prévisions de trésorerie — gain de ~4h/jour.</p>
-                    <div class="project-links">
-                        <a href="https://github.com/RoJLD" target="_blank">💻 GitHub</a>
-                    </div>
-                </div>
-
-                <div class="project-card">
-                    <h4>Couverture dynamique (EY)</h4>
-                    <p>Projet de fin d'études en partenariat avec EY — modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque.</p>
-                    <div class="project-links">
-                        <a href="https://github.com/RoJLD" target="_blank">💻 GitHub</a>
-                    </div>
-                </div>
-
-                <div class="project-card">
-                    <h4>Certifications</h4>
-                    <p>Google Project Management · Business Analyst · Data Scientist · TOEIC 925/990</p>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══════════ LEADERSHIP ═══════════ -->
-    <section id="leadership" class="reveal">
-        <div class="section-header" aria-expanded="true" onclick="toggleSection(this)">
-            <div class="section-icon">🏆</div>
-            <h2 class="section-title">Leadership & Activités</h2>
-            <span class="section-toggle">▾</span>
-        </div>
-        <div class="section-body open">
-            <div class="timeline">
-                <div class="timeline-item">
-                    <div class="timeline-card">
-                        <div class="timeline-header">
-                            <div class="timeline-info">
-                                <h3>Centres d'intérêt</h3>
-                                <span class="org">Activités personnelles</span>
-                            </div>
-                        </div>
-                        <div class="timeline-body">
-                            <ul>
-                                <li>Échecs</li>
-                                <li>Lecture — finance quantitative, discipline & psychologie</li>
-                                <li>Impression 3D & Développement open-source</li>
-                                <li>Planche à voile · Moto & Mécanique</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══════════ LANGUES ═══════════ -->
-    <section id="languages" class="reveal">
-        <div class="section-header" aria-expanded="false" onclick="toggleSection(this)">
-            <div class="section-icon">🌍</div>
-            <h2 class="section-title">Langues</h2>
-            <span class="section-toggle">▾</span>
-        </div>
-        <div class="section-body">
-            <div class="languages-row">
-                <div class="lang-item">
-                    <span class="lang-flag">🇫🇷</span>
-                    <div class="lang-info">
-                        <span class="lang-name">Français</span>
-                        <span class="lang-level">Langue maternelle</span>
-                    </div>
-                </div>
-                <div class="lang-item">
-                    <span class="lang-flag">🇬🇧</span>
-                    <div class="lang-info">
-                        <span class="lang-name">Anglais</span>
-                        <span class="lang-level">Courant — C1 · TOEIC 925/990</span>
-                    </div>
-                </div>
-                <div class="lang-item">
-                    <span class="lang-flag">🇪🇸</span>
-                    <div class="lang-info">
-                        <span class="lang-name">Espagnol</span>
-                        <span class="lang-level">Intermédiaire — B1</span>
-                    </div>
-                </div>
-                <div class="lang-item">
-                    <span class="lang-flag">🇨🇳</span>
-                    <div class="lang-info">
-                        <span class="lang-name">Chinois</span>
-                        <span class="lang-level">Notions — A1</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══════════ CONTACT ═══════════ -->
-    <section id="contact" class="reveal">
-        <div class="section-header" aria-expanded="true" onclick="toggleSection(this)">
-            <div class="section-icon">📬</div>
-            <h2 class="section-title">Contact</h2>
-            <span class="section-toggle">▾</span>
-        </div>
-        <div class="section-body open">
-            <div class="contact-row">
-                <a href="mailto:robin.denis1207@gmail.com" class="contact-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
-                    robin.denis1207@gmail.com
-                </a>
-                <a href="https://www.linkedin.com/in/robin-denis-finance/" class="contact-item" target="_blank">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-                    LinkedIn
-                </a>
-                <a href="https://github.com/RoJLD" class="contact-item" target="_blank">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-                    GitHub
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══════════ FOOTER ═══════════ -->
-    <footer>
-        Dernière mise à jour : Mars 2026
-    </footer>
-
+<footer><span data-i18n="footer">Robin Denis · Dernière mise à jour Mars 2026</span></footer>
 </div>
 
+<!-- FAB -->
+<a class="fab" href="cv/Robin_Denis_CV.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="fab-tip" data-i18n="fab_tip">Télécharger mon CV</span></a>
+
 <script>
-    // ── Nav scroll effect ──
-    window.addEventListener('scroll', () => {
-        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+// ═══════════════════════════════════════════
+// i18n TRANSLATION DICTIONARY
+// ═══════════════════════════════════════════
+const i18n = {
+    fr: {
+        nav_exp: "Expérience", nav_edu: "Formation", nav_skills: "Compétences", nav_demos: "Démos",
+        status: "Actuellement : Quant Researcher DeFi @ ALTEN",
+        hero_tag: "Ingénierie Financière & Quantitative",
+        pill_cv: "CV",
+        sec_parcours: "Mon Parcours",
+        ht_prepa: "Prépa MPSI", ht_ece_sub: "Cycle Ingénieur", ht_jun24: "Juin 2024", ht_feb25: "Fév 2025",
+        ht_bt: "Trésorier & Dev", ht_pfe: "PFE avec EY", ht_pfe_sub: "Couverture dynamique",
+        ht_feb26: "Fév 2026", ht_diplome: "Diplôme Ingénieur",
+        sec_exp: "Expérience Professionnelle",
+        per_alten: "Février – Août 2026",
+        alten1: "Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d'actifs sur protocoles émergents",
+        alten2: "Développement de modèles statistiques et ML pour l'exploration de patterns et l'analyse de corrélations",
+        alten3: "Data Engineering : automatisation de la collecte de métriques on-chain (TVL, APY, Volume) via Python",
+        bt_title: "Trésorier & Développeur Full Stack",
+        bt_org: "Bouygues Telecom — Département Financier, Vélizy",
+        per_bt: "Février – Août 2025",
+        bt1: "Conception d'un Treasury Management System (Python/SQL/VBA, ODBC) : gain de ~4h/jour",
+        bt2: "Automatisation des prévisions de trésorerie et intégration du pricing de swaps de taux",
+        bt3: "Orchestration d'ETL (Dataiku/BigQuery) et automatisation des contrôles qualité des données",
+        per_manco: "Juin – Décembre 2024",
+        mc1: "Suivi de plus de 250 règles d'investissement réglementaires et statutaires",
+        mc2: "Préparation des comités de risques (mensuels, trimestriels, annuels)",
+        mc3: "Analyse des risques de marché, liquidité, contrepartie et opérationnels",
+        mc4: "Calculs actuariels, amélioration d'outils et automatisation (Excel, VBA, Access)",
+        sec_edu: "Formation",
+        ece_title: "ECE Paris — Cycle Ingénieur",
+        ece_major: "Majeure Ingénierie Financière et Quantitative",
+        cours_cles: "Cours clés",
+        cours2: "Finance de marché", cours3: "Recherche opérationnelle & optimisation numérique",
+        cours4: "Machine Learning appliqué", cours5: "Contrôle optimal et Hamiltonien", cours6: "Modèles DSGE",
+        pfe_label: "Projet de fin d'études (avec EY)",
+        pfe_role: "Chef de projet",
+        pfe_desc: "Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque",
+        prepa_title: "Classes Préparatoires MPSI – MP",
+        prepa_desc: "Mathématiques, Physique et Sciences de l'Ingénieur",
+        sec_skills: "Compétences", sk_lang: "Langages", sk_infra: "Infrastructure",
+        lbl_certs: "Certifications",
+        sec_demos: "Démos Interactives",
+        bs_vol: "Volatilité (σ)", bs_mat: "Maturité (T)",
+        bs_desc: "Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.",
+        mc_desc: "Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.",
+        code_src: "💻 Code source",
+        sec_testi: "Recommandations",
+        testi1: "Robin a fait preuve d'une grande autonomie et d'un sens aigu de l'optimisation. Son TMS a transformé notre workflow quotidien — un gain de temps considérable pour l'équipe.",
+        testi2: "Excellent sens de l'analyse et rigueur dans le suivi réglementaire. Robin a su monter rapidement en compétences sur les problématiques complexes de risk management.",
+        testi1_name: "Prénom Nom", testi2_name: "Prénom Nom",
+        testi2_role: "Directeur des Risques — ManCo Paris",
+        testi_note: "* Remplace par de vrais témoignages de tes managers/collègues",
+        sec_blog: "Articles & Notes",
+        blog1_date: "Mars 2026", blog1_title: "Couverture dynamique : théorie vs pratique en assurance",
+        blog1_desc: "Retour d'expérience sur mon PFE avec EY — comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.",
+        blog2_date: "Avril 2026", blog2_title: "Analyse on-chain : détecter les signaux faibles en DeFi",
+        blog2_desc: "Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.",
+        sec_interests: "Langues & Centres d'intérêt",
+        lang_fr: "Français", lang_fr_lvl: "Langue maternelle",
+        lang_en: "Anglais", lang_en_lvl: "Courant — C1",
+        lang_es: "Espagnol", lang_es_lvl: "Intermédiaire — B1",
+        lang_cn: "Chinois", lang_cn_lvl: "Notions — A1",
+        lbl_interests: "Centres d'intérêt",
+        int_chess: "♟️ Échecs", int_qf: "📚 Finance quantitative",
+        int_psy: "🧠 Psychologie & Discipline", int_3d: "🖨️ Impression 3D",
+        int_wind: "🏄 Planche à voile", int_moto: "🏍️ Moto & Mécanique",
+        footer: "Robin Denis · Dernière mise à jour Mars 2026",
+        fab_tip: "Télécharger mon CV",
+        radar_labels: ['Quant Finance','Machine Learning','Data Engineering','Dev Full Stack','Risk Mgmt','Gestion Projet']
+    },
+    en: {
+        nav_exp: "Experience", nav_edu: "Education", nav_skills: "Skills", nav_demos: "Demos",
+        status: "Currently: DeFi Quant Researcher @ ALTEN",
+        hero_tag: "Financial & Quantitative Engineering",
+        pill_cv: "Resume",
+        sec_parcours: "My Journey",
+        ht_prepa: "Prep School MPSI", ht_ece_sub: "Engineering Cycle", ht_jun24: "Jun 2024", ht_feb25: "Feb 2025",
+        ht_bt: "Treasurer & Dev", ht_pfe: "Thesis with EY", ht_pfe_sub: "Dynamic hedging",
+        ht_feb26: "Feb 2026", ht_diplome: "Engineering Degree",
+        sec_exp: "Professional Experience",
+        per_alten: "February – August 2026",
+        alten1: "Led the 'CryptoExploration' project: detection and evaluation of asset fluctuations on emerging protocols",
+        alten2: "Developed statistical and ML models for pattern exploration and correlation analysis",
+        alten3: "Data Engineering: automated on-chain metrics collection (TVL, APY, Volume) via Python",
+        bt_title: "Treasurer & Full Stack Developer",
+        bt_org: "Bouygues Telecom — Finance Department, Vélizy",
+        per_bt: "February – August 2025",
+        bt1: "Built a Treasury Management System (Python/SQL/VBA, ODBC): saving ~4h/day",
+        bt2: "Automated cash flow forecasting and integrated interest rate swap pricing",
+        bt3: "Orchestrated ETL pipelines (Dataiku/BigQuery) and automated data quality controls",
+        per_manco: "June – December 2024",
+        mc1: "Monitored over 250 regulatory and statutory investment rules",
+        mc2: "Prepared risk committees (monthly, quarterly, annual)",
+        mc3: "Analyzed market, liquidity, counterparty and operational risks",
+        mc4: "Performed actuarial calculations, improved tools and automated processes (Excel, VBA, Access)",
+        sec_edu: "Education",
+        ece_title: "ECE Paris — Engineering Program",
+        ece_major: "Major in Financial & Quantitative Engineering",
+        cours_cles: "Key courses",
+        cours2: "Financial markets", cours3: "Operations research & numerical optimization",
+        cours4: "Applied Machine Learning", cours5: "Optimal control & Hamiltonian", cours6: "DSGE models",
+        pfe_label: "Capstone project (with EY)",
+        pfe_role: "Project lead",
+        pfe_desc: "Modeling and management of dynamic hedging strategies in insurance and banking",
+        prepa_title: "Preparatory Classes MPSI – MP",
+        prepa_desc: "Mathematics, Physics & Engineering Sciences",
+        sec_skills: "Skills", sk_lang: "Languages", sk_infra: "Infrastructure",
+        lbl_certs: "Certifications",
+        sec_demos: "Interactive Demos",
+        bs_vol: "Volatility (σ)", bs_mat: "Maturity (T)",
+        bs_desc: "Real-time European option pricing with delta display. Adjust parameters to see the impact on price.",
+        mc_desc: "Geometric Brownian Motion paths for option pricing via Monte Carlo simulation.",
+        code_src: "💻 Source code",
+        sec_testi: "Recommendations",
+        testi1: "Robin demonstrated great autonomy and a keen sense of optimization. His TMS transformed our daily workflow — a considerable time saver for the team.",
+        testi2: "Excellent analytical skills and rigor in regulatory monitoring. Robin quickly ramped up on complex risk management challenges.",
+        testi1_name: "First Last", testi2_name: "First Last",
+        testi2_role: "Head of Risk — ManCo Paris",
+        testi_note: "* Replace with real testimonials from your managers/colleagues",
+        sec_blog: "Articles & Notes",
+        blog1_date: "March 2026", blog1_title: "Dynamic Hedging: Theory vs Practice in Insurance",
+        blog1_desc: "Lessons from my capstone project with EY — how theoretical models face operational constraints in portfolio hedging.",
+        blog2_date: "April 2026", blog2_title: "On-Chain Analytics: Detecting Weak Signals in DeFi",
+        blog2_desc: "Methodology for collecting and analyzing on-chain metrics (TVL, APY, Volume) to identify patterns on emerging protocols.",
+        sec_interests: "Languages & Interests",
+        lang_fr: "French", lang_fr_lvl: "Native",
+        lang_en: "English", lang_en_lvl: "Fluent — C1",
+        lang_es: "Spanish", lang_es_lvl: "Intermediate — B1",
+        lang_cn: "Chinese", lang_cn_lvl: "Beginner — A1",
+        lbl_interests: "Interests",
+        int_chess: "♟️ Chess", int_qf: "📚 Quantitative finance",
+        int_psy: "🧠 Psychology & Discipline", int_3d: "🖨️ 3D Printing",
+        int_wind: "🏄 Windsurfing", int_moto: "🏍️ Motorbike & Mechanics",
+        footer: "Robin Denis · Last updated March 2026",
+        fab_tip: "Download my resume",
+        radar_labels: ['Quant Finance','Machine Learning','Data Engineering','Full Stack Dev','Risk Mgmt','Project Mgmt']
+    }
+};
+
+// ═══ Apply translations ═══
+function applyLang(lang) {
+    const dict = i18n[lang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) el.textContent = dict[key];
     });
+    document.documentElement.setAttribute('data-lang', lang);
+    document.documentElement.setAttribute('lang', lang);
+    document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
+    // Redraw radar with translated labels
+    initRadar();
+}
 
-    // ── Section toggle ──
-    function toggleSection(header) {
-        const expanded = header.getAttribute('aria-expanded') === 'true';
-        header.setAttribute('aria-expanded', !expanded);
-        const body = header.nextElementSibling;
-        body.classList.toggle('open');
-    }
+function toggleLang() {
+    const curr = document.documentElement.getAttribute('data-lang') || 'fr';
+    const next = curr === 'fr' ? 'en' : 'fr';
+    localStorage.setItem('lang', next);
+    applyLang(next);
+}
 
-    // ── Education courses toggle ──
-    function toggleCourses(btn, event) {
-        event.stopPropagation();
-        btn.classList.toggle('open');
-        btn.nextElementSibling.classList.toggle('open');
-    }
+// ═══ Theme ═══
+function toggleTheme(){
+    const h=document.documentElement,b=document.getElementById('themeBtn');
+    if(h.getAttribute('data-theme')==='dark'){h.setAttribute('data-theme','light');b.textContent='☀️';localStorage.setItem('theme','light')}
+    else{h.setAttribute('data-theme','dark');b.textContent='🌙';localStorage.setItem('theme','dark')}
+    initRadar();mcRun(currentMC);
+}
 
-    // ── Scroll reveal ──
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
-        });
-    }, { threshold: 0.1 });
+// ═══ Restore saved prefs ═══
+(function(){
+    const s=localStorage.getItem('theme');
+    if(s==='light'){document.documentElement.setAttribute('data-theme','light');document.getElementById('themeBtn').textContent='☀️'}
+    const l=localStorage.getItem('lang');
+    if(l==='en') applyLang('en');
+})();
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+// ═══ Nav scroll ═══
+window.addEventListener('scroll',()=>{document.getElementById('nav').classList.toggle('scrolled',scrollY>50)});
+
+// ═══ Toggle helpers ═══
+function tog(h){const o=h.getAttribute('aria-expanded')==='true';h.setAttribute('aria-expanded',!o);h.nextElementSibling.classList.toggle('open')}
+function sub(b,e){e.stopPropagation();b.classList.toggle('on');b.nextElementSibling.classList.toggle('on')}
+
+// ═══ Scroll reveal ═══
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:.06});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+
+// ═══ Black-Scholes ═══
+function normCdf(x){const a1=.254829592,a2=-.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=.3275911;const sign=x<0?-1:1;x=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*x);const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);return .5*(1+sign*y)}
+function bsCalc(){const S=+document.getElementById('slS').value,K=+document.getElementById('slK').value,v=+document.getElementById('slV').value/100,T=+document.getElementById('slT').value/12,r=.05;document.getElementById('bsS').textContent=S;document.getElementById('bsK').textContent=K;document.getElementById('bsV').textContent=(v*100).toFixed(0)+'%';document.getElementById('bsT').textContent=T.toFixed(1);if(T<=0||v<=0)return;const d1=(Math.log(S/K)+(r+v*v/2)*T)/(v*Math.sqrt(T)),d2=d1-v*Math.sqrt(T);const call=S*normCdf(d1)-K*Math.exp(-r*T)*normCdf(d2),put=K*Math.exp(-r*T)*normCdf(-d2)-S*normCdf(-d1),delta=normCdf(d1);document.getElementById('callP').textContent=call.toFixed(2);document.getElementById('putP').textContent=put.toFixed(2);document.getElementById('deltaV').textContent=delta.toFixed(2)}
+bsCalc();
+
+// ═══ Monte Carlo ═══
+let currentMC=50;
+function mcRun(n){currentMC=n;document.querySelectorAll('.mc-btn').forEach(b=>b.classList.remove('active'));const btn=document.getElementById('mc'+n);if(btn)btn.classList.add('active');const canvas=document.getElementById('mcCanvas'),ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1,rect=canvas.getBoundingClientRect();canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);const W=rect.width,H=rect.height;const S0=100,mu=.08,sigma=.25,T=1,steps=252,dt=T/steps;const isDark=document.documentElement.getAttribute('data-theme')==='dark';ctx.clearRect(0,0,W,H);ctx.strokeStyle=isDark?'rgba(59,130,246,.06)':'rgba(37,99,235,.06)';ctx.lineWidth=.5;for(let i=0;i<=4;i++){const y=i*H/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}let allPaths=[];for(let p=0;p<n;p++){let path=[S0],s=S0;for(let i=0;i<steps;i++){const z=Math.sqrt(-2*Math.log(Math.random()))*Math.cos(2*Math.PI*Math.random());s*=Math.exp((mu-.5*sigma*sigma)*dt+sigma*Math.sqrt(dt)*z);path.push(s)}allPaths.push(path)}const allVals=allPaths.flat(),mn=Math.min(...allVals)*.95,mx=Math.max(...allVals)*1.05;const colors=['rgba(59,130,246,','rgba(167,139,250,','rgba(232,121,168,','rgba(245,158,66,','rgba(34,197,94,'];allPaths.forEach((path,pi)=>{const c=colors[pi%colors.length];ctx.beginPath();ctx.strokeStyle=c+(n>100?'0.08)':'0.25)');ctx.lineWidth=n>100?.5:1;path.forEach((v,i)=>{const x=(i/steps)*W,y=H-((v-mn)/(mx-mn))*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.stroke()});ctx.beginPath();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;for(let i=0;i<=steps;i++){const avg=allPaths.reduce((s,p)=>s+p[i],0)/n;const x=(i/steps)*W,y=H-((avg-mn)/(mx-mn))*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}
+setTimeout(()=>mcRun(50),600);
+
+// ═══ Radar Chart ═══
+function initRadar(){const canvas=document.getElementById('radarChart');if(!canvas)return;const ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1;canvas.style.width='320px';canvas.style.height='320px';canvas.width=320*dpr;canvas.height=320*dpr;ctx.scale(dpr,dpr);const W=320,H=320,cx=W/2,cy=H/2,R=120;const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+const lang=document.documentElement.getAttribute('data-lang')||'fr';
+const labels=i18n[lang].radar_labels;
+const values=[.88,.75,.80,.82,.78,.85];const n=labels.length,step=(2*Math.PI)/n;ctx.clearRect(0,0,W,H);for(let lvl=1;lvl<=5;lvl++){const r=(lvl/5)*R;ctx.beginPath();for(let i=0;i<=n;i++){const angle=-Math.PI/2+i*step;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.strokeStyle=isDark?'rgba(59,130,246,.1)':'rgba(37,99,235,.1)';ctx.lineWidth=1;ctx.stroke()}for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*Math.cos(angle),cy+R*Math.sin(angle));ctx.strokeStyle=isDark?'rgba(59,130,246,.08)':'rgba(37,99,235,.08)';ctx.stroke()}ctx.beginPath();for(let i=0;i<=n;i++){const idx=i%n,angle=-Math.PI/2+idx*step,r=values[idx]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.fillStyle=isDark?'rgba(59,130,246,.15)':'rgba(37,99,235,.12)';ctx.fill();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;ctx.stroke();for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,r=values[i]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);ctx.beginPath();ctx.arc(x,y,4,0,2*Math.PI);ctx.fillStyle=isDark?'#3b82f6':'#2563eb';ctx.fill();ctx.strokeStyle=isDark?'#0a1020':'#f5f7fa';ctx.lineWidth=2;ctx.stroke()}ctx.font='11px "DM Sans",sans-serif';ctx.fillStyle=isDark?'#8b9aba':'#546178';ctx.textAlign='center';for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,lr=R+28;let x=cx+lr*Math.cos(angle),y=cy+lr*Math.sin(angle);if(angle>Math.PI*.25&&angle<Math.PI*.75)y+=4;if(angle<-Math.PI*.25||angle>Math.PI*1.25)y-=4;ctx.fillText(labels[i],x,y)}}
+setTimeout(initRadar,300);window.addEventListener('resize',()=>{initRadar();mcRun(currentMC)});
 </script>
-
 </body>
 </html>
