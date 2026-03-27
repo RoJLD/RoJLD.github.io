@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Match Analyzer — Robin Denis</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root {
+      --bg:#07080d;--surface:#0f1017;--surface2:#161720;
+      --border:rgba(255,255,255,0.07);--text:#e8eaf0;--muted:#52566b;
+      --accent:#818cf8;--accent-glow:rgba(129,140,248,0.15);
+      --green:#4ade80;--orange:#fb923c;--pink:#f472b6;--yellow:#facc15;
+      --red:#f87171;
+      --r:10px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      --mono:'Cascadia Code','Fira Code',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh}
+    .header{padding:32px 40px 0;display:flex;justify-content:space-between;align-items:flex-start}
+    .header-back{color:var(--muted);text-decoration:none;font-size:12px}
+    .header-back:hover{color:var(--accent)}
+    .header-title{font-size:22px;font-weight:700}
+    .header-sub{color:var(--muted);font-size:12px;margin-top:4px}
+    .page{max-width:1100px;margin:0 auto;padding:28px 40px 60px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+    .card-title{font-weight:600;font-size:13px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+    .card-badge{font-size:10px;padding:3px 8px;border-radius:5px;background:var(--accent-glow);border:1px solid rgba(129,140,248,0.25);color:var(--accent);font-weight:500}
+    .input-hint{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+    textarea#jd-input{
+      width:100%;min-height:200px;max-height:340px;
+      background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:var(--font);font-size:13px;line-height:1.6;
+      padding:14px 16px;resize:vertical;outline:none;transition:border-color .2s;
+    }
+    textarea#jd-input:focus{border-color:var(--accent)}
+    textarea#jd-input::placeholder{color:var(--muted)}
+    .input-actions{display:flex;gap:10px;margin-top:12px;align-items:center}
+    .btn-analyze{
+      background:var(--accent);color:#07080d;font-weight:700;font-size:13px;
+      border:none;border-radius:7px;padding:9px 22px;cursor:pointer;transition:opacity .15s;
+    }
+    .btn-analyze:hover{opacity:.85}
+    .btn-analyze:disabled{opacity:.4;cursor:not-allowed}
+    .btn-clear{
+      background:transparent;color:var(--muted);font-size:12px;
+      border:1px solid var(--border);border-radius:7px;padding:9px 16px;cursor:pointer;
+    }
+    .btn-clear:hover{color:var(--text);border-color:rgba(255,255,255,0.15)}
+    .char-count{font-size:11px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+    .score-row{display:flex;gap:16px;align-items:stretch;flex-wrap:wrap}
+    .score-main{
+      flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
+      padding:24px 32px;min-width:160px;
+    }
+    .score-pct{font-size:52px;font-weight:800;line-height:1;font-family:var(--mono)}
+    .score-label{font-size:11px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.8px}
+    .score-verdict{font-size:12px;font-weight:600;margin-top:8px;padding:3px 10px;border-radius:5px}
+    .score-meta{flex:1;display:flex;flex-direction:column;gap:10px;min-width:200px}
+    .meta-row{display:flex;gap:10px;flex-wrap:wrap}
+    .meta-pill{
+      display:flex;align-items:center;gap:8px;padding:10px 12px;
+      background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+      font-size:12px;flex:1;min-width:140px;
+    }
+    .meta-pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .meta-pill-inner{flex:1}
+    .meta-pill-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.7px;margin-bottom:2px}
+    .meta-pill-val{font-weight:600;font-size:12px}
+    .stats-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .stat-mini{padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center}
+    .stat-mini-val{font-size:22px;font-weight:700;line-height:1;font-family:var(--mono)}
+    .stat-mini-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.7px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .skill-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .skill-row:last-child{border-bottom:none}
+    .skill-name{flex:1;font-size:12px}
+    .skill-bar-wrap{width:90px;height:5px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;flex-shrink:0}
+    .skill-bar{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1);width:0}
+    .skill-pct{width:32px;text-align:right;font-size:11px;font-family:var(--mono);color:var(--muted);flex-shrink:0}
+    .skill-cat{font-size:9px;padding:2px 5px;border-radius:3px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
+    .cat-prog{background:rgba(129,140,248,.12);color:var(--accent)}
+    .cat-fin{background:rgba(74,222,128,.12);color:var(--green)}
+    .cat-ml{background:rgba(251,146,60,.12);color:var(--orange)}
+    .cat-dom{background:rgba(244,114,182,.12);color:var(--pink)}
+    .gap-tag{display:inline-flex;align-items:center;padding:4px 9px;border-radius:5px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--red);font-size:11px;margin:3px}
+    .gap-note{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
+    .combo{padding:14px;border-radius:8px;border:1px solid;margin-bottom:8px}
+    .combo:last-child{margin-bottom:0}
+    .combo-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .combo-skills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+    .combo-skill{font-size:11px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,0.06)}
+    .combo-narrative{font-size:12px;color:var(--muted);line-height:1.5}
+    .combo-premium{font-size:18px;font-weight:700;flex-shrink:0}
+    .very_rare{background:rgba(244,114,182,0.1);border-color:rgba(244,114,182,.3);color:var(--pink)}
+    .rare{background:rgba(129,140,248,0.1);border-color:rgba(129,140,248,.3);color:var(--accent)}
+    .uncommon{background:rgba(250,204,21,0.08);border-color:rgba(250,204,21,.25);color:var(--yellow)}
+    .rec-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+    .rec-item:last-child{border-bottom:none}
+    .rec-num{width:22px;height:22px;border-radius:50%;background:var(--accent-glow);border:1px solid rgba(129,140,248,.3);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+    .rec-content{flex:1}
+    .rec-title{font-size:12px;font-weight:600;margin-bottom:2px}
+    .rec-body{font-size:11px;color:var(--muted);line-height:1.5}
+    #results{display:none}
+    .loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:20px 0}
+    .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-note{font-size:12px;color:var(--muted);padding:8px 0}
+    .gap-ok{font-size:12px;color:var(--green);padding:8px 0}
+    @media(max-width:768px){
+      .page{padding:20px}.grid2{grid-template-columns:1fr}
+      .score-row{flex-direction:column}.header{padding:20px 20px 0}
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Job Match Analyzer</div>
+    <div class="header-sub">Score de compatibilité fiche de poste × profil</div>
+  </div>
+  <a href="/" class="header-back">← Portfolio</a>
+</div>
+
+<div class="page">
+
+  <!-- INPUT -->
+  <div class="card">
+    <div class="card-title">
+      Fiche de poste
+      <span class="card-badge">Ctrl+Enter pour lancer</span>
+    </div>
+    <p class="input-hint">Collez le texte brut d'une offre d'emploi — FR et EN supportés.</p>
+    <textarea id="jd-input" placeholder="Collez ici la fiche de poste complète...&#10;&#10;Ex: Nous recherchons un Quant Researcher avec 2-3 ans d'expérience en finance quantitative, maîtrise de Python, modèles de pricing d'options..."></textarea>
+    <div class="input-actions">
+      <button class="btn-analyze" id="btn-analyze" onclick="runAnalysis()">Analyser</button>
+      <button class="btn-clear" onclick="clearAll()">Effacer</button>
+      <span class="char-count" id="char-count">0 car.</span>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading-state" style="display:none">
+    <div class="loading"><div class="spinner"></div> Analyse en cours...</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <div class="card">
+      <div class="card-title">Vue d'ensemble <span class="card-badge" id="score-badge-top"></span></div>
+      <div class="score-row">
+        <div class="score-main">
+          <div class="score-pct" id="score-display">—</div>
+          <div class="score-label">activation profil</div>
+          <div class="score-verdict" id="score-verdict"></div>
+        </div>
+        <div class="score-meta">
+          <div class="meta-row">
+            <div class="meta-pill">
+              <div class="meta-pill-dot" id="seniority-dot"></div>
+              <div class="meta-pill-inner">
+                <div class="meta-pill-label">Séniorité</div>
+                <div class="meta-pill-val" id="seniority-val">—</div>
+              </div>
+            </div>
+            <div class="meta-pill">
+              <div class="meta-pill-dot" id="tone-dot"></div>
+              <div class="meta-pill-inner">
+                <div class="meta-pill-label">Secteur</div>
+                <div class="meta-pill-val" id="tone-val">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="stats-mini" id="stats-mini"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Skills activés <span class="card-badge" id="matched-badge">0</span></div>
+        <div id="matched-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Termes non couverts <span class="card-badge" id="gap-badge">0</span></div>
+        <div id="gap-list"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Hidden Edge activés <span class="card-badge" id="combo-badge">0 / 3</span></div>
+      <div id="combo-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Recommandations CV / LM</div>
+      <div id="rec-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── DOM helpers (zero innerHTML with external data) ──────────────────────────
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)) {
+    if (k === 'className')    node.className   = v;
+    else if (k === 'style')   node.style.cssText = v;
+    else if (k === 'textContent') node.textContent = v;
+    else node.setAttribute(k, v);
+  }
+  if (children) for (const c of [].concat(children)) {
+    if (c == null) continue;
+    node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return node;
+}
+
+// Safe clear — no innerHTML
+function clearEl(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+// ─── Skill aliases (FR + EN) ──────────────────────────────────────────────────
+const SKILL_ALIASES = {
+  "Python":         ["python"," py ","pandas","numpy","scipy","jupyter","flask","fastapi"],
+  "SQL":            ["sql","mysql","postgresql","postgres","sqlite","oracle","pl/sql","plsql","base de données","sgbd"],
+  "VBA":            ["vba","macro excel","macros vba","excel vba"],
+  "Java":           ["java ","spring boot","spring ","jvm"],
+  "C/C++":          ["c++","cpp"," c ","langage c"],
+  "C#":             ["c#","csharp",".net","dotnet"],
+  "Finance Quantitative": [
+    "quant","quantitative","quant finance","finance quantitative",
+    "ingénierie financière","financial engineering","quant researcher",
+    "quant analyst","quantitative analyst","recherche quantitative",
+    "mathematical finance","finance mathématique","modèles financiers","financial modeling"
+  ],
+  "Calcul Stochastique": [
+    "stochastique","stochastic","sde","ito","monte carlo",
+    "processus stochastique","mouvement brownien","brownian motion",
+    "diffusion","équations différentielles stochastiques","fokker-planck","lévy"
+  ],
+  "Pricing Dérivés": [
+    "pricing","pricer","dérivés","derivatives","options","swaps",
+    "black-scholes","black scholes","produits dérivés","structured products",
+    "produits structurés","volatilité","volatility","greeks",
+    "delta hedging","cap floor","swaption","credit default swap","cds"
+  ],
+  "Risk Management": [
+    "risk","risque","var","value at risk","expected shortfall",
+    "market risk","risque de marché","credit risk","risque de crédit",
+    "stress test","backtesting","back-test","risque opérationnel",
+    "operational risk","risk manager","gestion des risques","irb","cvar","frtb"
+  ],
+  "Trésorerie d'entreprise": [
+    "trésorerie","treasury","cash management","liquidité","forex",
+    " fx ","gestion des flux","cash flow","cash pooling","alm","gestion actif passif"
+  ],
+  "Couverture dynamique": [
+    "couverture","hedging","hedge","dynamic hedging",
+    "couverture dynamique","delta neutral","gamma hedging","vega"
+  ],
+  "Machine Learning": [
+    "machine learning"," ml ","deep learning","neural network",
+    "réseau de neurones","sklearn","scikit-learn","tensorflow",
+    "pytorch","keras","xgboost","gradient boosting","random forest",
+    "classification","clustering","nlp","llm","reinforcement learning","apprentissage automatique"
+  ],
+  "Statistics": [
+    "statistiques","statistical","probabilité","probability",
+    "time series","série temporelle","économétrie","econometrics",
+    "inférence","bayesian","bayésien","tests statistiques","régression linéaire"
+  ],
+  "ETL / Data Pipelines": [
+    "etl","data pipeline","data engineering","spark","airflow",
+    "dbt","ingestion","kafka","pipeline de données","batch processing","orchestration"
+  ],
+  "BigQuery": [
+    "bigquery"," bq ","gcp","google cloud","data warehouse",
+    "datalake","data lake","snowflake","redshift","databricks"
+  ],
+  "Dataiku":           ["dataiku"," dss "],
+  "DeFi / Blockchain": [
+    "defi","blockchain","crypto","web3","ethereum","smart contract",
+    "on-chain","protocoles"," tvl"," apy","decentralized","décentralisé",
+    "token","yield farming","liquidity pool","solana","stablecoin"
+  ],
+  "Compliance": [
+    "compliance","réglementaire","regulatory","mifid","emir",
+    "aml","kyc","bâle","bale","reporting réglementaire",
+    "contrôle interne","lcr","nsfr","bcbs","bâle iv"
+  ],
+  "Actuariat": [
+    "actuariat","actuarial","actuaire","solvabilité","solvency",
+    "assurance vie","réserves techniques","best estimate","orsa","embedded value"
+  ]
+};
+
+// Gap terms — tech found in JD but not covered by our skills
+const GAP_TERMS = [
+  {term:"rust",label:"Rust"},{term:"golang",label:"Go/Golang"},
+  {term:"scala",label:"Scala"},{term:"rstudio",label:"R (RStudio)"},
+  {term:"r language",label:"R Language"},{term:"matlab",label:"MATLAB"},
+  {term:"julia ",label:"Julia"},{term:"javascript",label:"JavaScript"},
+  {term:"typescript",label:"TypeScript"},{term:"react",label:"React"},
+  {term:"docker",label:"Docker"},{term:"kubernetes",label:"Kubernetes"},
+  {term:" aws ",label:"AWS"},{term:"azure",label:"Azure"},
+  {term:"bloomberg",label:"Bloomberg Terminal"},{term:"murex",label:"Murex"},
+  {term:"calypso",label:"Calypso"},{term:"refinitiv",label:"Refinitiv"},
+  {term:"reuters",label:"Reuters/Eikon"},{term:"power bi",label:"Power BI"},
+  {term:"tableau",label:"Tableau"},{term:"finite difference",label:"Différences finies"},
+  {term:"différences finies",label:"Différences finies"},{term:" pde ",label:"EDP/PDE"},
+  {term:"solidity",label:"Solidity"},{term:"hardhat",label:"Hardhat/Foundry"},
+  {term:"mongodb",label:"MongoDB"},{term:"redis",label:"Redis"},
+  {term:"graphql",label:"GraphQL"},{term:"agile",label:"Agile/Scrum"}
+];
+
+// Seniority signals
+const SENIORITY = [
+  {words:["stage ","stagiaire","intern","alternance","alternant","apprenti","contrat pro"],
+   label:"Stage / Alternance", color:"#4ade80"},
+  {words:["junior","débutant","0-2 ans","0 à 2 ans","première expérience","young graduate","jeune diplômé"],
+   label:"Junior (0-2 ans)", color:"#818cf8"},
+  {words:["confirmé","expérimenté","2-5 ans","3-5 ans","minimum 2 ans","minimum 3 ans"],
+   label:"Confirmé (2-5 ans)", color:"#facc15"},
+  {words:["senior","expert","5+ ans","plus de 5 ans","7 ans","lead","autonome"],
+   label:"Senior (5+ ans)", color:"#fb923c"},
+  {words:["directeur","head of","managing director"," vp ","vice president","partner"],
+   label:"Management", color:"#f472b6"}
+];
+
+// Sector/tone signals
+const TONE = [
+  {words:["startup","scale-up","fintech","neo-banque","neobank","early stage","série a","série b"],
+   label:"Startup / Fintech", color:"#4ade80"},
+  {words:["hedge fund","prop trading","trading firm","market making","hft","systematic","quant fund"],
+   label:"Buy-Side / Trading", color:"#f472b6"},
+  {words:["banque","bank","société générale","bnp","natixis","cacib","barclays","goldman","jp morgan","morgan stanley"],
+   label:"Banque / IBD", color:"#818cf8"},
+  {words:["consulting","conseil","deloitte","kpmg","pwc","mckinsey","bcg","bain","oliver wyman","cabinet"],
+   label:"Consulting", color:"#facc15"},
+  {words:["assurance","insurance","axa","allianz","generali","prévoyance","réassurance"],
+   label:"Assurance", color:"#fb923c"},
+  {words:["asset management","gestion d'actifs","gestion de portefeuille","portfolio management","fonds"],
+   label:"Asset Management", color:"#38bdf8"}
+];
+
+// ─── Analysis engine ──────────────────────────────────────────────────────────
+let profileData = null;
+
+async function loadProfile() {
+  if (profileData) return profileData;
+  const r = await fetch('profile.json');
+  profileData = await r.json();
+  return profileData;
+}
+
+function detectSignal(jd, signals) {
+  for (const sig of signals)
+    if (sig.words.some(w => jd.includes(w))) return sig;
+  return null;
+}
+
+function analyzeJD(jdRaw, profile) {
+  const jd = jdRaw.toLowerCase();
+
+  // Collect all skills across categories
+  const allSkills = [];
+  for (const cat of ['programming','finance','data_ml','domain']) {
+    for (const s of (profile.skills[cat] || []))
+      allSkills.push({...s, category: cat});
+  }
+
+  // Match each skill against JD
+  const matched = [], unmatched = [];
+  for (const skill of allSkills) {
+    const aliases = SKILL_ALIASES[skill.name] || [skill.name.toLowerCase()];
+    const hit = aliases.some(a => jd.includes(a.toLowerCase()));
+    (hit ? matched : unmatched).push(skill);
+  }
+
+  // Score: fraction of weighted profile activated by this JD
+  const totalW   = allSkills.reduce((s,k) => s + k.weight, 0);
+  const matchedW = matched.reduce((s,k) => s + k.weight, 0);
+  const score    = matchedW / totalW;
+
+  // Gap terms: in JD but not covered by our skills
+  const gaps = GAP_TERMS.filter(g => jd.includes(g.term.toLowerCase()));
+
+  // Activated Hidden Edge combos
+  const matchedNames = new Set(matched.map(s => s.name));
+  const activatedCombos = profile.hidden_edge.combos.filter(c =>
+    c.skills.every(sn => matchedNames.has(sn))
+  );
+
+  const seniority = detectSignal(jd, SENIORITY);
+  const tone      = detectSignal(jd, TONE);
+  const recs      = buildRecs(score, matched, gaps, activatedCombos, seniority, tone);
+
+  return {score, matched, unmatched, gaps, activatedCombos, seniority, tone, recs, totalW, matchedW};
+}
+
+function buildRecs(score, matched, gaps, combos, seniority, tone) {
+  const recs = [];
+
+  const top3 = [...matched].sort((a,b) => b.weight - a.weight).slice(0,3);
+  if (top3.length > 0) {
+    recs.push({
+      title: 'Mettez en avant : ' + top3.map(s => s.name).join(', '),
+      body: 'Ces skills apparaissent dans la fiche ET sont vos points forts. Placez-les dans le résumé de profil et l\'objet email.'
+    });
+  }
+
+  if (combos.length > 0) {
+    const c = combos[0];
+    recs.push({
+      title: 'Argument différenciant : combo "' + c.id.replace(/_/g,' ') + '"',
+      body: 'Ce poste active un Hidden Edge (+' + c.market_premium_pct + '% prime marché). Mentionnez : "' + c.narrative + '"'
+    });
+  }
+
+  if (score < 0.40) {
+    recs.push({
+      title: 'Score faible — adaptez l\'angle d\'attaque',
+      body: 'Moins de 40 % du profil activé. Concentrez la candidature sur les skills communs et justifiez par la complémentarité, pas la similarité.'
+    });
+  }
+
+  const criticalGaps = gaps.filter(g =>
+    ['Bloomberg Terminal','Murex','Calypso','MATLAB','R (RStudio)','R Language'].includes(g.label)
+  );
+  if (criticalGaps.length > 0) {
+    recs.push({
+      title: 'Outils non maîtrisés : ' + criticalGaps.map(g => g.label).join(', '),
+      body: 'Ces outils apparaissent dans la JD. Précisez votre niveau dans la LM ou proposez une montée en compétence rapide.'
+    });
+  }
+
+  if (seniority && (seniority.label.includes('Senior') || seniority.label.includes('Management'))) {
+    recs.push({
+      title: 'Poste senior — valorisez l\'impact quantifié',
+      body: 'Utilisez vos métriques concrètes : 4h/jour économisées, 250+ règles suivies, 10+ protocoles analysés.'
+    });
+  }
+
+  if (tone) {
+    const toneMap = {
+      'Startup / Fintech': 'Valorisez l\'autonomie, la vitesse, votre expérience DeFi et votre side project Career OS.',
+      'Buy-Side / Trading': 'Mettez en avant calcul stochastique, Monte Carlo, backtesting. Évitez le jargon corporate.',
+      'Banque / IBD': 'Structurez en trois parties (formation, expériences, adéquation). Formalisez le ton.',
+      'Consulting': 'Insistez sur la structure analytique, le Problem Solving, votre PFE avec EY.',
+      'Assurance': 'Votre passage ManCo (actuariat, risk) et votre PFE couverture dynamique sont vos meilleurs atouts.',
+      'Asset Management': 'Valorisez la combinaison quant + risk + statistiques. Mentionnez vos modèles de portefeuille.'
+    };
+    const advice = toneMap[tone.label];
+    if (advice) recs.push({title: 'Adapter le ton : ' + tone.label, body: advice});
+  }
+
+  return recs.slice(0, 5);
+}
+
+// ─── Verdict helpers ──────────────────────────────────────────────────────────
+function scoreVerdict(pct) {
+  if (pct >= 80) return {label:'Match optimal',  bg:'rgba(74,222,128,.15)',  color:'#4ade80'};
+  if (pct >= 65) return {label:'Très aligné',    bg:'rgba(129,140,248,.15)', color:'#818cf8'};
+  if (pct >= 50) return {label:'Bien aligné',    bg:'rgba(250,204,21,.12)',  color:'#facc15'};
+  if (pct >= 35) return {label:'Pertinent',      bg:'rgba(251,146,60,.12)',  color:'#fb923c'};
+  if (pct >= 20) return {label:'Connexe',        bg:'rgba(248,113,113,.12)', color:'#f87171'};
+  return             {label:'Hors cible',       bg:'rgba(100,100,100,.15)', color:'#52566b'};
+}
+
+const CAT_CLASS = {programming:'cat-prog', finance:'cat-fin', data_ml:'cat-ml', domain:'cat-dom'};
+const CAT_LABEL = {programming:'Code', finance:'Finance', data_ml:'ML/Data', domain:'Domaine'};
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderResults(res) {
+  const pct     = Math.round(res.score * 100);
+  const verdict = scoreVerdict(pct);
+
+  // Score
+  const scoreEl = document.getElementById('score-display');
+  scoreEl.textContent  = pct + '%';
+  scoreEl.style.color  = verdict.color;
+
+  const vEl = document.getElementById('score-verdict');
+  vEl.textContent         = verdict.label;
+  vEl.style.background    = verdict.bg;
+  vEl.style.color         = verdict.color;
+
+  document.getElementById('score-badge-top').textContent = verdict.label;
+
+  // Seniority
+  const senEl  = document.getElementById('seniority-val');
+  const senDot = document.getElementById('seniority-dot');
+  senEl.textContent        = res.seniority ? res.seniority.label : 'Non précisé';
+  senDot.style.background  = res.seniority ? res.seniority.color : 'var(--muted)';
+
+  // Tone
+  const toneEl  = document.getElementById('tone-val');
+  const toneDot = document.getElementById('tone-dot');
+  toneEl.textContent        = res.tone ? res.tone.label : 'Non identifié';
+  toneDot.style.background  = res.tone ? res.tone.color : 'var(--muted)';
+
+  // Stats mini (3 cards)
+  const statsEl = document.getElementById('stats-mini');
+  clearEl(statsEl);
+  for (const s of [
+    {val: res.matched.length,          lbl:'Skills matchés'},
+    {val: res.gaps.length,             lbl:'Termes manquants'},
+    {val: res.activatedCombos.length,  lbl:'Edge activés'}
+  ]) {
+    statsEl.appendChild(el('div',{className:'stat-mini'},[
+      el('div',{className:'stat-mini-val',textContent:String(s.val)}),
+      el('div',{className:'stat-mini-lbl',textContent:s.lbl})
+    ]));
+  }
+
+  // Matched skills
+  document.getElementById('matched-badge').textContent = String(res.matched.length);
+  const matchedList = document.getElementById('matched-list');
+  clearEl(matchedList);
+
+  if (res.matched.length === 0) {
+    matchedList.appendChild(el('div',{className:'empty-note',textContent:'Aucun skill activé par cette fiche.'}));
+  } else {
+    const sorted = [...res.matched].sort((a,b) => b.weight - a.weight);
+    for (const s of sorted) {
+      const c = scoreVerdict(Math.round(s.weight*100)).color;
+      const bar = el('div',{className:'skill-bar',style:'width:0;background:'+c});
+      const row = el('div',{className:'skill-row'},[
+        el('div',{className:'skill-name',textContent:s.name}),
+        el('div',{className:'skill-bar-wrap'},[bar]),
+        el('div',{className:'skill-pct',textContent:Math.round(s.weight*100)+'%'}),
+        el('div',{className:'skill-cat '+(CAT_CLASS[s.category]||''),textContent:CAT_LABEL[s.category]||s.category})
+      ]);
+      matchedList.appendChild(row);
+    }
+    requestAnimationFrame(() => {
+      const bars = matchedList.querySelectorAll('.skill-bar');
+      bars.forEach((bar, i) => { bar.style.width = sorted[i].weight * 100 + '%'; });
+    });
+  }
+
+  // Gap terms
+  document.getElementById('gap-badge').textContent = String(res.gaps.length);
+  const gapList = document.getElementById('gap-list');
+  clearEl(gapList);
+
+  if (res.gaps.length === 0) {
+    gapList.appendChild(el('div',{className:'gap-ok',textContent:'Aucun terme technique manquant détecté — profil bien couvrant.'}));
+  } else {
+    const wrap = el('div',{style:'padding:4px 0'});
+    for (const g of res.gaps)
+      wrap.appendChild(el('span',{className:'gap-tag',textContent:g.label}));
+    gapList.appendChild(wrap);
+    gapList.appendChild(el('p',{className:'gap-note',
+      textContent:'Ces termes apparaissent dans la fiche mais ne correspondent à aucun skill de votre profil actuel.'}));
+  }
+
+  // Hidden Edge combos
+  const totalCombos = profileData && profileData.hidden_edge ? profileData.hidden_edge.combos.length : 3;
+  document.getElementById('combo-badge').textContent = res.activatedCombos.length + ' / ' + totalCombos;
+  const comboList = document.getElementById('combo-list');
+  clearEl(comboList);
+
+  if (res.activatedCombos.length === 0) {
+    comboList.appendChild(el('div',{className:'empty-note',
+      textContent:'Aucun combo rare entièrement activé. Les fiches Quant Researcher / DeFi activent le combo quant_defi (+20 %).'}));
+  } else {
+    for (const c of res.activatedCombos) {
+      const combo = el('div',{className:'combo '+c.rarity});
+      const header = el('div',{className:'combo-header'});
+      const left   = el('div');
+      const name   = c.id.replace(/_/g,' ').replace(/\b\w/g,x => x.toUpperCase());
+      left.appendChild(el('div',{style:'font-size:12px;font-weight:600;margin-bottom:4px',textContent:name}));
+      const pills = el('div',{className:'combo-skills'});
+      for (const sn of c.skills)
+        pills.appendChild(el('span',{className:'combo-skill',textContent:sn}));
+      left.appendChild(pills);
+      header.appendChild(left);
+      header.appendChild(el('div',{className:'combo-premium',textContent:'+'+c.market_premium_pct+'%'}));
+      combo.appendChild(header);
+      combo.appendChild(el('div',{className:'combo-narrative',textContent:c.narrative}));
+      comboList.appendChild(combo);
+    }
+  }
+
+  // Recommendations
+  const recList = document.getElementById('rec-list');
+  clearEl(recList);
+
+  if (res.recs.length === 0) {
+    recList.appendChild(el('div',{className:'empty-note',textContent:'Analysez une fiche pour obtenir des recommandations personnalisées.'}));
+  } else {
+    res.recs.forEach((r, i) => {
+      recList.appendChild(el('div',{className:'rec-item'},[
+        el('div',{className:'rec-num',textContent:String(i+1)}),
+        el('div',{className:'rec-content'},[
+          el('div',{className:'rec-title',textContent:r.title}),
+          el('div',{className:'rec-body', textContent:r.body})
+        ])
+      ]));
+    });
+  }
+}
+
+// ─── Entry points ─────────────────────────────────────────────────────────────
+async function runAnalysis() {
+  const jd = document.getElementById('jd-input').value.trim();
+  if (jd.length < 50) { document.getElementById('jd-input').focus(); return; }
+
+  document.getElementById('btn-analyze').disabled = true;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('loading-state').style.display = 'block';
+
+  try {
+    const profile = await loadProfile();
+    const result  = analyzeJD(jd, profile);
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    renderResults(result);
+    document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+  } catch(e) {
+    document.getElementById('loading-state').style.display = 'none';
+    alert('Erreur chargement profil : ' + e.message);
+  } finally {
+    document.getElementById('btn-analyze').disabled = false;
+  }
+}
+
+function clearAll() {
+  document.getElementById('jd-input').value = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('char-count').textContent = '0 car.';
+}
+
+document.getElementById('jd-input').addEventListener('input', function() {
+  document.getElementById('char-count').textContent = this.value.length + ' car.';
+});
+
+document.getElementById('jd-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAnalysis();
+});
+</script>
+</body>
+</html>
