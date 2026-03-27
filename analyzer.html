@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Stack Analyzer — Robin Denis</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root {
+      --bg:#07080d;--surface:#0f1017;--surface2:#161720;
+      --border:rgba(255,255,255,0.07);--text:#e8eaf0;--muted:#52566b;
+      --accent:#818cf8;--accent-glow:rgba(129,140,248,0.15);
+      --green:#4ade80;--orange:#fb923c;--pink:#f472b6;--yellow:#facc15;
+      --r:10px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      --mono:'Cascadia Code','Fira Code',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh}
+    .header{padding:32px 40px 0;display:flex;justify-content:space-between;align-items:flex-start}
+    .header-back{color:var(--muted);text-decoration:none;font-size:12px}
+    .header-back:hover{color:var(--accent)}
+    .header-title{font-size:22px;font-weight:700}
+    .header-sub{color:var(--muted);font-size:12px;margin-top:4px}
+    .page{max-width:1100px;margin:0 auto;padding:32px 40px 60px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+    .card-title{font-weight:600;font-size:13px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+    .card-badge{font-size:10px;padding:3px 8px;border-radius:5px;background:var(--accent-glow);border:1px solid rgba(129,140,248,0.25);color:var(--accent);font-weight:500}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .stat-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+    .stat{flex:1;min-width:120px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;text-align:center}
+    .stat-val{font-size:28px;font-weight:700;line-height:1}
+    .stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.8px}
+    .skill-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .skill-row:last-child{border-bottom:none}
+    .skill-name{width:160px;font-size:12px;flex-shrink:0}
+    .skill-name.top{color:var(--accent);font-weight:600}
+    .skill-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden}
+    .skill-bar{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);width:0}
+    .skill-pct{width:36px;text-align:right;font-size:11px;font-family:var(--mono);color:var(--muted)}
+    .skill-tag{font-size:9px;padding:2px 6px;border-radius:3px;width:48px;text-align:center;flex-shrink:0}
+    .tag-top{background:rgba(129,140,248,0.15);color:var(--accent)}
+    .tag-decay{background:rgba(251,146,60,0.12);color:var(--orange)}
+    .rule-sep{display:flex;align-items:center;gap:10px;padding:10px 0 4px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+    .rule-line{flex:1;height:1px;background:var(--border)}
+    .combo{padding:16px;border-radius:8px;border:1px solid;margin-bottom:10px}
+    .combo:last-child{margin-bottom:0}
+    .combo-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+    .combo-skills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .combo-skill{font-size:11px;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,0.06)}
+    .combo-narrative{font-size:12px;color:var(--muted);line-height:1.5}
+    .combo-premium{font-size:20px;font-weight:700;flex-shrink:0}
+    .combo-rarity{font-size:10px;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.8px}
+    .very_rare{background:rgba(244,114,182,0.15);color:var(--pink);border-color:rgba(244,114,182,0.3)}
+    .rare{background:rgba(129,140,248,0.15);color:var(--accent);border-color:rgba(129,140,248,0.3)}
+    .uncommon{background:rgba(250,204,21,0.12);color:var(--yellow);border-color:rgba(250,204,21,0.25)}
+    .radar-wrap{display:flex;justify-content:center;padding:8px 0}
+    .opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .opt-card{padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+    .opt-horizon{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+    .opt-target{font-size:12px;font-weight:600;margin-bottom:8px}
+    .opt-bar-wrap{height:5px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;margin-bottom:4px}
+    .opt-bar{height:100%;border-radius:3px}
+    .opt-score{font-size:11px;font-family:var(--mono);color:var(--muted)}
+    .ikigai-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .ikigai-cell{padding:12px 14px;border-radius:8px;border:1px solid var(--border)}
+    .ikigai-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px}
+    .ikigai-tags{display:flex;flex-wrap:wrap;gap:5px}
+    .ikigai-tag{font-size:11px;padding:2px 7px;border-radius:4px;background:var(--surface2)}
+    .sweet-spot{margin-top:12px;padding:10px 12px;background:var(--accent-glow);border:1px solid rgba(129,140,248,.2);border-radius:7px;font-size:12px;color:var(--accent)}
+    .decay-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px}
+    .decay-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .decay-badge{font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(251,146,60,.12);flex-shrink:0}
+    .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:14px;color:var(--muted)}
+    .spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:768px){.grid2{grid-template-columns:1fr}.opt-grid{grid-template-columns:1fr 1fr}.page{padding:20px}}
+  </style>
+</head>
+<body>
+
+<div id="loading" class="loading">
+  <div class="spinner"></div>
+  <span>Chargement du profil…</span>
+</div>
+
+<div id="app" style="display:none">
+  <div class="header">
+    <a href="/" class="header-back">← Retour au portfolio</a>
+    <div style="text-align:right">
+      <div class="header-title">Skill Stack Analyzer</div>
+      <div class="header-sub" id="updated"></div>
+    </div>
+  </div>
+  <div class="page">
+    <div class="stat-row" id="stats"></div>
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <div class="card-title">
+            <span>Skills par valeur marché</span>
+            <span class="card-badge">Règle 80/20</span>
+          </div>
+          <div id="skill-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Optionality de carrière</div>
+          <div class="opt-grid" id="opt-grid"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <span>Skill decay monitoring</span>
+            <span class="card-badge" style="background:rgba(251,146,60,.12);border-color:rgba(251,146,60,.3);color:var(--orange)">À surveiller</span>
+          </div>
+          <div id="decay-list"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title">Hidden Edge — Combinaisons rares</div>
+          <div id="combos"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Radar compétences</div>
+          <div class="radar-wrap"><canvas id="radar" width="300" height="300"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Ikigai — Zone de convergence</div>
+          <div class="ikigai-grid" id="ikigai"></div>
+          <div class="sweet-spot" id="ikigai-sweet"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Sécurité : échapper tout contenu issu de profile.json ───────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function barColor(w) {
+  if (w >= 0.85) return 'var(--accent)';
+  if (w >= 0.70) return 'var(--green)';
+  if (w >= 0.55) return 'var(--orange)';
+  return 'var(--muted)';
+}
+
+function monthsAgo(dateStr) {
+  if (!dateStr) return 999;
+  const [y, m] = dateStr.split('-').map(Number);
+  const now = new Date(2026, 2);
+  return (now.getFullYear() - y) * 12 + (now.getMonth() - (m - 1));
+}
+
+function decayRisk(skill) {
+  const mo = monthsAgo(skill.last_used);
+  const limits = { slow: 36, medium: 24, fast: 12 };
+  return mo / (limits[skill.decay_class] || 24);
+}
+
+function rarityLabel(r) {
+  return { very_rare: 'Très rare', rare: 'Rare', uncommon: 'Peu commun' }[r] || esc(r);
+}
+
+// ── Helpers DOM — évite innerHTML avec données non-fiables ───────────────────
+function el(tag, attrs = {}, children = []) {
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => {
+    if (k === 'class') e.className = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k === 'data') Object.entries(v).forEach(([dk, dv]) => e.dataset[dk] = dv);
+    else e.setAttribute(k, v);
+  });
+  children.forEach(c => {
+    if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+    else if (c) e.appendChild(c);
+  });
+  return e;
+}
+
+// ── Render : Stats ────────────────────────────────────────────────────────────
+function renderStats(data) {
+  const allSkills = Object.values(data.skills).filter(Array.isArray).flat();
+  const topSkills = allSkills.filter(s => s.weight >= 0.80).length;
+  const maxPremium = Math.max(...data.hidden_edge.combos.map(c => c.market_premium_pct));
+  const avgWeight = (allSkills.reduce((a, s) => a + s.weight, 0) / allSkills.length * 100).toFixed(0);
+  const wrap = document.getElementById('stats');
+  [
+    { val: allSkills.length, lbl: 'Skills totaux', color: 'var(--text)' },
+    { val: topSkills, lbl: 'Skills top-tier (≥80%)', color: 'var(--accent)' },
+    { val: data.hidden_edge.combos.length, lbl: 'Combos rares', color: 'var(--pink)' },
+    { val: '+' + maxPremium + '%', lbl: 'Premium marché max', color: 'var(--green)' },
+    { val: avgWeight + '%', lbl: 'Poids moyen', color: 'var(--orange)' },
+  ].forEach(s => {
+    wrap.appendChild(el('div', { class: 'stat' }, [
+      el('div', { class: 'stat-val', style: `color:${s.color}` }, [String(s.val)]),
+      el('div', { class: 'stat-lbl' }, [s.lbl]),
+    ]));
+  });
+}
+
+// ── Render : Skills 80/20 ────────────────────────────────────────────────────
+function renderSkills(data) {
+  const allSkills = Object.values(data.skills).filter(Array.isArray).flat()
+    .sort((a, b) => b.weight - a.weight);
+  const total = allSkills.reduce((a, s) => a + s.weight, 0);
+  let cumulative = 0, separatorAdded = false;
+  const wrap = document.getElementById('skill-list');
+
+  allSkills.forEach(s => {
+    cumulative += s.weight;
+    if (!separatorAdded && cumulative / total >= 0.80) {
+      separatorAdded = true;
+      const sep = el('div', { class: 'rule-sep' }, [
+        el('div', { class: 'rule-line' }),
+        el('span', {}, ['↓ 80% de la valeur marché — seuil 80/20']),
+        el('div', { class: 'rule-line' }),
+      ]);
+      wrap.appendChild(sep);
+    }
+
+    const isTop = !separatorAdded;
+    const isFast = s.decay_class === 'fast';
+    const pct = (s.weight * 100).toFixed(0) + '%';
+
+    const bar = el('div', { class: 'skill-bar', style: `background:${barColor(s.weight)}`, data: { target: pct } });
+    const row = el('div', { class: 'skill-row' }, [
+      el('span', { class: 'skill-name' + (isTop ? ' top' : '') }, [esc(s.name)]),
+      el('div', { class: 'skill-bar-wrap' }, [bar]),
+      el('span', { class: 'skill-pct' }, [pct]),
+      isTop
+        ? el('span', { class: 'skill-tag tag-top' }, ['TOP'])
+        : isFast
+          ? el('span', { class: 'skill-tag tag-decay' }, ['FAST'])
+          : el('span', { style: 'width:48px' }),
+    ]);
+    wrap.appendChild(row);
+  });
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.skill-bar').forEach(b => { b.style.width = b.dataset.target; });
+  });
+}
+
+// ── Render : Hidden Edge combos ───────────────────────────────────────────────
+function renderCombos(data) {
+  const skillColors = ['var(--accent)', 'var(--green)', 'var(--pink)', 'var(--orange)', 'var(--yellow)'];
+  const wrap = document.getElementById('combos');
+  data.hidden_edge.combos.forEach(c => {
+    const rc = c.rarity;
+    const skillsWrap = el('div', { class: 'combo-skills' });
+    c.skills.forEach((sk, i) => {
+      skillsWrap.appendChild(el('span', { class: 'combo-skill', style: `color:${skillColors[i % skillColors.length]}` }, [esc(sk)]));
+    });
+    const premiumEl = el('div', { class: 'combo-premium', style: 'color:var(--green)' }, [
+      '+' + c.market_premium_pct + '%',
+      el('span', { style: 'font-size:11px;color:var(--muted);font-weight:400;margin-left:4px' }, [' premium']),
+    ]);
+    const header = el('div', { class: 'combo-header' }, [
+      el('span', { class: 'combo-rarity ' + rc }, [rarityLabel(rc)]),
+      premiumEl,
+    ]);
+    wrap.appendChild(el('div', { class: 'combo ' + rc }, [
+      header,
+      skillsWrap,
+      el('div', { class: 'combo-narrative' }, [esc(c.narrative)]),
+    ]));
+  });
+}
+
+// ── Render : Radar canvas ─────────────────────────────────────────────────────
+function renderRadar(data) {
+  const scores = data.skills.radar_scores;
+  const labels = Object.keys(scores);
+  const values = Object.values(scores);
+  const canvas = document.getElementById('radar');
+  const ctx = canvas.getContext('2d');
+  const cx = 150, cy = 150, R = 110, N = labels.length;
+
+  ctx.clearRect(0, 0, 300, 300);
+
+  [0.25, 0.5, 0.75, 1].forEach(t => {
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+      i === 0 ? ctx.moveTo(cx + Math.cos(a) * R * t, cy + Math.sin(a) * R * t)
+              : ctx.lineTo(cx + Math.cos(a) * R * t, cy + Math.sin(a) * R * t);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  values.forEach((v, i) => {
+    const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+    i === 0 ? ctx.moveTo(cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v)
+            : ctx.lineTo(cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(129,140,248,0.18)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(129,140,248,0.8)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  values.forEach((v, i) => {
+    const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#818cf8';
+    ctx.fill();
+  });
+
+  ctx.font = '600 10px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(232,234,240,0.7)';
+  ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => {
+    const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+    ctx.fillText(lbl, cx + Math.cos(a) * (R + 22), cy + Math.sin(a) * (R + 22) + 4);
+  });
+}
+
+// ── Render : Optionality ──────────────────────────────────────────────────────
+function renderOptimality(data) {
+  const colors = { short_term: 'var(--green)', mid_term: 'var(--accent)', long_term: 'var(--orange)' };
+  const horizons = { short_term: 'Court terme', mid_term: 'Moyen terme', long_term: 'Long terme' };
+  const wrap = document.getElementById('opt-grid');
+  Object.entries(data.career_goals).forEach(([k, g]) => {
+    const bar = el('div', { class: 'opt-bar', style: `width:${g.optionality_score * 100}%;background:${colors[k]}` });
+    wrap.appendChild(el('div', { class: 'opt-card' }, [
+      el('div', { class: 'opt-horizon' }, [horizons[k]]),
+      el('div', { class: 'opt-target' }, [esc(g.target)]),
+      el('div', { style: 'font-size:10px;color:var(--muted);margin-bottom:8px' }, [g.horizon]),
+      el('div', { class: 'opt-bar-wrap' }, [bar]),
+      el('div', { class: 'opt-score' }, ['Optionality : ' + (g.optionality_score * 100).toFixed(0) + '%']),
+    ]));
+  });
+}
+
+// ── Render : Decay monitoring ─────────────────────────────────────────────────
+function renderDecay(data) {
+  const allSkills = Object.values(data.skills).filter(Array.isArray).flat();
+  const risky = allSkills
+    .map(s => ({ ...s, risk: decayRisk(s) }))
+    .filter(s => s.risk > 0.5)
+    .sort((a, b) => b.risk - a.risk)
+    .slice(0, 6);
+  const wrap = document.getElementById('decay-list');
+  if (risky.length === 0) {
+    wrap.appendChild(el('div', { style: 'color:var(--muted);font-size:12px' }, ['Tous tes skills sont à jour.']));
+    return;
+  }
+  risky.forEach(s => {
+    const expired = s.risk >= 1;
+    const color = expired ? 'var(--orange)' : 'var(--yellow)';
+    const ago = monthsAgo(s.last_used);
+    wrap.appendChild(el('div', { class: 'decay-row' }, [
+      el('div', { class: 'decay-dot', style: `background:${color}` }),
+      el('span', { style: 'flex:1' }, [esc(s.name)]),
+      el('span', { style: 'font-size:11px;color:var(--muted);font-family:var(--mono)' }, [ago + 'm sans usage · decay ' + s.decay_class]),
+      el('span', { class: 'decay-badge', style: `color:${color}` }, [expired ? '⚠ decay' : '⚡ watch']),
+    ]));
+  });
+}
+
+// ── Render : Ikigai ───────────────────────────────────────────────────────────
+function renderIkigai(data) {
+  const ik = data.ikigai;
+  const sections = [
+    { label: '❤️ Passion', key: 'passion', bg: 'rgba(244,114,182,0.15)' },
+    { label: '🌍 Besoin du monde', key: 'world_needs', bg: 'rgba(74,222,128,0.10)' },
+    { label: '⚡ Bon à faire', key: 'good_at', bg: 'rgba(129,140,248,0.12)' },
+    { label: '💰 Rémunéré pour', key: 'paid_for', bg: 'rgba(250,204,21,0.10)' },
+  ];
+  const wrap = document.getElementById('ikigai');
+  sections.forEach(s => {
+    const tagsWrap = el('div', { class: 'ikigai-tags' });
+    ik[s.key].forEach(t => tagsWrap.appendChild(el('span', { class: 'ikigai-tag' }, [esc(t)])));
+    wrap.appendChild(el('div', { class: 'ikigai-cell', style: `background:${s.bg}` }, [
+      el('div', { class: 'ikigai-label' }, [s.label]),
+      tagsWrap,
+    ]));
+  });
+  document.getElementById('ikigai-sweet').textContent = '🎯 Sweet spot : ' + ik.sweet_spot;
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch('profile.json');
+    if (!res.ok) throw new Error('profile.json introuvable (status ' + res.status + ')');
+    const data = await res.json();
+
+    document.getElementById('updated').textContent =
+      'profile.json v' + data['$version'] + ' · ' + data['$updated'];
+
+    renderStats(data);
+    renderSkills(data);
+    renderCombos(data);
+    renderRadar(data);
+    renderOptimality(data);
+    renderDecay(data);
+    renderIkigai(data);
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch (e) {
+    const loadEl = document.getElementById('loading');
+    loadEl.innerHTML = '';
+    loadEl.appendChild(el('div', { style: 'color:var(--orange)' }, ['Erreur : ' + e.message]));
+    loadEl.appendChild(el('div', { style: 'color:var(--muted);font-size:12px;margin-top:8px' },
+      ['Lance un serveur local pour tester : python -m http.server']));
+  }
+}
+
+init();
+</script>
+</body>
+</html>
