@@ -1,0 +1,362 @@
+{
+  "$schema": "https://roblastar.github.io/profile-schema/v1.json",
+  "$version": "1.0.0",
+  "$updated": "2026-03-27",
+
+  "identity": {
+    "first_name": "Robin",
+    "last_name": "Denis",
+    "email": "robin.denis1207@gmail.com",
+    "phone": "",
+    "location": { "city": "Paris", "country": "France", "remote": true },
+    "links": {
+      "portfolio": "https://rojld.github.io",
+      "linkedin": "https://www.linkedin.com/in/robin-denis-finance/",
+      "github": "https://github.com/RoJLD"
+    },
+    "tagline": {
+      "fr": "Ingénierie Financière & Quantitative",
+      "en": "Financial & Quantitative Engineering"
+    },
+    "status": {
+      "fr": "Actuellement : Quant Researcher DeFi @ ALTEN",
+      "en": "Currently: DeFi Quant Researcher @ ALTEN"
+    },
+    "availability": "2026-09",
+    "target_roles": ["Quant Researcher", "Structuration", "Risk Manager", "Data Engineer Finance", "Dev Quantitatif"]
+  },
+
+  "education": [
+    {
+      "id": "ece",
+      "school": "ECE Paris",
+      "degree": "Diplôme d'Ingénieur",
+      "major": "Ingénierie Financière et Quantitative",
+      "start": "2021-09",
+      "end": "2026-09",
+      "gpa": null,
+      "highlights": [
+        "Calcul stochastique & SDE",
+        "Finance de marché",
+        "Recherche opérationnelle & optimisation numérique",
+        "Machine Learning appliqué",
+        "Contrôle optimal et Hamiltonien",
+        "Modèles DSGE"
+      ],
+      "capstone": {
+        "title": "Couverture dynamique en assurance et en banque",
+        "partner": "EY",
+        "role": "Chef de projet",
+        "description": "Modélisation et pilotage de stratégies de couverture dynamique — confrontation des modèles théoriques aux contraintes opérationnelles du hedging.",
+        "tags": ["hedging", "assurance", "finance de marché", "EY"]
+      },
+      "ranking_context": "Top 2% sur communauté de 40 000 étudiants (Student Pop)"
+    }
+  ],
+
+  "experiences": [
+    {
+      "id": "alten_2026",
+      "company": "ALTEN",
+      "division": "Lab R&D",
+      "location": "Sèvres, France",
+      "title": { "fr": "Quantitative Researcher DeFi", "en": "DeFi Quantitative Researcher" },
+      "type": "stage",
+      "start": "2026-02",
+      "end": "2026-08",
+      "current": true,
+      "bullets": {
+        "fr": [
+          "Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d'actifs sur protocoles émergents",
+          "Développement de modèles statistiques et ML pour l'exploration de patterns et l'analyse de corrélations",
+          "Data Engineering : automatisation de la collecte de métriques on-chain (TVL, APY, Volume) via Python"
+        ],
+        "en": [
+          "Led the 'CryptoExploration' project: detection and evaluation of asset fluctuations on emerging protocols",
+          "Developed statistical and ML models for pattern exploration and correlation analysis",
+          "Data Engineering: automated on-chain metrics collection (TVL, APY, Volume) via Python"
+        ]
+      },
+      "impact_metrics": [
+        { "metric": "protocoles on-chain analysés", "value": "10+", "type": "scope" },
+        { "metric": "modèles ML développés", "value": "3", "type": "output" }
+      ],
+      "skills_used": ["Python", "Machine Learning", "DeFi", "Data Engineering", "Statistics", "ETL"],
+      "keywords": ["quant", "DeFi", "on-chain", "ML", "pattern detection", "TVL", "APY", "blockchain", "crypto", "correlation"],
+      "relevance": { "quant": 0.95, "risk": 0.50, "dev": 0.70, "general": 0.65 }
+    },
+    {
+      "id": "bouygues_2025",
+      "company": "Bouygues Telecom",
+      "division": "Département Financier",
+      "location": "Vélizy, France",
+      "title": { "fr": "Trésorier & Développeur Full Stack", "en": "Treasury Manager & Full Stack Developer" },
+      "type": "stage",
+      "start": "2025-02",
+      "end": "2025-08",
+      "current": false,
+      "bullets": {
+        "fr": [
+          "Conception d'un Treasury Management System (Python/SQL/VBA, ODBC) : gain de ~4h/jour",
+          "Automatisation des prévisions de trésorerie et intégration du pricing de swaps de taux",
+          "Orchestration d'ETL (Dataiku/BigQuery) et automatisation des contrôles qualité des données"
+        ],
+        "en": [
+          "Built a Treasury Management System (Python/SQL/VBA, ODBC): saving ~4h/day",
+          "Automated cash flow forecasting and integrated interest rate swap pricing",
+          "Orchestrated ETL pipelines (Dataiku/BigQuery) and automated data quality controls"
+        ]
+      },
+      "impact_metrics": [
+        { "metric": "gain de temps quotidien", "value": "~4h/jour", "type": "efficiency" },
+        { "metric": "processus automatisés", "value": "5+", "type": "output" }
+      ],
+      "skills_used": ["Python", "SQL", "VBA", "ODBC", "Dataiku", "BigQuery", "ETL", "Swap pricing", "Trésorerie"],
+      "keywords": ["treasury", "trésorerie", "TMS", "swap de taux", "ETL", "BigQuery", "Dataiku", "cash flow", "prévision", "automatisation"],
+      "relevance": { "quant": 0.75, "risk": 0.60, "dev": 0.85, "general": 0.80 }
+    },
+    {
+      "id": "manco_2024",
+      "company": "ManCo Paris",
+      "division": null,
+      "location": "Paris, France",
+      "title": { "fr": "Risk Manager", "en": "Risk Manager" },
+      "type": "stage",
+      "start": "2024-06",
+      "end": "2024-12",
+      "current": false,
+      "bullets": {
+        "fr": [
+          "Suivi de plus de 250 règles d'investissement réglementaires et statutaires",
+          "Préparation des comités de risques (mensuels, trimestriels, annuels)",
+          "Analyse des risques de marché, liquidité, contrepartie et opérationnels",
+          "Calculs actuariels, amélioration d'outils et automatisation (Excel, VBA, Access)"
+        ],
+        "en": [
+          "Monitored over 250 regulatory and statutory investment rules",
+          "Prepared risk committees (monthly, quarterly, annual)",
+          "Analyzed market, liquidity, counterparty and operational risks",
+          "Performed actuarial calculations, improved tools and automated processes (Excel, VBA, Access)"
+        ]
+      },
+      "impact_metrics": [
+        { "metric": "règles réglementaires suivies", "value": "250+", "type": "scope" },
+        { "metric": "comités de risques préparés", "value": "mensuel/trimestriel/annuel", "type": "scope" }
+      ],
+      "skills_used": ["Risk Management", "VBA", "Excel", "Access", "Compliance", "Actuarial"],
+      "keywords": ["risk manager", "risque de marché", "risque de liquidité", "risque opérationnel", "compliance", "réglementaire", "MiFID", "comité de risques", "actuariat"],
+      "relevance": { "quant": 0.55, "risk": 0.95, "dev": 0.40, "general": 0.75 }
+    }
+  ],
+
+  "skills": {
+    "programming": [
+      { "name": "Python",       "weight": 0.95, "level": "expert",        "last_used": "2026-03", "decay_class": "slow",   "contexts": ["quant", "data", "dev"],       "used_in": ["alten_2026", "bouygues_2025"] },
+      { "name": "SQL",          "weight": 0.88, "level": "advanced",      "last_used": "2025-08", "decay_class": "slow",   "contexts": ["data", "dev"],                "used_in": ["bouygues_2025", "manco_2024"] },
+      { "name": "VBA",          "weight": 0.82, "level": "advanced",      "last_used": "2024-12", "decay_class": "medium", "contexts": ["finance", "automation"],       "used_in": ["bouygues_2025", "manco_2024"] },
+      { "name": "Java",         "weight": 0.45, "level": "intermediate",  "last_used": "2024-06", "decay_class": "medium", "contexts": ["dev"],                        "used_in": [] },
+      { "name": "C/C++",        "weight": 0.40, "level": "intermediate",  "last_used": "2024-01", "decay_class": "slow",   "contexts": ["dev", "quant"],               "used_in": [] },
+      { "name": "C#",           "weight": 0.35, "level": "beginner",      "last_used": "2023-06", "decay_class": "medium", "contexts": ["dev"],                        "used_in": [] }
+    ],
+    "finance": [
+      { "name": "Finance Quantitative",   "weight": 0.92, "level": "advanced", "last_used": "2026-03", "decay_class": "slow",   "contexts": ["quant"],           "used_in": ["alten_2026", "ece"] },
+      { "name": "Calcul Stochastique",    "weight": 0.85, "level": "advanced", "last_used": "2026-03", "decay_class": "slow",   "contexts": ["quant"],           "used_in": ["ece"] },
+      { "name": "Pricing Dérivés",        "weight": 0.82, "level": "advanced", "last_used": "2025-08", "decay_class": "slow",   "contexts": ["quant"],           "used_in": ["bouygues_2025", "ece"] },
+      { "name": "Risk Management",        "weight": 0.88, "level": "advanced", "last_used": "2024-12", "decay_class": "slow",   "contexts": ["risk"],            "used_in": ["manco_2024", "ece"] },
+      { "name": "Trésorerie d'entreprise","weight": 0.78, "level": "advanced", "last_used": "2025-08", "decay_class": "medium", "contexts": ["finance"],         "used_in": ["bouygues_2025"] },
+      { "name": "Couverture dynamique",   "weight": 0.75, "level": "advanced", "last_used": "2026-03", "decay_class": "slow",   "contexts": ["quant", "risk"],   "used_in": ["ece"] }
+    ],
+    "data_ml": [
+      { "name": "Machine Learning",   "weight": 0.80, "level": "advanced",     "last_used": "2026-03", "decay_class": "medium", "contexts": ["quant", "data"],    "used_in": ["alten_2026", "ece"] },
+      { "name": "Statistics",         "weight": 0.85, "level": "advanced",     "last_used": "2026-03", "decay_class": "slow",   "contexts": ["quant", "data"],    "used_in": ["alten_2026"] },
+      { "name": "ETL / Data Pipelines","weight": 0.78, "level": "advanced",    "last_used": "2025-08", "decay_class": "medium", "contexts": ["data"],             "used_in": ["alten_2026", "bouygues_2025"] },
+      { "name": "BigQuery",           "weight": 0.65, "level": "intermediate", "last_used": "2025-08", "decay_class": "medium", "contexts": ["data"],             "used_in": ["bouygues_2025"] },
+      { "name": "Dataiku",            "weight": 0.60, "level": "intermediate", "last_used": "2025-08", "decay_class": "fast",   "contexts": ["data"],             "used_in": ["bouygues_2025"] }
+    ],
+    "domain": [
+      { "name": "DeFi / Blockchain",  "weight": 0.75, "level": "advanced",     "last_used": "2026-03", "decay_class": "fast",   "contexts": ["quant", "crypto"], "used_in": ["alten_2026"] },
+      { "name": "Compliance",         "weight": 0.70, "level": "intermediate", "last_used": "2024-12", "decay_class": "medium", "contexts": ["risk"],             "used_in": ["manco_2024"] },
+      { "name": "Actuariat",          "weight": 0.60, "level": "intermediate", "last_used": "2024-12", "decay_class": "slow",   "contexts": ["risk"],             "used_in": ["manco_2024"] }
+    ],
+    "radar_scores": {
+      "Quant Finance":     0.88,
+      "Machine Learning":  0.78,
+      "Data Engineering":  0.75,
+      "Full Stack Dev":    0.65,
+      "Risk Management":   0.82,
+      "Project Management":0.70
+    }
+  },
+
+  "hidden_edge": {
+    "description": "Combinaisons rares identifiées par croisement de skills",
+    "combos": [
+      {
+        "id": "quant_defi",
+        "skills": ["Finance Quantitative", "DeFi / Blockchain", "Machine Learning"],
+        "rarity": "very_rare",
+        "market_premium_pct": 20,
+        "narrative": "Quant avec expérience on-chain — profil quasi inexistant sur le marché FR"
+      },
+      {
+        "id": "treasury_dev",
+        "skills": ["Trésorerie d'entreprise", "Python", "ETL / Data Pipelines"],
+        "rarity": "rare",
+        "market_premium_pct": 15,
+        "narrative": "Trésorier qui code — pont entre finance corporate et engineering"
+      },
+      {
+        "id": "risk_quant",
+        "skills": ["Risk Management", "Calcul Stochastique", "Compliance"],
+        "rarity": "uncommon",
+        "market_premium_pct": 10,
+        "narrative": "Risk Manager avec background stochastique — rare chez les juniors"
+      }
+    ]
+  },
+
+  "languages": [
+    { "lang": "Français", "level": "native", "code": "fr" },
+    { "lang": "English",  "level": "fluent",  "code": "en" }
+  ],
+
+  "projects": [
+    {
+      "id": "treasury_ms",
+      "name": "Treasury Management System",
+      "context": "bouygues_2025",
+      "description": "Système de gestion de trésorerie intégrant pricing de swaps de taux, prévisions automatisées et ETL.",
+      "impact": "~4h économisées par jour",
+      "stack": ["Python", "SQL", "VBA", "ODBC", "BigQuery", "Dataiku"],
+      "tags": ["treasury", "automation", "finance"]
+    },
+    {
+      "id": "crypto_exploration",
+      "name": "CryptoExploration",
+      "context": "alten_2026",
+      "description": "Pipeline de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) avec modèles ML pour détection de patterns sur protocoles DeFi émergents.",
+      "impact": "Analyse de 10+ protocoles, 3 modèles ML déployés",
+      "stack": ["Python", "Machine Learning", "DeFi", "Data Engineering"],
+      "tags": ["DeFi", "ML", "on-chain", "quant"]
+    },
+    {
+      "id": "pfe_hedging",
+      "name": "Couverture Dynamique — PFE avec EY",
+      "context": "ece",
+      "description": "Modélisation et pilotage de stratégies de couverture dynamique en assurance et banque.",
+      "impact": "Projet de fin d'études, chef de projet",
+      "stack": ["Finance de marché", "Calcul stochastique", "Python"],
+      "tags": ["hedging", "assurance", "quant", "EY"]
+    },
+    {
+      "id": "portfolio_site",
+      "name": "Portfolio Career OS",
+      "context": "personal",
+      "description": "Site portfolio bilingue + interface admin locale (FastAPI) + bot de candidature automatisé.",
+      "impact": "100% statique, GitHub Pages, système admin complet",
+      "stack": ["HTML", "CSS", "JS", "Python", "FastAPI"],
+      "tags": ["dev", "fullstack", "career"]
+    }
+  ],
+
+  "articles": [
+    {
+      "id": "couverture_dynamique",
+      "title": { "fr": "Couverture dynamique : théorie vs pratique en assurance", "en": "Dynamic Hedging: Theory vs Practice in Insurance" },
+      "url": "articles/couverture-dynamique.html",
+      "date": "2026-03",
+      "tags": ["Finance", "Hedging", "PFE", "EY"]
+    },
+    {
+      "id": "onchain_analytics",
+      "title": { "fr": "Analyse on-chain : détecter les signaux faibles en DeFi", "en": "On-Chain Analytics: Detecting Weak Signals in DeFi" },
+      "url": "articles/on-chain-analytics.html",
+      "date": "2026-04",
+      "tags": ["DeFi", "Data", "Python", "ML"]
+    }
+  ],
+
+  "recommendations": [
+    {
+      "id": "student_pop",
+      "author": "Ouriel Darmon",
+      "role": { "fr": "Président-Directeur Général — Student Pop", "en": "CEO — Student Pop" },
+      "initials": "OD",
+      "text": {
+        "fr": "Robin figure parmi les 2% des meilleurs profils de notre communauté de 40 000 étudiants. Son engagement, ses résultats et son professionnalisme en font un candidat d'exception. Il a démontré un dynamisme remarquable et une bonne autonomie, avec des retours positifs sur sa présentation et son adaptabilité.",
+        "en": "Robin ranks among the top 2% of our 40,000-student community. His commitment, results, and professionalism make him an exceptional candidate. He demonstrated remarkable drive and autonomy, with positive feedback on his presentation and adaptability."
+      },
+      "pdf": "recommandations/Lettre de recommandation Robin DENIS Student Pop.pdf",
+      "date": "2025"
+    },
+    {
+      "id": "manco_paris",
+      "author": "André MAYENS",
+      "role": { "fr": "Directeur Général — ManCo Paris", "en": "CEO — ManCo Paris" },
+      "initials": "AM",
+      "text": {
+        "fr": "Sa vision analytique et sa capacité à travailler en autonomie comme en équipe font de lui un excellent candidat. Il allie des compétences techniques solides — VBA, SQL, Access — à une bonne compréhension des enjeux métiers. Robin s'est très vite imposé comme un collaborateur sérieux, curieux et extrêmement impliqué.",
+        "en": "His analytical vision and ability to work independently or as a team make him an excellent candidate. He combines strong technical skills — VBA, SQL, Access — with a solid understanding of business challenges. Robin quickly established himself as a serious, curious and highly dedicated team member."
+      },
+      "pdfs": [
+        "recommandations/Reco_Academique_Manco_signed 2025-06-10 06_50_03.pdf",
+        "recommandations/Reco_Professionnelle_Manco_signed 2025-06-10 06_48_35.pdf"
+      ],
+      "date": "2025"
+    }
+  ],
+
+  "ikigai": {
+    "passion":     ["marchés financiers", "systèmes complexes", "DeFi", "modélisation quantitative", "automatisation"],
+    "world_needs": ["risk management", "transparence DeFi", "outils financiers accessibles", "analyse de données"],
+    "good_at":     ["modélisation", "développement Python", "analyse de données", "compréhension finance + tech"],
+    "paid_for":    ["quant finance", "data engineering", "risk management", "développement outils financiers"],
+    "sweet_spot":  "Quant Researcher / Structuration avec composante data et DeFi"
+  },
+
+  "lifestyle": {
+    "remote_preference": 0.7,
+    "travel_willingness": 0.5,
+    "team_size_preference": "small_to_medium",
+    "company_type_preference": ["hedge_fund", "prop_shop", "fintech", "startup", "banque_IBD"],
+    "values": {
+      "intellectual_challenge": 1.0,
+      "autonomy":               0.90,
+      "impact":                 0.80,
+      "compensation":           0.75,
+      "prestige":               0.60,
+      "work_life_balance":      0.70,
+      "learning":               0.95
+    },
+    "freedom_number_eur_month": null,
+    "deal_framework": {
+      "eliminate": [],
+      "automate":  ["reporting manuel", "collecte de données répétitive", "envoi emails candidature"],
+      "liberate":  []
+    }
+  },
+
+  "career_goals": {
+    "short_term": {
+      "horizon": "2026-2028",
+      "target": "Poste Quant / Structuration en finance de marché ou hedge fund",
+      "optionality_score": 0.85
+    },
+    "mid_term": {
+      "horizon": "2028-2031",
+      "target": "Senior Quant Researcher ou lancement side business SaaS finance",
+      "optionality_score": 0.75
+    },
+    "long_term": {
+      "horizon": "2031+",
+      "target": "Head of Quant Research ou fondateur fintech",
+      "optionality_score": 0.60
+    }
+  },
+
+  "meta": {
+    "schema_version": "1.0.0",
+    "public": true,
+    "note": "Ce fichier est la source de vérité machine-readable du profil. Les champs lifestyle.freedom_number et finances personnelles sont dans profile_private.json (non commité)."
+  }
+}
