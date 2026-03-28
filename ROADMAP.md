@@ -63,29 +63,32 @@
 
 ---
 
-### 📋 V2.5 — Générateur CV/LM Sémantique *(Tier 2)*
+### ✅ V2.5 — Générateur CV/LM Sémantique *(Tier 2)*
+**Tag git :** `v2.0` (repo `portfolio-admin`)
 **Repos :** `RoJLD/portfolio-admin`
 
-- [ ] Parsing fiche de poste — extraction must-have vs nice-to-have, ton, séniorité
-- [ ] Matching sémantique fiche × `profile.json` (keyword + contexte)
-- [ ] Génération CV restructuré via API Claude (bullets réordonnés, vocabulaire adapté)
-- [ ] Génération LM personnalisée (ton adapté : startup / banque / fintech)
-- [ ] Export PDF (WeasyPrint ou puppeteer)
-- [ ] Historique candidatures générées (date, fiche source, statut)
+- [x] Parsing fiche de poste — extraction must-have vs nice-to-have, ton, séniorité
+- [x] Matching sémantique fiche × `profile.json` (keyword + contexte)
+- [x] Génération CV restructuré via API Claude (streaming SSE, balises ===CV_START===)
+- [x] Génération LM personnalisée (ton adapté : startup / banque / fintech)
+- [x] Export PDF via `window.print()` + print stylesheet
+- [x] Historique générations (SQLite generator.db, date, fiche, score, statut)
+- [x] Bouton "→ Candidatures" — pré-remplit /contacts/add depuis la JD analysée
 
 ---
 
-### 📋 V2.6 — Content Flywheel *(Tier 2)*
+### ✅ V2.6 — Content Flywheel *(Tier 2)*
+**Tag git :** `v2.6` (repo `portfolio-admin`)
 **Repos :** `RoJLD/portfolio-admin`
 
 > Transformer automatiquement les articles de blog et notes en contenu LinkedIn/X optimisé pour le personal brand.
 
-- [ ] Ingestion articles blog (Markdown → structuré) + notes libres
-- [ ] Génération via Claude : 3 formats par article (post court 300 car. / moyen 800 / thread X 5 tweets)
-- [ ] Adaptation du ton par audience cible (recruteurs quant / fintech / AM / général)
-- [ ] Copy-to-clipboard par format (pas d'API LinkedIn — friction volontaire réduite)
-- [ ] Calendrier éditorial : vue mensuelle, slots prévus, historique des posts
-- [ ] Métriques personal brand : fréquence de publication, thèmes couverts, gaps identifiés
+- [x] Ingestion articles HTML blog (html.parser stdlib, extraction texte propre sans scripts/styles)
+- [x] Génération via Claude : 3 formats par article (post court 300 car. / moyen 800 / thread X 5 tweets)
+- [x] Streaming SSE avec balises ===SHORT_START=== / ===MEDIUM_START=== / ===THREAD_START===
+- [x] Copy-to-clipboard par format (pas d'API LinkedIn — friction volontaire réduite)
+- [x] Calendrier éditorial : historique SQLite (flywheel.db), statut draft/published
+- [x] Sauvegarde + marquage publié par format, suppression
 
 **Insight stratégique :** le même pipeline Claude que V2.5 (CV/LM) appliqué à la production de contenu. Coût marginal quasi nul une fois V2.5 en place.
 
