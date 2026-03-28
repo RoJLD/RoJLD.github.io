@@ -5,6 +5,19 @@
 
 ---
 
+## Naming & Branding
+
+| Couche | Nom | Positionnement | Modèle |
+|--------|-----|---------------|--------|
+| Tier 1-2 | **Career OS** | Outil open-source pour développeurs | MIT — code public |
+| Tier 3-4 | **Life Architect** | Produit SaaS grand public | Propriétaire — payant |
+
+**Stratégie open-core :** Career OS reste open-source et construit la crédibilité technique. Life Architect monétise les couches cloud/SaaS au-dessus du même moteur. Le `profile.json` est le contrat commun entre les deux.
+
+**Signal de bascule :** quand un utilisateur externe dit "je veux ça pour moi" — c'est le moment de lancer Life Architect. Avant ce signal, construire pour soi.
+
+---
+
 ## Tiers d'infrastructure
 
 | Tier | Infrastructure | Prérequis |
@@ -19,7 +32,7 @@
 ## Versions
 
 ### ✅ V1.0 — Portfolio Intelligent *(Tier 1)*
-**Tag git :** `v1.0`
+**Tag git :** `v1.0` (repo `RoJLD.github.io`)
 **Repos :** `RoJLD/RoJLD.github.io`
 
 - [x] Site statique bilingue FR/EN
@@ -36,16 +49,16 @@
 
 ---
 
-### 🔄 V1.5 — Profile API + Fondation Career OS *(Tier 1)*
-**Tag git :** `v1.5`
+### ✅ V1.5 — Profile API + Fondation Career OS *(Tier 1)*
+**Tag git :** `v1.5` (repo `RoJLD.github.io`)
 **Repos :** `RoJLD/RoJLD.github.io`
 
 - [x] `profile.json` — source de vérité machine-readable (20 skills pondérés, 3 expériences, ikigai, lifestyle, career goals)
 - [x] `hidden_edge` — 3 combos de compétences rares avec market premium calculé
 - [x] `/analyzer.html` — Skill Stack Analyzer (80/20, rare combos, radar, optionality, decay)
 - [x] `/match.html` — Score de compatibilité fiche de poste (keyword matching JS, séniorité, secteur, recs LM)
-- [ ] `/simulator.html` — Path Simulator 5-10 ans (sliders Canvas)
-- [ ] Analytics visiteurs (Plausible, script 1 ligne)
+- [x] `/simulator.html` — Path Simulator 10 ans (12 sliders, Canvas 2D devicePixelRatio, MRR compounding, fear-setting, crossover detection)
+- [x] Analytics visiteurs (Plausible — script 1 ligne, zero cookies, RGPD-friendly)
 
 ---
 
@@ -68,12 +81,12 @@
 **Repos :** `RoJLD/portfolio-admin`
 
 - [x] Parsing fiche de poste — extraction must-have vs nice-to-have, ton, séniorité
-- [x] Matching sémantique fiche × `profile.json` (keyword + contexte)
-- [x] Génération CV restructuré via API Claude (streaming SSE, balises ===CV_START===)
+- [x] Matching sémantique fiche × `profile.json` (keyword + contexte, 300+ alias FR/EN)
+- [x] Génération CV restructuré via API Claude (streaming SSE, balises `===CV_START===`)
 - [x] Génération LM personnalisée (ton adapté : startup / banque / fintech)
 - [x] Export PDF via `window.print()` + print stylesheet
 - [x] Historique générations (SQLite generator.db, date, fiche, score, statut)
-- [x] Bouton "→ Candidatures" — pré-remplit /contacts/add depuis la JD analysée
+- [x] Bouton "→ Candidatures" — pré-remplit `/contacts/add` depuis la JD analysée (sector→type mapping)
 
 ---
 
@@ -81,16 +94,16 @@
 **Tag git :** `v2.6` (repo `portfolio-admin`)
 **Repos :** `RoJLD/portfolio-admin`
 
-> Transformer automatiquement les articles de blog et notes en contenu LinkedIn/X optimisé pour le personal brand.
+> Transformer automatiquement les articles de blog en contenu LinkedIn/X optimisé pour le personal brand.
 
-- [x] Ingestion articles HTML blog (html.parser stdlib, extraction texte propre sans scripts/styles)
-- [x] Génération via Claude : 3 formats par article (post court 300 car. / moyen 800 / thread X 5 tweets)
-- [x] Streaming SSE avec balises ===SHORT_START=== / ===MEDIUM_START=== / ===THREAD_START===
+- [x] Ingestion articles HTML blog (html.parser stdlib, extraction texte propre sans scripts/styles/nav)
+- [x] Génération via Claude : 3 formats par article (post court ~300 car. / moyen ~800 / thread X 5 tweets)
+- [x] Streaming SSE avec balises `===SHORT_START===` / `===MEDIUM_START===` / `===THREAD_START===`
 - [x] Copy-to-clipboard par format (pas d'API LinkedIn — friction volontaire réduite)
 - [x] Calendrier éditorial : historique SQLite (flywheel.db), statut draft/published
 - [x] Sauvegarde + marquage publié par format, suppression
 
-**Insight stratégique :** le même pipeline Claude que V2.5 (CV/LM) appliqué à la production de contenu. Coût marginal quasi nul une fois V2.5 en place.
+**Insight stratégique :** le même pipeline Claude que V2.5 (CV/LM) appliqué à la production de contenu. Coût marginal quasi nul. Un article = 5-10 posts LinkedIn sur 30 jours. Personal brand amplifie toutes les autres actions du Career OS.
 
 ---
 
@@ -109,7 +122,7 @@
 ### 📋 V3.5 — Analytics & Tracking *(Tier 1 + Tier 3)*
 **Repos :** `RoJLD/RoJLD.github.io` + `RoJLD/portfolio-admin`
 
-- [ ] Tier 1 : Plausible Analytics (visites, sections, referrers)
+- [x] Tier 1 : Plausible Analytics (visites, sections, referrers) *(livré V1.5)*
 - [ ] Tier 3 : Pixel tracking dans les PDFs envoyés (ping serveur à l'ouverture)
 - [ ] Dashboard "qui a ouvert mon CV" (date, heure, nombre d'ouvertures)
 - [ ] Tracking ouverture emails de candidature
@@ -120,7 +133,7 @@
 ### 📋 V4.0 — Modules Lifestyle Design *(Tier 1)*
 **Repos :** `RoJLD/RoJLD.github.io`
 
-#### V4.1 — Skill Stack Analyzer (déplacé en V1.5 ✅)
+#### V4.1 — Skill Stack Analyzer *(livré V1.5 ✅)*
 
 #### V4.2 — DEAL Framework Self-Audit
 - [ ] Questionnaire interactif (activités de la semaine → freedom / skill / trap)
@@ -128,11 +141,7 @@
 - [ ] Stockage localStorage, historique mensuel
 - [ ] Suggestions d'élimination / automatisation basées sur les patterns
 
-#### V4.3 — Path Simulator *(déplacé en V1.5)*
-- [ ] Sliders : salaire, heures/semaine, taux augmentation, revenus side business
-- [ ] Deux courbes Canvas : current path vs redesigned path sur 5-10 ans
-- [ ] Fear-setting intégré (runway calculator, time-to-equivalent-job)
-- [ ] Optionality score par trajectoire
+#### V4.3 — Path Simulator *(livré V1.5 ✅)*
 
 #### V4.4 — Freedom Roadmap
 - [ ] Timeline verticale interactive 3 phases (Launch / Automation / Ownership)
@@ -207,16 +216,17 @@
 
 ---
 
-### 📋 V7.0 — Career OS SaaS *(Tier 4)*
-**Stack :** Next.js, Clerk, Stripe, Postgres multi-tenant, Vercel
+### 📋 V7.0 — Life Architect SaaS *(Tier 4)*
+**Stack :** Next.js, Clerk, Stripe, Neon Postgres (RLS multi-tenant), Vercel
 
-> Le pivot commercial : transformer l'outil personnel en produit. La moat = le schéma `profile.json` + les modules d'analyse devenus une plateforme.
+> Le pivot commercial : transformer l'outil personnel en produit. Career OS devient Life Architect — même moteur, couche SaaS au-dessus.
+> La moat = le schéma `profile.json` + les modules d'analyse devenus une plateforme.
 
 **Produit particuliers (B2C)**
 - [ ] Auth multi-utilisateurs (Clerk)
 - [ ] Chaque utilisateur a son `profile.json`, historique, coach IA
 - [ ] Freemium : Tier 1 gratuit (profil + analyzers statiques) / Premium 15-30€/mois (IA + tracker)
-- [ ] Onboarding guidé : importer CV → générer `profile.json` automatiquement
+- [ ] Onboarding guidé : importer CV → générer `profile.json` automatiquement via Claude
 
 **Produit entreprises (B2B)**
 - [ ] Cabinets de recrutement : scoring automatique de candidats vs `profile.json` de la fiche
@@ -226,11 +236,12 @@
 
 **Infrastructure**
 - [ ] Billing Stripe (freemium / pro / enterprise)
-- [ ] Multi-tenant Postgres (un schéma par tenant ou row-level security)
+- [ ] Multi-tenant Neon Postgres (row-level security par tenant)
 - [ ] Marketplace optionnelle (recruteurs × candidats — double-sided)
 - [ ] OIDC / SSO entreprise (SAML pour les gros comptes)
+- [ ] Déploiement Vercel (CI/CD natif, preview URLs, edge functions)
 
-**Moat technique :** le `profile.json` devient un standard ouvert. Les utilisateurs exportent, importent, partagent leur profil. Network effects dès que les recruteurs et candidats utilisent le même format.
+**Moat technique :** le `profile.json` devient un standard ouvert. Les utilisateurs exportent, importent, partagent leur profil. Network effects dès que recruteurs et candidats utilisent le même format.
 
 ---
 
@@ -242,7 +253,7 @@
 | `profile.json` structuré | ✅ | ✅ | ✅ | ✅ |
 | Skill Stack Analyzer | ✅ | ✅ | ✅ | ✅ |
 | Score match fiche de poste (keywords) | ✅ | ✅ | ✅ | ✅ |
-| Path Simulator 5-10 ans | ✅ | ✅ | ✅ | ✅ |
+| Path Simulator 10 ans | ✅ | ✅ | ✅ | ✅ |
 | DEAL Framework self-audit | ✅ | ✅ | ✅ | ✅ |
 | Freedom Roadmap visuel | ✅ | ✅ | ✅ | ✅ |
 | Freedom Number (sliders manuels) | ✅ | ✅ | ✅ | ✅ |
@@ -261,35 +272,36 @@
 | Job hunter autonome 24/7 | ❌ | ❌ | ✅ | ✅ |
 | Freedom Number (Open Banking live) | ❌ | ❌ | ✅ | ✅ |
 | Network CRM | ❌ | ❌ | ✅ | ✅ |
-| Multi-user SaaS | ❌ | ❌ | ❌ | ✅ |
+| Multi-user SaaS (Life Architect) | ❌ | ❌ | ❌ | ✅ |
 | B2B recruteurs / écoles | ❌ | ❌ | ❌ | ✅ |
 | API publique de profil | ❌ | ❌ | ❌ | ✅ |
 | Marketplace recruteurs × candidats | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
-## Analyse stratégique des 3 nouvelles additions
+## Analyse stratégique
 
 ### Content Flywheel — Pourquoi c'est puissant
 Le pipeline est identique à V2.5 (Claude + `profile.json`), mais le ROI est différent : au lieu d'optimiser pour un recruteur ponctuel, on optimise pour construire une audience durable. Un article de blog = 5-10 posts LinkedIn sur 30 jours. Le personal brand amplifie toutes les autres actions du Career OS (recruteurs inbound, opportunités réseau, crédibilité).
 
-**MVP Tier 2 :** 2 endpoints FastAPI + 3 prompts Claude bien calibrés. Faisable en 1 journée une fois V2.5 en place.
-
 **Risque :** LinkedIn API restrictive pour le posting automatique. Stratégie : génération + clipboard (friction volontaire). L'IA propose, l'humain publie.
 
-### Freedom Number Tracker — Pourquoi c'est le module le plus personnel
+### Freedom Number Tracker — Le module le plus personnel
 C'est le module qui transforme Career OS d'un outil de recherche d'emploi en un système de design de vie. La "Freedom Number" est le vrai objectif derrière tous les autres modules : le CV parfait, le job idéal, le réseau, le side business — tout pointe vers ce chiffre.
 
-**MVP Tier 1 :** 3 sliders (dépenses, épargne, MRR cible) + une gauge animée = 100 lignes de JS. Peut être ajouté à `/simulator.html` ou dans `profile.json` directement.
+**MVP Tier 1 :** 3 sliders (dépenses, épargne, MRR cible) + une gauge animée = 100 lignes de JS. Peut être intégré à `/simulator.html` ou page dédiée `/freedom.html`.
 
-**Piège à éviter :** l'Open Banking est complexe à intégrer correctement (GDPR, PSD2, gestion des tokens). Commencer Tier 1 manuel, puis Tier 2 CSV avant toute API.
+**Piège à éviter :** l'Open Banking est complexe (GDPR, PSD2, gestion des tokens). Commencer Tier 1 manuel, puis Tier 2 CSV avant toute API.
 
-### Tier 4 SaaS — La question de timing
+### Life Architect SaaS — La question de timing
 Le pivot SaaS est tentant mais risqué à lancer trop tôt. La vraie question : à quel moment Career OS est suffisamment différencié pour que quelqu'un paie ?
 
 **Signal de maturité :** quand les Tier 1-2 sont complets et qu'un utilisateur externe dit "je veux ça pour moi". Avant ce signal, construire pour soi d'abord.
 
-**Architecture cible :** Next.js App Router + Clerk + Stripe + Neon Postgres (multi-tenant via RLS). Vercel pour le déploiement (CI/CD natif). Le schéma `profile.json` devient le contrat d'API public.
+**Stack Tier 4 :** Next.js App Router + Clerk + Stripe + Neon Postgres (RLS) + Vercel. Le schéma `profile.json` devient le contrat d'API public.
+
+### Open-Core — Pourquoi séparer Career OS et Life Architect
+Career OS (Tier 1-2) reste MIT open-source : crédibilité technique, contributions communauté, portfolio visible. Life Architect (Tier 3-4) est propriétaire : monet­isation des couches infrastructure et SaaS. Les deux partagent le même moteur `profile.json`. Pas de conflit — c'est le modèle classique open-core (ex : GitLab, Sentry, Metabase).
 
 ---
 
@@ -298,10 +310,10 @@ Le pivot SaaS est tentant mais risqué à lancer trop tôt. La vraie question : 
 | Tag | Repo | Description |
 |-----|------|-------------|
 | `v1.0` | `RoJLD.github.io` | Portfolio HTML statique |
-| `v1.5` | `RoJLD.github.io` | Profile API + modules Tier 1 |
-| `v1.0` | `portfolio-admin` | Admin FastAPI local |
-| `v2.0` | `portfolio-admin` | *(prévu)* Générateur CV/LM Claude |
-| `v2.5` | `portfolio-admin` | *(prévu)* Content Flywheel |
+| `v1.5` | `RoJLD.github.io` | Profile API + Skill Analyzer + Match + Simulator + Plausible |
+| `v1.0` | `portfolio-admin` | Admin FastAPI local (portfolio + CRM + SMTP) |
+| `v2.0` | `portfolio-admin` | Générateur CV/LM Claude API + lien → Candidatures |
+| `v2.6` | `portfolio-admin` | Content Flywheel (blog → LinkedIn/X) |
 | `v3.0` | `portfolio-admin` | *(prévu)* Extension Chrome + cloud |
 
 ---
