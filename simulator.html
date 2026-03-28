@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path Simulator — Robin Denis</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root {
+      --bg:#07080d;--surface:#0f1017;--surface2:#161720;
+      --border:rgba(255,255,255,0.07);--text:#e8eaf0;--muted:#52566b;
+      --accent:#818cf8;--accent-glow:rgba(129,140,248,0.15);
+      --green:#4ade80;--orange:#fb923c;--pink:#f472b6;--yellow:#facc15;
+      --r:10px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      --mono:'Cascadia Code','Fira Code',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh}
+    .header{padding:32px 40px 0;display:flex;justify-content:space-between;align-items:flex-start}
+    .header-back{color:var(--muted);text-decoration:none;font-size:12px}
+    .header-back:hover{color:var(--accent)}
+    .header-title{font-size:22px;font-weight:700}
+    .header-sub{color:var(--muted);font-size:12px;margin-top:4px}
+    .page{max-width:1100px;margin:0 auto;padding:28px 40px 60px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+    .card-title{font-weight:600;font-size:13px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .card-badge{font-size:10px;padding:3px 8px;border-radius:5px;background:var(--accent-glow);border:1px solid rgba(129,140,248,0.25);color:var(--accent);font-weight:500;white-space:nowrap}
+
+    /* Config grid */
+    .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    .config-col-title{font-weight:600;font-size:12px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .col-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+    .col-current .col-dot{background:var(--muted)}
+    .col-redesigned .col-dot{background:var(--accent)}
+
+    /* Sliders */
+    .slider-row{margin-bottom:14px}
+    .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+    .slider-label{font-size:11px;color:var(--muted)}
+    .slider-val{font-size:13px;font-weight:600;font-family:var(--mono)}
+    .slider-val.current-color{color:var(--muted)}
+    .slider-val.redesigned-color{color:var(--accent)}
+    input[type=range]{
+      width:100%;height:4px;background:var(--surface2);
+      border-radius:2px;outline:none;cursor:pointer;
+      -webkit-appearance:none;appearance:none;border:1px solid var(--border);
+    }
+    input[type=range]::-webkit-slider-thumb{
+      -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+      background:var(--text);cursor:pointer;
+    }
+    .col-current input[type=range]::-webkit-slider-thumb{background:var(--muted)}
+    .col-redesigned input[type=range]::-webkit-slider-thumb{background:var(--accent)}
+
+    /* Chart toggle */
+    .chart-toggle{display:flex;gap:6px}
+    .toggle-btn{
+      font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;
+      background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+    }
+    .toggle-btn.active{background:var(--accent-glow);border-color:rgba(129,140,248,.3);color:var(--accent)}
+
+    /* Canvas */
+    .canvas-wrap{position:relative;width:100%}
+    canvas#sim-canvas{width:100%;height:320px;display:block}
+    .canvas-legend{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+    .legend-line{width:22px;height:2px;border-radius:1px}
+    .legend-line.current{background:var(--muted);border-top:2px dashed var(--muted);height:0}
+    .legend-line.redesigned{background:var(--accent)}
+    .legend-line.crossover{background:var(--green);border-radius:50%;width:8px;height:8px}
+
+    /* Metrics row */
+    .metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+    .metric-card{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);text-align:center}
+    .metric-val{font-size:28px;font-weight:800;line-height:1;font-family:var(--mono)}
+    .metric-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.8px}
+    .metric-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+    /* Fear-setting */
+    .fear-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .fear-card{padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+    .fear-title{font-size:11px;font-weight:600;margin-bottom:6px}
+    .fear-val{font-size:20px;font-weight:700;font-family:var(--mono);margin-bottom:4px}
+    .fear-desc{font-size:11px;color:var(--muted);line-height:1.5}
+    .fear-bar-wrap{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;margin:8px 0 4px}
+    .fear-bar{height:100%;border-radius:2px;transition:width .5s ease}
+
+    /* Hourly rate comparison */
+    .hourly-row{display:flex;gap:12px;flex-wrap:wrap}
+    .hourly-card{flex:1;min-width:160px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+    .hourly-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+    .hourly-val{font-size:22px;font-weight:700;font-family:var(--mono)}
+    .hourly-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+    @media(max-width:768px){
+      .page{padding:20px}.config-grid{grid-template-columns:1fr}
+      .metrics-row{grid-template-columns:repeat(2,1fr)}.fear-grid{grid-template-columns:1fr 1fr}
+      .header{padding:20px 20px 0}
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Path Simulator</div>
+    <div class="header-sub">Projection 10 ans — trajectoire actuelle vs redesignée</div>
+  </div>
+  <a href="/" class="header-back">← Portfolio</a>
+</div>
+
+<div class="page">
+
+  <!-- Config sliders -->
+  <div class="config-grid">
+
+    <!-- Current path -->
+    <div class="card col-current">
+      <div class="config-col-title">
+        <div class="col-dot"></div>
+        Trajectoire actuelle
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Salaire net annuel</span>
+          <span class="slider-val current-color" id="val-salary">42 000 €</span>
+        </div>
+        <input type="range" id="sl-salary" min="20000" max="120000" step="1000" value="42000">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Heures / semaine</span>
+          <span class="slider-val current-color" id="val-hours">45 h</span>
+        </div>
+        <input type="range" id="sl-hours" min="25" max="70" step="1" value="45">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Augmentation annuelle</span>
+          <span class="slider-val current-color" id="val-growth">3 %</span>
+        </div>
+        <input type="range" id="sl-growth" min="0" max="12" step="0.5" value="3">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Taux d'épargne</span>
+          <span class="slider-val current-color" id="val-savings-rate">20 %</span>
+        </div>
+        <input type="range" id="sl-savings-rate" min="5" max="60" step="1" value="20">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Épargne actuelle</span>
+          <span class="slider-val current-color" id="val-savings">8 000 €</span>
+        </div>
+        <input type="range" id="sl-savings" min="0" max="100000" step="500" value="8000">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Dépenses mensuelles</span>
+          <span class="slider-val current-color" id="val-expenses">2 200 €</span>
+        </div>
+        <input type="range" id="sl-expenses" min="1000" max="5000" step="100" value="2200">
+      </div>
+    </div>
+
+    <!-- Redesigned path -->
+    <div class="card col-redesigned">
+      <div class="config-col-title">
+        <div class="col-dot"></div>
+        Trajectoire redesignée
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Salaire cible (post-pivot)</span>
+          <span class="slider-val redesigned-color" id="val-target-salary">42 000 €</span>
+        </div>
+        <input type="range" id="sl-target-salary" min="20000" max="150000" step="1000" value="42000">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Heures / semaine redesignées</span>
+          <span class="slider-val redesigned-color" id="val-redesigned-hours">30 h</span>
+        </div>
+        <input type="range" id="sl-redesigned-hours" min="10" max="55" step="1" value="30">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Durée de transition</span>
+          <span class="slider-val redesigned-color" id="val-transition">2 ans</span>
+        </div>
+        <input type="range" id="sl-transition" min="0" max="4" step="1" value="2">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">MRR initial (side business)</span>
+          <span class="slider-val redesigned-color" id="val-mrr">0 €/mois</span>
+        </div>
+        <input type="range" id="sl-mrr" min="0" max="5000" step="100" value="0">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Croissance MRR mensuelle</span>
+          <span class="slider-val redesigned-color" id="val-mrr-growth">5 %</span>
+        </div>
+        <input type="range" id="sl-mrr-growth" min="0" max="30" step="0.5" value="5">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">MRR cible (Freedom Number)</span>
+          <span class="slider-val redesigned-color" id="val-freedom-mrr">2 500 €/mois</span>
+        </div>
+        <input type="range" id="sl-freedom-mrr" min="500" max="20000" step="500" value="2500">
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <div class="card-title">
+      Revenus annuels projetés
+      <div class="chart-toggle">
+        <button class="toggle-btn active" id="btn-income" onclick="setMode('income')">Revenus</button>
+        <button class="toggle-btn" id="btn-wealth" onclick="setMode('wealth')">Patrimoine</button>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="sim-canvas"></canvas>
+    </div>
+    <div class="canvas-legend">
+      <div class="legend-item">
+        <div style="width:22px;height:0;border-top:2px dashed #52566b"></div>
+        Trajectoire actuelle
+      </div>
+      <div class="legend-item">
+        <div class="legend-line redesigned"></div>
+        Trajectoire redesignée
+      </div>
+      <div class="legend-item">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0"></div>
+        Point de croisement
+      </div>
+      <div class="legend-item">
+        <div style="width:16px;height:10px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);border-radius:2px;flex-shrink:0"></div>
+        Zone de liberté
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-val" id="m-crossover" style="color:var(--green)">—</div>
+      <div class="metric-lbl">Croisement</div>
+      <div class="metric-sub" id="m-crossover-sub">année où redesigné dépasse actuel</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="m-gain10" style="color:var(--accent)">—</div>
+      <div class="metric-lbl">Gain à 10 ans</div>
+      <div class="metric-sub">revenus cumulés supplémentaires</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="m-freedom-year" style="color:var(--yellow)">—</div>
+      <div class="metric-lbl">Freedom Year</div>
+      <div class="metric-sub">MRR ≥ dépenses mensuelles</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="m-hours-freed" style="color:var(--orange)">—</div>
+      <div class="metric-lbl">H libérées / an</div>
+      <div class="metric-sub" id="m-hours-freed-sub">heures récupérées</div>
+    </div>
+  </div>
+
+  <!-- Hourly rate + optionality -->
+  <div class="card">
+    <div class="card-title">Revenu horaire & qualité de trajectoire</div>
+    <div class="hourly-row" id="hourly-row"></div>
+  </div>
+
+  <!-- Fear-setting -->
+  <div class="card">
+    <div class="card-title">
+      Fear-Setting
+      <span class="card-badge">Si tu sautais demain</span>
+    </div>
+    <div class="fear-grid" id="fear-grid"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)) {
+    if (k === 'className') node.className = v;
+    else if (k === 'style') node.style.cssText = v;
+    else if (k === 'textContent') node.textContent = v;
+    else node.setAttribute(k, v);
+  }
+  if (children) for (const c of [].concat(children)) {
+    if (c == null) continue;
+    node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return node;
+}
+function clearEl(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+function fmtK(v) {
+  if (v >= 1e6) return (v/1e6).toFixed(1).replace('.0','') + 'M €';
+  if (v >= 1000) return Math.round(v/1000) + 'k €';
+  return Math.round(v) + ' €';
+}
+function fmtInt(v) { return Math.round(v).toLocaleString('fr-FR'); }
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let chartMode = 'income'; // 'income' | 'wealth'
+
+function getParams() {
+  return {
+    salary:          +document.getElementById('sl-salary').value,
+    hours:           +document.getElementById('sl-hours').value,
+    growthRate:      +document.getElementById('sl-growth').value / 100,
+    savingsRate:     +document.getElementById('sl-savings-rate').value / 100,
+    savings:         +document.getElementById('sl-savings').value,
+    expenses:        +document.getElementById('sl-expenses').value,
+    targetSalary:    +document.getElementById('sl-target-salary').value,
+    redesignedHours: +document.getElementById('sl-redesigned-hours').value,
+    transition:      +document.getElementById('sl-transition').value,
+    initialMRR:      +document.getElementById('sl-mrr').value,
+    mrrGrowthRate:   +document.getElementById('sl-mrr-growth').value / 100,
+    freedomMRR:      +document.getElementById('sl-freedom-mrr').value,
+  };
+}
+
+// ─── Computation ──────────────────────────────────────────────────────────────
+function computePaths(p) {
+  const N = 10;
+  const currentIncome  = [];
+  const redesignedIncome = [];
+  const currentWealth  = [p.savings];
+  const redesignedWealth = [p.savings];
+
+  for (let t = 0; t <= N; t++) {
+    // Current path: salary grows at growthRate per year
+    const cInc = p.salary * Math.pow(1 + p.growthRate, t);
+    currentIncome.push(cInc);
+
+    // Redesigned path:
+    // During transition (t < transition): interpolate salary_current → target_salary
+    // After transition: target_salary grows at growthRate
+    let mainInc;
+    if (p.transition === 0) {
+      mainInc = p.targetSalary * Math.pow(1 + p.growthRate, t);
+    } else if (t <= p.transition) {
+      const frac = t / p.transition;
+      mainInc = p.salary + (p.targetSalary - p.salary) * frac;
+    } else {
+      mainInc = p.targetSalary * Math.pow(1 + p.growthRate, t - p.transition);
+    }
+
+    // MRR: starts at initialMRR, grows at mrrGrowthRate per month
+    const monthsMRR = t * 12;
+    const monthlyMRR = p.initialMRR * Math.pow(1 + p.mrrGrowthRate, monthsMRR);
+    const annualMRR  = monthlyMRR * 12;
+
+    redesignedIncome.push(mainInc + annualMRR);
+  }
+
+  // Wealth accumulation (compounding simplified — savings added each year)
+  for (let t = 1; t <= N; t++) {
+    currentWealth.push(currentWealth[t-1] + currentIncome[t] * p.savingsRate);
+    redesignedWealth.push(redesignedWealth[t-1] + redesignedIncome[t] * p.savingsRate);
+  }
+
+  // Crossover: first year redesigned income >= current income
+  let crossoverIncome = null;
+  for (let t = 1; t <= N; t++) {
+    if (redesignedIncome[t] >= currentIncome[t]) { crossoverIncome = t; break; }
+  }
+
+  // Freedom year: first year monthly MRR >= monthly expenses (from redesigned)
+  let freedomYear = null;
+  for (let t = 0; t <= N; t++) {
+    const mMRR = p.initialMRR * Math.pow(1 + p.mrrGrowthRate, t * 12);
+    if (mMRR >= p.expenses) { freedomYear = t; break; }
+  }
+
+  // Cumulative income gap at year 10
+  const sumCurrent    = currentIncome.reduce((s,v)=>s+v,0);
+  const sumRedesigned = redesignedIncome.reduce((s,v)=>s+v,0);
+  const gain10 = sumRedesigned - sumCurrent;
+
+  // Hours freed per year
+  const hoursFreed = Math.max(0, p.hours - p.redesignedHours) * 52;
+
+  // Hourly rates (at year 5)
+  const income5Current    = currentIncome[5];
+  const income5Redesigned = redesignedIncome[5];
+  const hourlyCurrentY5    = income5Current    / (p.hours * 52);
+  const hourlyRedesignedY5 = income5Redesigned / (p.redesignedHours * 52);
+
+  // Runway (months)
+  const runway = p.expenses > 0 ? p.savings / p.expenses : 0;
+
+  // Pivot safety: months savings can cover income shortfall during transition
+  const monthlyShortfall = Math.max(0, (p.salary - p.targetSalary) / 12);
+  const pivotSafety = monthlyShortfall > 0 ? p.savings / monthlyShortfall : 99;
+
+  // Freedom progress (current MRR / freedom MRR target)
+  const freedomProgress = p.freedomMRR > 0 ? Math.min(1, p.initialMRR / p.freedomMRR) : 0;
+
+  return {
+    currentIncome, redesignedIncome, currentWealth, redesignedWealth,
+    crossoverIncome, freedomYear, gain10, hoursFreed,
+    hourlyCurrentY5, hourlyRedesignedY5,
+    runway, pivotSafety, freedomProgress,
+    params: p
+  };
+}
+
+// ─── Canvas drawing ───────────────────────────────────────────────────────────
+function drawChart(paths) {
+  const canvas = document.getElementById('sim-canvas');
+  const dpr    = window.devicePixelRatio || 1;
+  const W0     = canvas.offsetWidth;
+  const H0     = 320;
+  canvas.width  = W0 * dpr;
+  canvas.height = H0 * dpr;
+  canvas.style.height = H0 + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const W = W0, H = H0;
+  const PAD = {top:28, right:24, bottom:44, left:68};
+  const CW  = W - PAD.left - PAD.right;
+  const CH  = H - PAD.top  - PAD.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const serA = chartMode === 'income' ? paths.currentIncome    : paths.currentWealth;
+  const serB = chartMode === 'income' ? paths.redesignedIncome : paths.redesignedWealth;
+  const crossover = chartMode === 'income' ? paths.crossoverIncome : null;
+
+  const allVals = [...serA, ...serB];
+  const maxVal  = Math.max(...allVals) * 1.12;
+  const minVal  = 0;
+
+  const xPos = t  => PAD.left + (t / 10) * CW;
+  const yPos = v  => PAD.top  + CH - ((v - minVal) / (maxVal - minVal)) * CH;
+
+  // Y grid + labels
+  const rawStep = maxVal / 4;
+  const mag     = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const step    = Math.ceil(rawStep / mag) * mag;
+  ctx.font       = '10px monospace';
+  ctx.fillStyle  = '#52566b';
+  ctx.textAlign  = 'right';
+  for (let v = 0; v <= maxVal + step; v += step) {
+    if (v > maxVal * 1.05) break;
+    const y = yPos(v);
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, y);
+    ctx.lineTo(PAD.left + CW, y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillText(fmtK(v), PAD.left - 6, y + 3);
+  }
+
+  // X axis labels
+  ctx.textAlign = 'center';
+  for (let t = 0; t <= 10; t++) {
+    const x = xPos(t);
+    ctx.beginPath();
+    ctx.moveTo(x, PAD.top);
+    ctx.lineTo(x, PAD.top + CH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.stroke();
+    ctx.fillStyle = '#52566b';
+    ctx.fillText('A' + t, x, PAD.top + CH + 16);
+  }
+
+  // Axes
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, PAD.top);
+  ctx.lineTo(PAD.left, PAD.top + CH);
+  ctx.lineTo(PAD.left + CW, PAD.top + CH);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Freedom zone fill (where redesigned > current)
+  if (crossover !== null) {
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(74,222,128,0.07)';
+    for (let t = crossover; t <= 10; t++) {
+      const x = xPos(t), y = yPos(serB[t]);
+      if (t === crossover) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    for (let t = 10; t >= crossover; t--) {
+      ctx.lineTo(xPos(t), yPos(serA[t]));
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Current path (dashed)
+  ctx.beginPath();
+  ctx.setLineDash([6,3]);
+  ctx.strokeStyle = '#52566b';
+  ctx.lineWidth = 1.8;
+  for (let t = 0; t <= 10; t++) {
+    const x = xPos(t), y = yPos(serA[t]);
+    if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Redesigned path (solid)
+  ctx.beginPath();
+  ctx.strokeStyle = '#818cf8';
+  ctx.lineWidth = 2.5;
+  for (let t = 0; t <= 10; t++) {
+    const x = xPos(t), y = yPos(serB[t]);
+    if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Crossover dot + label
+  if (crossover !== null && crossover >= 1 && crossover <= 10) {
+    const cx = xPos(crossover), cy = yPos(serB[crossover]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#4ade80';
+    ctx.fill();
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillStyle = '#4ade80';
+    ctx.textAlign = 'center';
+    ctx.fillText('Croisement A' + crossover, cx, cy - 10);
+  }
+
+  // Freedom year vertical line
+  if (paths.freedomYear !== null && paths.freedomYear > 0 && paths.freedomYear <= 10) {
+    const fx = xPos(paths.freedomYear);
+    ctx.beginPath();
+    ctx.moveTo(fx, PAD.top);
+    ctx.lineTo(fx, PAD.top + CH);
+    ctx.strokeStyle = 'rgba(250,204,21,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#facc15';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Freedom', fx, PAD.top + 12);
+  }
+
+  // Y-axis label
+  ctx.save();
+  ctx.translate(14, PAD.top + CH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#52566b';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(chartMode === 'income' ? 'Revenus annuels' : 'Patrimoine accumulé', 0, 0);
+  ctx.restore();
+}
+
+// ─── Update UI ────────────────────────────────────────────────────────────────
+function updateMetrics(paths) {
+  const p = paths.params;
+
+  // Crossover
+  const crossEl = document.getElementById('m-crossover');
+  const crossSub = document.getElementById('m-crossover-sub');
+  if (paths.crossoverIncome !== null) {
+    crossEl.textContent = 'Année ' + paths.crossoverIncome;
+    crossEl.style.color = '#4ade80';
+    crossSub.textContent = 'revenus redesignés ≥ actuels';
+  } else {
+    crossEl.textContent = '> 10 ans';
+    crossEl.style.color = '#52566b';
+    crossSub.textContent = 'pas de croisement sur 10 ans';
+  }
+
+  // Gain at year 10
+  const gainEl = document.getElementById('m-gain10');
+  gainEl.textContent = (paths.gain10 >= 0 ? '+' : '') + fmtK(paths.gain10);
+  gainEl.style.color = paths.gain10 >= 0 ? '#818cf8' : '#f87171';
+
+  // Freedom year
+  const fyEl = document.getElementById('m-freedom-year');
+  if (paths.freedomYear !== null && paths.freedomYear <= 10) {
+    fyEl.textContent = 'Année ' + paths.freedomYear;
+    fyEl.style.color = '#facc15';
+  } else if (p.initialMRR === 0) {
+    fyEl.textContent = '—';
+    fyEl.style.color = '#52566b';
+  } else {
+    fyEl.textContent = '> 10 ans';
+    fyEl.style.color = '#52566b';
+  }
+
+  // Hours freed
+  const hfEl  = document.getElementById('m-hours-freed');
+  const hfSub = document.getElementById('m-hours-freed-sub');
+  hfEl.textContent = fmtInt(paths.hoursFreed) + ' h';
+  hfEl.style.color = paths.hoursFreed > 0 ? '#fb923c' : '#52566b';
+  const days = Math.round(paths.hoursFreed / 8);
+  hfSub.textContent = days > 0 ? '≈ ' + days + ' journées de travail / an' : 'même rythme';
+
+  // Hourly rate cards
+  const hourlyRow = document.getElementById('hourly-row');
+  clearEl(hourlyRow);
+  const hDelta = paths.hourlyRedesignedY5 - paths.hourlyCurrentY5;
+  const hDeltaPct = paths.hourlyCurrentY5 > 0 ? (hDelta / paths.hourlyCurrentY5) * 100 : 0;
+
+  for (const item of [
+    {label:'Taux horaire actuel (A5)',     val: paths.hourlyCurrentY5,    sub: p.hours + ' h/sem', color:'#52566b'},
+    {label:'Taux horaire redesigné (A5)',  val: paths.hourlyRedesignedY5, sub: p.redesignedHours + ' h/sem', color:'#818cf8'},
+    {label:'Delta taux horaire',           val: hDelta, sub: (hDeltaPct >= 0 ? '+' : '') + Math.round(hDeltaPct) + '% par heure travaillée',
+     color: hDelta >= 0 ? '#4ade80' : '#f87171', prefix: hDelta >= 0 ? '+' : ''}
+  ]) {
+    hourlyRow.appendChild(el('div',{className:'hourly-card'},[
+      el('div',{className:'hourly-label', textContent: item.label}),
+      el('div',{className:'hourly-val', style:'color:'+item.color,
+        textContent: (item.prefix||'') + Math.round(item.val) + ' €/h'}),
+      el('div',{className:'hourly-sub', textContent: item.sub})
+    ]));
+  }
+
+  // Fear-setting cards
+  const fearGrid = document.getElementById('fear-grid');
+  clearEl(fearGrid);
+
+  const runwayMonths = Math.round(paths.runway);
+  const runwayColor  = runwayMonths >= 6 ? '#4ade80' : runwayMonths >= 3 ? '#facc15' : '#f87171';
+  const runwayPct    = Math.min(1, runwayMonths / 12);
+
+  const pivotMonths = Math.min(99, Math.round(paths.pivotSafety));
+  const pivotColor  = pivotMonths >= 12 ? '#4ade80' : pivotMonths >= 6 ? '#facc15' : '#fb923c';
+  const pivotPct    = Math.min(1, pivotMonths / 24);
+
+  const freePct   = paths.freedomProgress;
+  const freeColor = freePct >= 1 ? '#4ade80' : freePct >= 0.5 ? '#facc15' : '#818cf8';
+  const freePctDisp = Math.round(freePct * 100);
+
+  for (const item of [
+    {title:'Runway', val: runwayMonths + ' mois', color: runwayColor, pct: runwayPct,
+     desc: 'Tu peux vivre ' + runwayMonths + ' mois sans aucun revenu avec ton épargne actuelle ('+ fmtK(p.savings) +').'},
+    {title:'Sécurité de pivot', val: pivotMonths < 99 ? pivotMonths + ' mois' : '∞', color: pivotColor, pct: pivotPct,
+     desc: p.salary === p.targetSalary
+       ? 'Pas de baisse de salaire prévue — pivot sans risque financier immédiat.'
+       : 'Ton épargne couvre ' + pivotMonths + ' mois de baisse de revenu pendant la transition.'},
+    {title:'Freedom Progress', val: freePctDisp + '%', color: freeColor, pct: freePct,
+     desc: p.initialMRR > 0
+       ? fmtK(p.initialMRR * 12) + ' MRR/an sur ' + fmtK(p.freedomMRR * 12) + ' cible annuelle.'
+       : 'Configure un MRR initial pour mesurer ta progression vers le Freedom Number.'}
+  ]) {
+    fearGrid.appendChild(el('div',{className:'fear-card'},[
+      el('div',{className:'fear-title', textContent: item.title}),
+      el('div',{className:'fear-val', style:'color:'+item.color, textContent: item.val}),
+      el('div',{className:'fear-bar-wrap'},
+        [el('div',{className:'fear-bar',style:'width:'+(item.pct*100)+'%;background:'+item.color})]),
+      el('div',{className:'fear-desc', textContent: item.desc})
+    ]));
+  }
+}
+
+function updateAll() {
+  const p     = getParams();
+  const paths = computePaths(p);
+  drawChart(paths);
+  updateMetrics(paths);
+}
+
+// ─── Slider live label updates ────────────────────────────────────────────────
+const sliderDefs = [
+  ['sl-salary',          'val-salary',          v => fmtInt(v) + ' €'],
+  ['sl-hours',           'val-hours',           v => v + ' h'],
+  ['sl-growth',          'val-growth',          v => v + ' %'],
+  ['sl-savings-rate',    'val-savings-rate',    v => v + ' %'],
+  ['sl-savings',         'val-savings',         v => fmtInt(v) + ' €'],
+  ['sl-expenses',        'val-expenses',        v => fmtInt(v) + ' €'],
+  ['sl-target-salary',   'val-target-salary',   v => fmtInt(v) + ' €'],
+  ['sl-redesigned-hours','val-redesigned-hours',v => v + ' h'],
+  ['sl-transition',      'val-transition',      v => v === '0' ? 'aucune' : v + ' ans'],
+  ['sl-mrr',             'val-mrr',             v => fmtInt(v) + ' €/mois'],
+  ['sl-mrr-growth',      'val-mrr-growth',      v => v + ' %'],
+  ['sl-freedom-mrr',     'val-freedom-mrr',     v => fmtInt(v) + ' €/mois'],
+];
+
+for (const [slId, valId, fmt] of sliderDefs) {
+  const slider = document.getElementById(slId);
+  const label  = document.getElementById(valId);
+  slider.addEventListener('input', function() {
+    label.textContent = fmt(this.value);
+    updateAll();
+  });
+}
+
+// ─── Chart mode toggle ────────────────────────────────────────────────────────
+function setMode(mode) {
+  chartMode = mode;
+  document.getElementById('btn-income').className = 'toggle-btn' + (mode === 'income' ? ' active' : '');
+  document.getElementById('btn-wealth').className = 'toggle-btn' + (mode === 'wealth' ? ' active' : '');
+  const title = document.querySelector('.card-title');
+  updateAll();
+}
+
+// ─── Responsive canvas redraw on resize ──────────────────────────────────────
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(updateAll, 120);
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+updateAll();
+</script>
+</body>
+</html>
