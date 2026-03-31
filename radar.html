@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Gap Radar — Robin Denis</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root {
+      --bg:#07080d;--surface:#0f1017;--surface2:#161720;
+      --border:rgba(255,255,255,0.07);--text:#e8eaf0;--muted:#52566b;
+      --accent:#818cf8;--accent-glow:rgba(129,140,248,0.15);
+      --green:#4ade80;--orange:#fb923c;--pink:#f472b6;--yellow:#facc15;
+      --red:#f87171;
+      --r:10px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      --mono:'Cascadia Code','Fira Code',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh}
+    .header{padding:32px 40px 0;display:flex;justify-content:space-between;align-items:flex-start}
+    .header-back{color:var(--muted);text-decoration:none;font-size:12px}
+    .header-back:hover{color:var(--accent)}
+    .header-title{font-size:22px;font-weight:700}
+    .header-sub{color:var(--muted);font-size:12px;margin-top:4px}
+    .page{max-width:1200px;margin:0 auto;padding:28px 40px 60px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+    .card-title{font-weight:600;font-size:13px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+    .card-badge{font-size:10px;padding:3px 8px;border-radius:5px;background:var(--accent-glow);border:1px solid rgba(129,140,248,0.25);color:var(--accent);font-weight:500}
+    .input-hint{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+    .main-grid{display:grid;grid-template-columns:1fr 420px;gap:16px;align-items:start}
+    @media(max-width:860px){.main-grid{grid-template-columns:1fr}}
+    textarea#jd-input{
+      width:100%;min-height:140px;max-height:240px;
+      background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:var(--font);font-size:13px;line-height:1.6;
+      padding:14px 16px;resize:vertical;outline:none;transition:border-color .2s;
+    }
+    textarea#jd-input:focus{border-color:var(--accent)}
+    textarea#jd-input::placeholder{color:var(--muted)}
+    .input-actions{display:flex;gap:10px;margin-top:12px;align-items:center}
+    .btn-primary{background:var(--accent);color:#07080d;font-weight:700;font-size:13px;border:none;border-radius:7px;padding:9px 22px;cursor:pointer;transition:opacity .15s}
+    .btn-primary:hover{opacity:.85}
+    .btn-ghost{background:transparent;color:var(--muted);font-size:12px;border:1px solid var(--border);border-radius:7px;padding:9px 16px;cursor:pointer}
+    .btn-ghost:hover{color:var(--text)}
+    .btn-small{background:transparent;color:var(--muted);font-size:11px;border:1px solid var(--border);border-radius:5px;padding:4px 10px;cursor:pointer}
+    .btn-small:hover{color:var(--text)}
+    .skill-list{display:flex;flex-direction:column;gap:12px}
+    .skill-row{display:grid;grid-template-columns:130px 1fr 28px 28px;gap:8px;align-items:center}
+    .skill-label{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .slider-wrap{display:flex;align-items:center;gap:8px}
+    .skill-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;outline:none;cursor:pointer;background:var(--surface2);border:1px solid var(--border)}
+    .skill-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
+    .skill-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
+    .slider-val{font-size:11px;font-family:var(--mono);color:var(--accent);min-width:12px;text-align:center}
+    .req-val{font-size:11px;font-family:var(--mono);min-width:12px;text-align:center}
+    .gap-dot{width:8px;height:8px;border-radius:50%;margin:auto}
+    .radar-wrap{display:flex;justify-content:center;align-items:center;padding:10px}
+    canvas#radar{display:block;max-width:100%}
+    .radar-legend{display:flex;gap:16px;justify-content:center;margin-top:10px}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+    .legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+    .gap-summary{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+    .gap-chip{font-size:11px;padding:4px 10px;border-radius:5px;font-weight:500}
+    .gap-ok{background:rgba(74,222,128,.12);color:var(--green);border:1px solid rgba(74,222,128,.2)}
+    .gap-warn{background:rgba(250,204,21,.12);color:var(--yellow);border:1px solid rgba(250,204,21,.2)}
+    .gap-bad{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2)}
+    .score-bar-wrap{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+    .score-bar-label{font-size:11px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+    .score-bar-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+    .score-bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+    .detected-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+    .detected-hint{font-size:11px;color:var(--muted);width:100%;margin-bottom:4px}
+    .detected-chip{font-size:11px;padding:3px 9px;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);transition:all .15s}
+    .detected-chip:hover{color:var(--text)}
+    .detected-chip.active{background:var(--accent-glow);border-color:rgba(129,140,248,.4);color:var(--accent)}
+    .flash{font-size:11px;color:var(--green);margin-left:8px;opacity:0;transition:opacity .3s}
+    .flash.show{opacity:1}
+    .col-header{font-size:10px;color:var(--muted)}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Skill Gap Radar</div>
+    <div class="header-sub">Visualise tes forces vs. les exigences d'une offre</div>
+  </div>
+  <a href="match.html" class="header-back">← Match Analyzer</a>
+</div>
+
+<div class="page">
+  <div class="main-grid">
+
+    <!-- LEFT -->
+    <div>
+      <div class="card">
+        <div class="card-title">
+          Fiche de poste
+          <span class="card-badge" id="detect-badge" style="display:none">Compétences détectées</span>
+        </div>
+        <p class="input-hint">Colle une offre d'emploi pour extraire automatiquement le niveau requis par compétence.</p>
+        <textarea id="jd-input" placeholder="Colle ici la fiche de poste..."></textarea>
+        <div class="input-actions">
+          <button class="btn-primary" onclick="extractFromJD()">Analyser l'offre</button>
+          <button class="btn-ghost" onclick="clearJD()">Effacer</button>
+          <span class="flash" id="flash-extract"></span>
+        </div>
+        <div id="detected-wrap" class="detected-wrap" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Ton profil de compétences
+          <div style="display:flex;gap:8px">
+            <button class="btn-small" onclick="resetProfile()">Réinitialiser</button>
+            <button class="btn-small" onclick="saveProfile()">Sauvegarder<span class="flash" id="flash-save"></span></button>
+          </div>
+        </div>
+        <div class="skill-row" style="margin-bottom:8px">
+          <div class="col-header">Compétence</div>
+          <div class="col-header">Ton niveau</div>
+          <div class="col-header" style="text-align:center" title="Niveau requis JD">Req.</div>
+          <div class="col-header" style="text-align:center" title="Ecart">Δ</div>
+        </div>
+        <div class="skill-list" id="skill-list"></div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-label">
+            <span>Adéquation globale</span>
+            <span id="global-pct" style="font-family:var(--mono);color:var(--accent)">—</span>
+          </div>
+          <div class="score-bar-track">
+            <div class="score-bar-fill" id="global-bar" style="width:0%;background:var(--accent)"></div>
+          </div>
+          <div class="gap-summary" id="gap-summary"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Radar -->
+    <div class="card" style="position:sticky;top:20px">
+      <div class="card-title">
+        Radar
+        <span style="font-size:11px;color:var(--muted);font-weight:400">Niveau 1–5</span>
+      </div>
+      <div class="radar-wrap">
+        <canvas id="radar" width="380" height="380"></canvas>
+      </div>
+      <div class="radar-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:rgba(129,140,248,.55)"></div>
+          <span>Ton niveau</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:rgba(250,204,21,.35)"></div>
+          <span>Niveau requis (JD)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Taxonomy ──────────────────────────────────────────────────────────────────
+const DEFAULT_SKILLS = [
+  { id:"python",    label:"Python",           yourLevel:4, reqLevel:3 },
+  { id:"vba_excel", label:"Excel / VBA",       yourLevel:3, reqLevel:3 },
+  { id:"cpp",       label:"C++",               yourLevel:2, reqLevel:2 },
+  { id:"sql",       label:"SQL",               yourLevel:3, reqLevel:2 },
+  { id:"bloomberg", label:"Bloomberg",         yourLevel:3, reqLevel:3 },
+  { id:"derivs",    label:"Dérivés & Pricing", yourLevel:4, reqLevel:4 },
+  { id:"risk",      label:"Risque de marché",  yourLevel:4, reqLevel:4 },
+  { id:"fi",        label:"Fixed Income",      yourLevel:3, reqLevel:3 },
+  { id:"ml",        label:"Machine Learning",  yourLevel:3, reqLevel:2 },
+  { id:"stats",     label:"Statistiques",      yourLevel:4, reqLevel:3 },
+];
+
+const SKILL_KEYWORDS = {
+  python:    { patterns:["python","pandas","numpy","scipy","sklearn","scikit"], base:3 },
+  vba_excel: { patterns:["excel","vba","tableur","spreadsheet"], base:3 },
+  cpp:       { patterns:["c\\+\\+","cpp","c\\/c\\+\\+"], base:3 },
+  sql:       { patterns:["sql","postgresql","mysql","sqlite","oracle"], base:2 },
+  bloomberg: { patterns:["bloomberg","reuters","eikon","refinitiv"], base:3 },
+  derivs:    { patterns:["dérivés","derivat","pricing","option","swap","futures","black","exotique"], base:4 },
+  risk:      { patterns:["risque de march","market risk","var","cvar","stress test","greeks","delta","gamma","vega"], base:3 },
+  fi:        { patterns:["fixed income","taux","obligat","bond","duration","yield curve","courbe des taux"], base:3 },
+  ml:        { patterns:["machine learning","deep learning","neural","xgboost","random forest","nlp"], base:2 },
+  stats:     { patterns:["stochast","monte.carlo","régression","statistique","probabilit","bayesian","time series"], base:3 },
+};
+
+const INTENSITY_UP   = ["expert","maîtrise","approfondi","solide","confirmé","senior","requis","impératif","indispensable","required","strong"];
+const INTENSITY_DOWN = ["notions","bases","souhait","appréci","atout","plus","idéalement","nice.to.have","optional","knowledge of"];
+
+const PROFILE_KEY = "radar_profile_v1";
+let skills = [];
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+function init() {
+  const saved = localStorage.getItem(PROFILE_KEY);
+  skills = DEFAULT_SKILLS.map(s => ({ ...s }));
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      skills.forEach(s => {
+        const sv = parsed.find(p => p.id === s.id);
+        if (sv) s.yourLevel = sv.yourLevel;
+      });
+    } catch(e) { /* keep defaults */ }
+  }
+  renderSliders();
+  drawRadar();
+}
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
+function mkEl(tag, attrs, text) {
+  const el = document.createElement(tag);
+  if (attrs) Object.entries(attrs).forEach(([k, v]) => {
+    if (k === "style") el.style.cssText = v;
+    else if (k === "class") el.className = v;
+    else if (k === "title") el.title = v;
+    else el.setAttribute(k, v);
+  });
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+// ── Sliders ───────────────────────────────────────────────────────────────────
+function renderSliders() {
+  const list = document.getElementById("skill-list");
+  list.textContent = "";
+  skills.forEach((sk, i) => {
+    const row = mkEl("div", { class: "skill-row" });
+
+    // Label
+    const lbl = mkEl("div", { class: "skill-label", title: sk.label }, sk.label);
+
+    // Slider wrap
+    const sw = mkEl("div", { class: "slider-wrap" });
+    const slider = mkEl("input");
+    slider.type = "range"; slider.min = 0; slider.max = 5; slider.value = sk.yourLevel;
+    slider.className = "skill-slider";
+    slider.addEventListener("input", () => updateSkill(i, +slider.value));
+    const valSpan = mkEl("span", { class: "slider-val", id: "sv-" + i }, String(sk.yourLevel));
+    sw.appendChild(slider); sw.appendChild(valSpan);
+
+    // Required level
+    const reqEl = mkEl("div", { class: "req-val", id: "rv-" + i });
+    reqEl.style.color = sk.reqLevel > 0 ? "var(--muted)" : "var(--border)";
+    reqEl.textContent = sk.reqLevel > 0 ? String(sk.reqLevel) : "—";
+
+    // Gap dot
+    const dot = mkEl("div", { class: "gap-dot", id: "gi-" + i });
+    dot.style.background = gapColor(sk);
+    if (sk.reqLevel > 0) {
+      const gap = sk.yourLevel - sk.reqLevel;
+      dot.title = "Écart: " + (gap > 0 ? "+" + gap : String(gap));
+    }
+
+    row.appendChild(lbl); row.appendChild(sw); row.appendChild(reqEl); row.appendChild(dot);
+    list.appendChild(row);
+  });
+  updateGlobalScore();
+}
+
+function gapColor(sk) {
+  if (sk.reqLevel === 0) return "var(--border)";
+  const gap = sk.yourLevel - sk.reqLevel;
+  return gap >= 0 ? "var(--green)" : gap === -1 ? "var(--yellow)" : "var(--red)";
+}
+
+function updateSkill(i, val) {
+  skills[i].yourLevel = val;
+  const sv = document.getElementById("sv-" + i);
+  if (sv) sv.textContent = String(val);
+  const dot = document.getElementById("gi-" + i);
+  if (dot) dot.style.background = gapColor(skills[i]);
+  updateGlobalScore();
+  drawRadar();
+}
+
+function updateGlobalScore() {
+  const active = skills.filter(s => s.reqLevel > 0);
+  const pctEl = document.getElementById("global-pct");
+  const bar   = document.getElementById("global-bar");
+  const summary = document.getElementById("gap-summary");
+  summary.textContent = "";
+
+  if (!active.length) {
+    pctEl.textContent = "—";
+    bar.style.width = "0%";
+    return;
+  }
+
+  let totalScore = 0, ok = 0, warn = 0, bad = 0;
+  active.forEach(s => {
+    totalScore += Math.min(s.yourLevel, s.reqLevel) / s.reqLevel;
+    const gap = s.yourLevel - s.reqLevel;
+    if (gap >= 0) ok++; else if (gap === -1) warn++; else bad++;
+  });
+
+  const pct = Math.round(totalScore / active.length * 100);
+  const color = pct >= 80 ? "var(--green)" : pct >= 55 ? "var(--yellow)" : "var(--red)";
+  pctEl.textContent = pct + "%";
+  bar.style.width = pct + "%";
+  bar.style.background = color;
+
+  if (ok)   summary.appendChild(mkEl("span", { class: "gap-chip gap-ok" },   ok   + " OK"));
+  if (warn) summary.appendChild(mkEl("span", { class: "gap-chip gap-warn" }, warn + " \u22121"));
+  if (bad)  summary.appendChild(mkEl("span", { class: "gap-chip gap-bad" },  bad  + " gap critique"));
+}
+
+// ── Radar Canvas ──────────────────────────────────────────────────────────────
+function drawRadar() {
+  const canvas = document.getElementById("radar");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W/2, cy = H/2, MAX = 5, N = skills.length;
+  const R = Math.min(W, H) * 0.36;
+  const LABEL_R = R + 32;
+  const RINGS = 5;
+  const ang = i => -Math.PI/2 + (2*Math.PI/N)*i;
+  const pt  = (r, i) => ({ x: cx + r*Math.cos(ang(i)), y: cy + r*Math.sin(ang(i)) });
+
+  // Grid rings
+  for (let ring = 1; ring <= RINGS; ring++) {
+    const r = R * ring / RINGS;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) { const p = pt(r,i); i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y); }
+    ctx.closePath();
+    ctx.strokeStyle = ring === RINGS ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.05)";
+    ctx.lineWidth = ring === RINGS ? 1.5 : 1;
+    ctx.stroke();
+  }
+  // Spokes
+  for (let i = 0; i < N; i++) {
+    const p = pt(R, i);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(p.x,p.y);
+    ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  // Required polygon (yellow dashed)
+  if (skills.some(s => s.reqLevel > 0)) {
+    ctx.save();
+    ctx.beginPath();
+    skills.forEach((s, i) => {
+      const r = s.reqLevel > 0 ? R * s.reqLevel / MAX : 0;
+      const p = pt(r, i); i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = "rgba(250,204,21,0.10)"; ctx.fill();
+    ctx.strokeStyle = "rgba(250,204,21,0.45)"; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Your level polygon (accent solid)
+  ctx.save();
+  ctx.beginPath();
+  skills.forEach((s, i) => {
+    const r = R * s.yourLevel / MAX;
+    const p = pt(r, i); i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = "rgba(129,140,248,0.18)"; ctx.fill();
+  ctx.strokeStyle = "rgba(129,140,248,0.75)"; ctx.lineWidth = 2;
+  ctx.setLineDash([]); ctx.stroke();
+  ctx.restore();
+
+  // Dots
+  skills.forEach((s, i) => {
+    const p = pt(R * s.yourLevel / MAX, i);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, 2*Math.PI);
+    ctx.fillStyle = "#818cf8"; ctx.fill();
+  });
+
+  // Labels
+  ctx.save();
+  ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  skills.forEach((s, i) => {
+    const p = pt(LABEL_R, i);
+    const gap = s.reqLevel > 0 ? s.yourLevel - s.reqLevel : null;
+    ctx.fillStyle = gap === null ? "rgba(255,255,255,0.35)"
+                  : gap >= 0    ? "#4ade80"
+                  : gap === -1  ? "#facc15"
+                  :               "#f87171";
+    ctx.fillText(s.label, p.x, p.y);
+  });
+  ctx.restore();
+
+  // Ring numbers along top spoke
+  ctx.save();
+  ctx.font = "10px monospace"; ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  for (let ring = 1; ring <= RINGS; ring++) {
+    const p = pt(R * ring / RINGS, 0);
+    ctx.fillText(String(ring), p.x + 4, p.y);
+  }
+  ctx.restore();
+}
+
+// ── JD extraction ─────────────────────────────────────────────────────────────
+function extractFromJD() {
+  const jd = document.getElementById("jd-input").value;
+  if (jd.length < 80) return;
+  const jdLow = jd.toLowerCase();
+  const detected = [];
+
+  Object.entries(SKILL_KEYWORDS).forEach(([id, def]) => {
+    let found = false;
+    for (const pat of def.patterns) { if (new RegExp(pat, "i").test(jdLow)) { found = true; break; } }
+    if (!found) return;
+
+    let level = def.base;
+    let ctxFound = false;
+    for (const pat of def.patterns) {
+      const re = new RegExp(".{0,60}" + pat + ".{0,60}", "gi");
+      const ms = jdLow.match(re);
+      if (!ms) continue;
+      ctxFound = true;
+      const ctx = ms.join(" ");
+      if (INTENSITY_UP.some(w => ctx.includes(w)))   level = Math.min(5, def.base + 1);
+      if (INTENSITY_DOWN.some(w => ctx.includes(w))) level = Math.max(1, def.base - 1);
+    }
+    if (!ctxFound) return;
+    detected.push({ id, level });
+  });
+
+  skills.forEach(s => {
+    const d = detected.find(x => x.id === s.id);
+    s.reqLevel = d ? d.level : 0;
+  });
+
+  buildDetectedChips(detected);
+  renderSliders();
+  drawRadar();
+  updateGlobalScore();
+
+  const badge = document.getElementById("detect-badge");
+  badge.style.display = "inline-block";
+  badge.textContent = detected.length + " compétences détectées";
+  flash("flash-extract", "Analysé !");
+}
+
+function buildDetectedChips(detected) {
+  const wrap = document.getElementById("detected-wrap");
+  wrap.textContent = "";
+  wrap.style.display = "flex";
+
+  const hint = mkEl("div", { class: "detected-hint" }, "Clique pour activer / désactiver :");
+  wrap.appendChild(hint);
+
+  skills.forEach(sk => {
+    const isActive = detected.some(d => d.id === sk.id);
+    const chip = mkEl("span", { class: "detected-chip" + (isActive ? " active" : "") }, sk.label);
+    chip.dataset.id = sk.id;
+    chip.addEventListener("click", () => toggleSkillReq(sk.id, chip));
+    wrap.appendChild(chip);
+  });
+}
+
+function toggleSkillReq(id, chip) {
+  const sk = skills.find(s => s.id === id);
+  if (!sk) return;
+  if (sk.reqLevel > 0) {
+    sk._savedReq = sk.reqLevel;
+    sk.reqLevel = 0;
+    chip.classList.remove("active");
+  } else {
+    sk.reqLevel = sk._savedReq || SKILL_KEYWORDS[id]?.base || 3;
+    chip.classList.add("active");
+  }
+  renderSliders();
+  drawRadar();
+  updateGlobalScore();
+}
+
+function clearJD() {
+  document.getElementById("jd-input").value = "";
+  document.getElementById("detect-badge").style.display = "none";
+  const wrap = document.getElementById("detected-wrap");
+  wrap.textContent = ""; wrap.style.display = "none";
+  skills.forEach(s => {
+    s.reqLevel = DEFAULT_SKILLS.find(d => d.id === s.id)?.reqLevel ?? 3;
+  });
+  renderSliders();
+  drawRadar();
+  updateGlobalScore();
+}
+
+// ── Persistence ───────────────────────────────────────────────────────────────
+function saveProfile() {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(skills.map(s => ({ id: s.id, yourLevel: s.yourLevel }))));
+  flash("flash-save", " Sauvegardé");
+}
+
+function resetProfile() {
+  localStorage.removeItem(PROFILE_KEY);
+  skills = DEFAULT_SKILLS.map(s => ({ ...s }));
+  renderSliders();
+  drawRadar();
+}
+
+function flash(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 1800);
+}
+
+init();
+</script>
+</body>
+</html>
