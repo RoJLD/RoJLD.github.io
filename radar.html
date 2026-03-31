@@ -191,8 +191,29 @@ const SKILL_KEYWORDS = {
 const INTENSITY_UP   = ["expert","maîtrise","approfondi","solide","confirmé","senior","requis","impératif","indispensable","required","strong"];
 const INTENSITY_DOWN = ["notions","bases","souhait","appréci","atout","plus","idéalement","nice.to.have","optional","knowledge of"];
 
-const PROFILE_KEY = "radar_profile_v1";
+const PROFILE_KEY   = "radar_profile_v1";
+const JD_SCORE_KEY  = "radar_jd_scores_v1";  // [{pct, ts}]
+const MAX_JD_HISTORY = 50;
 let skills = [];
+
+// ── JD score history ──────────────────────────────────────────────────────────
+function saveJDScore(pct) {
+  try {
+    const h = JSON.parse(localStorage.getItem(JD_SCORE_KEY) || "[]");
+    h.push({ pct, ts: Date.now() });
+    if (h.length > MAX_JD_HISTORY) h.splice(0, h.length - MAX_JD_HISTORY);
+    localStorage.setItem(JD_SCORE_KEY, JSON.stringify(h));
+  } catch(e) { /* ignore */ }
+}
+
+function getJDPercentile(pct) {
+  try {
+    const h = JSON.parse(localStorage.getItem(JD_SCORE_KEY) || "[]");
+    if (h.length < 3) return null;
+    const below = h.filter(e => e.pct < pct).length;
+    return Math.round(below / h.length * 100);
+  } catch(e) { return null; }
+}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 function init() {
@@ -307,6 +328,17 @@ function updateGlobalScore() {
   if (ok)   summary.appendChild(mkEl("span", { class: "gap-chip gap-ok" },   ok   + " OK"));
   if (warn) summary.appendChild(mkEl("span", { class: "gap-chip gap-warn" }, warn + " \u22121"));
   if (bad)  summary.appendChild(mkEl("span", { class: "gap-chip gap-bad" },  bad  + " gap critique"));
+
+  // Percentile vs historique JD
+  const pctile = getJDPercentile(pct);
+  const existPct = document.getElementById("jd-percentile");
+  if (existPct) existPct.remove();
+  if (pctile !== null) {
+    const rank = 100 - pctile;
+    const note = mkEl("span", { id: "jd-percentile", style: "font-size:10px;color:var(--muted);margin-left:6px;font-family:var(--mono)" },
+      rank <= 25 ? "Top " + rank + "% de tes analyses JD" : "Percentile " + (100 - rank));
+    document.getElementById("global-pct").parentNode.appendChild(note);
+  }
 }
 
 // ── Radar Canvas ──────────────────────────────────────────────────────────────
@@ -442,6 +474,12 @@ function extractFromJD() {
   badge.style.display = "inline-block";
   badge.textContent = detected.length + " compétences détectées";
   flash("flash-extract", "Analysé !");
+  // Save score to history after full render
+  setTimeout(() => {
+    const pctEl = document.getElementById("global-pct");
+    const pct = pctEl ? parseInt(pctEl.textContent) : null;
+    if (pct !== null && !isNaN(pct)) saveJDScore(pct);
+  }, 100);
 }
 
 function buildDetectedChips(detected) {

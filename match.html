@@ -158,6 +158,10 @@
           <div class="score-pct" id="score-display">—</div>
           <div class="score-label">activation profil</div>
           <div class="score-verdict" id="score-verdict"></div>
+          <a id="radar-link" href="radar.html" target="_blank"
+             style="display:none;margin-top:10px;font-size:11px;color:var(--accent);text-decoration:none;border:1px solid rgba(129,140,248,.3);border-radius:5px;padding:4px 10px;background:rgba(129,140,248,.07)">
+            ⬡ Voir dans le Radar →
+          </a>
         </div>
         <div class="score-meta">
           <div class="meta-row">
@@ -725,6 +729,7 @@ async function runAnalysis() {
     document.getElementById('loading-state').style.display = 'none';
     document.getElementById('results').style.display = 'block';
     renderResults(result);
+    document.getElementById('radar-link').style.display = 'inline-block';
     document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
   } catch(e) {
     document.getElementById('loading-state').style.display = 'none';
