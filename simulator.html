@@ -93,6 +93,26 @@
     .hourly-val{font-size:22px;font-weight:700;font-family:var(--mono)}
     .hourly-sub{font-size:11px;color:var(--muted);margin-top:2px}
 
+    /* Scenario bar */
+    .scenario-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+    .scenario-label{font-size:11px;color:var(--muted);margin-right:2px;white-space:nowrap}
+    .scenario-slot{display:flex;gap:4px;align-items:center}
+    .scenario-name{font-size:11px;padding:4px 8px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);color:var(--text);outline:none;width:90px;font-family:var(--font)}
+    .scenario-name:focus{border-color:var(--accent)}
+    .scenario-name::placeholder{color:var(--muted)}
+    .btn-sc-save{font-size:10px;padding:4px 8px;border-radius:5px;cursor:pointer;background:var(--accent-glow);border:1px solid rgba(129,140,248,.3);color:var(--accent)}
+    .btn-sc-save:hover{background:rgba(129,140,248,.2)}
+    .btn-sc-load{font-size:10px;padding:4px 8px;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+    .btn-sc-load:hover{color:var(--text)}
+    .btn-sc-load.has-data{color:var(--accent);border-color:rgba(129,140,248,.3)}
+    /* Inflation row */
+    .inflation-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+    .inflation-toggle{width:34px;height:18px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;cursor:pointer;position:relative;flex-shrink:0;transition:background .2s}
+    .inflation-toggle.on{background:rgba(129,140,248,.3);border-color:rgba(129,140,248,.5)}
+    .inflation-thumb{position:absolute;width:12px;height:12px;background:var(--muted);border-radius:50%;top:2px;left:2px;transition:left .2s,background .2s}
+    .inflation-toggle.on .inflation-thumb{left:18px;background:var(--accent)}
+    .inflation-label{font-size:11px;color:var(--muted);flex:1}
+    .inflation-rate-val{font-size:12px;font-weight:600;font-family:var(--mono);color:var(--muted);width:36px;text-align:right}
     @media(max-width:768px){
       .page{padding:20px}.config-grid{grid-template-columns:1fr}
       .metrics-row{grid-template-columns:repeat(2,1fr)}.fear-grid{grid-template-columns:1fr 1fr}
@@ -111,6 +131,26 @@
 </div>
 
 <div class="page">
+
+  <!-- Scenario bar -->
+  <div class="scenario-bar">
+    <span class="scenario-label">Scénarios</span>
+    <div class="scenario-slot">
+      <input class="scenario-name" id="sc-name-0" placeholder="Scénario 1" maxlength="18">
+      <button class="btn-sc-save" onclick="saveScenario(0)">Sauv.</button>
+      <button class="btn-sc-load" id="sc-load-0" onclick="loadScenario(0)">Charger</button>
+    </div>
+    <div class="scenario-slot">
+      <input class="scenario-name" id="sc-name-1" placeholder="Scénario 2" maxlength="18">
+      <button class="btn-sc-save" onclick="saveScenario(1)">Sauv.</button>
+      <button class="btn-sc-load" id="sc-load-1" onclick="loadScenario(1)">Charger</button>
+    </div>
+    <div class="scenario-slot">
+      <input class="scenario-name" id="sc-name-2" placeholder="Scénario 3" maxlength="18">
+      <button class="btn-sc-save" onclick="saveScenario(2)">Sauv.</button>
+      <button class="btn-sc-load" id="sc-load-2" onclick="loadScenario(2)">Charger</button>
+    </div>
+  </div>
 
   <!-- Config sliders -->
   <div class="config-grid">
@@ -168,6 +208,14 @@
           <span class="slider-val current-color" id="val-expenses">2 200 €</span>
         </div>
         <input type="range" id="sl-expenses" min="1000" max="5000" step="100" value="2200">
+      </div>
+      <div class="inflation-row">
+        <button class="inflation-toggle" id="inflation-toggle" onclick="toggleInflation()">
+          <div class="inflation-thumb" id="inflation-thumb"></div>
+        </button>
+        <span class="inflation-label">Ajustement inflation (pouvoir d'achat réel)</span>
+        <span class="inflation-rate-val" id="inflation-rate-val">2,5 %</span>
+        <input type="range" id="sl-inflation" min="0" max="8" step="0.5" value="2.5" style="width:72px">
       </div>
     </div>
 
@@ -257,6 +305,10 @@
         <div style="width:16px;height:10px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);border-radius:2px;flex-shrink:0"></div>
         Zone de liberté
       </div>
+      <div class="legend-item">
+        <div style="width:22px;height:0;border-top:1.5px dashed #facc15"></div>
+        Freedom Number
+      </div>
     </div>
   </div>
 
@@ -319,6 +371,63 @@ function el(tag, attrs, children) {
 }
 function clearEl(n) { while (n.firstChild) n.removeChild(n.firstChild); }
 
+// ─── Scenario management ──────────────────────────────────────────────────────
+const SCENARIOS_KEY = 'sim_scenarios_v2';
+
+function _getScenarios() {
+  try { return JSON.parse(localStorage.getItem(SCENARIOS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveScenario(slot) {
+  const scenarios = _getScenarios();
+  while (scenarios.length <= slot) scenarios.push(null);
+  const name = document.getElementById('sc-name-' + slot).value.trim() || ('Scénario ' + (slot + 1));
+  document.getElementById('sc-name-' + slot).value = name;
+  // Collect all slider values
+  const vals = sliderDefs.map(([id]) => document.getElementById(id).value);
+  scenarios[slot] = {name, vals};
+  localStorage.setItem(SCENARIOS_KEY, JSON.stringify(scenarios));
+  _refreshScenarioBtns();
+}
+
+function loadScenario(slot) {
+  const sc = (_getScenarios())[slot];
+  if (!sc) return;
+  document.getElementById('sc-name-' + slot).value = sc.name;
+  sliderDefs.forEach(([slId, valId, fmt], i) => {
+    const sl = document.getElementById(slId);
+    const lb = document.getElementById(valId);
+    sl.value = sc.vals[i];
+    lb.textContent = fmt(sc.vals[i]);
+  });
+  updateAll();
+}
+
+function _refreshScenarioBtns() {
+  const scenarios = _getScenarios();
+  for (let i = 0; i < 3; i++) {
+    const btn = document.getElementById('sc-load-' + i);
+    const sc  = scenarios[i];
+    if (sc) {
+      btn.className = 'btn-sc-load has-data';
+      btn.textContent = (sc.name || 'Charger').slice(0, 12);
+    } else {
+      btn.className = 'btn-sc-load';
+      btn.textContent = 'Charger';
+    }
+  }
+}
+
+// ─── Inflation state ──────────────────────────────────────────────────────────
+let inflationOn = false;
+let inflationRate = 0.025;
+
+function toggleInflation() {
+  inflationOn = !inflationOn;
+  document.getElementById('inflation-toggle').className = 'inflation-toggle' + (inflationOn ? ' on' : '');
+  updateAll();
+}
+
 function fmtK(v) {
   if (v >= 1e6) return (v/1e6).toFixed(1).replace('.0','') + 'M €';
   if (v >= 1000) return Math.round(v/1000) + 'k €';
@@ -343,6 +452,8 @@ function getParams() {
     initialMRR:      +document.getElementById('sl-mrr').value,
     mrrGrowthRate:   +document.getElementById('sl-mrr-growth').value / 100,
     freedomMRR:      +document.getElementById('sl-freedom-mrr').value,
+    inflationOn,
+    inflationRate,
   };
 }
 
@@ -378,6 +489,15 @@ function computePaths(p) {
     const annualMRR  = monthlyMRR * 12;
 
     redesignedIncome.push(mainInc + annualMRR);
+  }
+
+  // Inflation adjustment (real purchasing power)
+  if (p.inflationOn && p.inflationRate > 0) {
+    for (let t = 1; t <= N; t++) {
+      const d = Math.pow(1 - p.inflationRate, t);
+      currentIncome[t]    *= d;
+      redesignedIncome[t] *= d;
+    }
   }
 
   // Wealth accumulation (compounding simplified — savings added each year)
@@ -570,6 +690,29 @@ function drawChart(paths) {
     ctx.fillText('Freedom', fx, PAD.top + 12);
   }
 
+  // Freedom Number horizontal line (annual MRR target)
+  const p = paths.params;
+  if (chartMode === 'income' && p.freedomMRR > 0) {
+    const freedomAnnual = p.freedomMRR * 12;
+    if (freedomAnnual > 0 && freedomAnnual <= maxVal * 1.05) {
+      const yFree = yPos(freedomAnnual);
+      ctx.save();
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = 'rgba(250,204,21,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, yFree);
+      ctx.lineTo(PAD.left + CW, yFree);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '9px monospace';
+      ctx.fillStyle = '#facc15';
+      ctx.textAlign = 'left';
+      ctx.fillText('Freedom ' + fmtK(freedomAnnual) + '/an', PAD.left + 4, yFree - 4);
+      ctx.restore();
+    }
+  }
+
   // Y-axis label
   ctx.save();
   ctx.translate(14, PAD.top + CH / 2);
@@ -723,6 +866,13 @@ function setMode(mode) {
   updateAll();
 }
 
+// ─── Inflation slider listener ────────────────────────────────────────────────
+document.getElementById('sl-inflation').addEventListener('input', function() {
+  inflationRate = +this.value / 100;
+  document.getElementById('inflation-rate-val').textContent = this.value.replace('.', ',') + ' %';
+  if (inflationOn) updateAll();
+});
+
 // ─── Responsive canvas redraw on resize ──────────────────────────────────────
 let resizeTimer;
 window.addEventListener('resize', () => {
@@ -731,6 +881,7 @@ window.addEventListener('resize', () => {
 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
+_refreshScenarioBtns();
 updateAll();
 </script>
 </body>

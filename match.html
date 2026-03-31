@@ -108,6 +108,8 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     .empty-note{font-size:12px;color:var(--muted);padding:8px 0}
     .gap-ok{font-size:12px;color:var(--green);padding:8px 0}
+    .bigram-tag{display:inline-flex;align-items:center;padding:4px 9px;border-radius:5px;background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);color:var(--accent);font-size:11px;margin:3px}
+    .percentile-note{font-size:10px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
     @media(max-width:768px){
       .page{padding:20px}.grid2{grid-template-columns:1fr}
       .score-row{flex-direction:column}.header{padding:20px 20px 0}
@@ -190,6 +192,13 @@
       </div>
     </div>
 
+    <!-- Bigrams section — populated by JS -->
+    <div id="bigrams-section" class="card" style="display:none">
+      <div class="card-title" id="bigrams-title">Termes bi-grams fréquents</div>
+      <div id="bigrams-list" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px"></div>
+      <p class="gap-note" style="margin-top:10px">Expressions bi-grams apparaissant ≥ 2× dans la fiche — indicateurs de focus du recruteur.</p>
+    </div>
+
     <div class="card">
       <div class="card-title">Hidden Edge activés <span class="card-badge" id="combo-badge">0 / 3</span></div>
       <div id="combo-list"></div>
@@ -229,6 +238,53 @@ function el(tag, attrs, children) {
 // Safe clear — no innerHTML
 function clearEl(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+// ─── LocalStorage score history ──────────────────────────────────────────────
+const MATCH_HISTORY_KEY = 'match_score_history';
+
+function saveMatchScore(score, snippet) {
+  try {
+    const h = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+    h.push({score, date: new Date().toISOString().slice(0,10), jd: snippet.slice(0,40)});
+    if (h.length > 100) h.splice(0, h.length - 100);
+    localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(h));
+  } catch(_) {}
+}
+
+function getScorePercentile(score) {
+  try {
+    const h = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+    if (h.length < 3) return null;
+    const below = h.filter(e => e.score < score).length;
+    return Math.round((below / h.length) * 100);
+  } catch(_) { return null; }
+}
+
+// ─── Bigram extraction ────────────────────────────────────────────────────────
+const _BG_STOP = new Set([
+  'de','du','des','le','la','les','un','une','au','aux','par','pour','dans','sur',
+  'avec','est','et','ou','the','of','and','with','in','to','for','are','will',
+  'that','this','at','be','as','not','have','from','on','also','must','can','should',
+  'nous','vous','qui','que','dont','mais','ses','son','leur','leurs','vous','une',
+  'avoir','être','faire','plus','moins','très','même','bien','tout','tous','toute'
+]);
+
+function extractBigrams(text) {
+  const words = text.toLowerCase()
+    .replace(/['']/g, '')
+    .split(/[^a-zàâçéèêëîïôùûüÿœ0-9+#]+/)
+    .filter(w => w.length >= 3 && !_BG_STOP.has(w));
+  const counts = {};
+  for (let i = 0; i < words.length - 1; i++) {
+    const bg = words[i] + ' ' + words[i+1];
+    counts[bg] = (counts[bg] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .filter(([,c]) => c >= 2)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([text, count]) => ({text, count}));
 }
 
 // ─── Skill aliases (FR + EN) ──────────────────────────────────────────────────
@@ -453,6 +509,13 @@ function buildRecs(score, matched, gaps, combos, seniority, tone) {
     });
   }
 
+  if (seniority && (seniority.label.includes('Junior') || seniority.label.includes('Stage'))) {
+    recs.push({
+      title: 'Poste junior / stage — risque de surqualification perçue',
+      body: 'Ce poste cible un profil 0-2 ans. Votre profil peut paraître surqualifié. Insistez sur votre motivation à apprendre rapidement, votre agilité, et évitez de sur-vendre l\'expérience. La curiosité bat l\'expertise ici.'
+    });
+  }
+
   if (tone) {
     const toneMap = {
       'Startup / Fintech': 'Valorisez l\'autonomie, la vitesse, votre expérience DeFi et votre side project Career OS.',
@@ -498,6 +561,20 @@ function renderResults(res) {
   vEl.style.color         = verdict.color;
 
   document.getElementById('score-badge-top').textContent = verdict.label;
+
+  // Percentile badge
+  const scoreMain = document.querySelector('.score-main');
+  const existingPct = document.getElementById('score-percentile');
+  if (existingPct) existingPct.remove();
+  const pctile = getScorePercentile(res.score);
+  if (pctile !== null) {
+    const pctNote = document.createElement('div');
+    pctNote.id = 'score-percentile';
+    pctNote.className = 'percentile-note';
+    const rank = 100 - pctile;
+    pctNote.textContent = rank <= 25 ? 'Top ' + rank + '% de tes analyses' : 'Score ' + rank + "e percentile";
+    scoreMain.appendChild(pctNote);
+  }
 
   // Seniority
   const senEl  = document.getElementById('seniority-val');
@@ -612,6 +689,24 @@ function renderResults(res) {
       ]));
     });
   }
+
+  // Bigrams section
+  const bgSection  = document.getElementById('bigrams-section');
+  const bgTitle    = document.getElementById('bigrams-title');
+  const bgList     = document.getElementById('bigrams-list');
+  const bigrams    = extractBigrams(document.getElementById('jd-input').value);
+  clearEl(bgList);
+  if (bigrams.length > 0) {
+    bgTitle.textContent = '';
+    bgTitle.appendChild(document.createTextNode('Termes bi-grams fréquents '));
+    bgTitle.appendChild(el('span',{className:'card-badge',textContent: bigrams.length + ' détectés'}));
+    for (const bg of bigrams) {
+      bgList.appendChild(el('span',{className:'bigram-tag',textContent: bg.text + ' ×' + bg.count}));
+    }
+    bgSection.style.display = '';
+  } else {
+    bgSection.style.display = 'none';
+  }
 }
 
 // ─── Entry points ─────────────────────────────────────────────────────────────
@@ -626,6 +721,7 @@ async function runAnalysis() {
   try {
     const profile = await loadProfile();
     const result  = analyzeJD(jd, profile);
+    saveMatchScore(result.score, jd);
     document.getElementById('loading-state').style.display = 'none';
     document.getElementById('results').style.display = 'block';
     renderResults(result);
