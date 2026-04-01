@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Architect — Pilotez votre recherche d'emploi avec l'IA</title>
+  <meta name="description" content="Life Architect transforme votre recherche d'emploi en système intelligent. CRM candidatures, scoring IA, analytics avancés, relances automatiques.">
+  <meta property="og:title" content="Life Architect — Career OS as a Service">
+  <meta property="og:description" content="Pilotez votre recherche d'emploi comme un professionnel. Scoring IA, analytics, relances intelligentes.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px;--ease:cubic-bezier(.4,0,.2,1)}
+    [data-theme="dark"]{--bg-0:#060a12;--bg-1:#0a1020;--bg-2:#111a2e;--bg-3:#162244;--border:#1a2847;--border-hi:#253a68;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--accent-g:rgba(59,130,246,.12);--green:#22c55e;--green-g:rgba(34,197,94,.10);--warm:#f59e42;--warm-g:rgba(245,158,66,.10);--violet:#a78bfa;--violet-g:rgba(167,139,250,.10);--rose:#e879a8;--glass:rgba(10,16,32,.75);--shadow:rgba(0,0,0,.3)}
+
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+    /* ── Blobs ── */
+    .blob{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}
+    .b1{width:800px;height:800px;top:-300px;right:-200px;background:var(--accent);opacity:.04}
+    .b2{width:600px;height:600px;bottom:-200px;left:-200px;background:var(--violet);opacity:.03}
+    .b3{width:400px;height:400px;top:40%;left:50%;transform:translate(-50%,-50%);background:var(--green);opacity:.025}
+
+    /* ── Nav ── */
+    nav{position:fixed;top:0;width:100%;z-index:100;padding:14px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
+    .nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+    .nav-logo{font-family:var(--serif);font-size:19px;color:var(--tx-1);text-decoration:none;display:flex;align-items:center;gap:8px}
+    .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+    .nav-links{display:flex;align-items:center;gap:28px}
+    .nav-links a{color:var(--tx-2);text-decoration:none;font-size:14px;transition:color .2s}
+    .nav-links a:hover{color:var(--tx-1)}
+    .btn-nav{background:var(--accent);color:#fff;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:opacity .2s}
+    .btn-nav:hover{opacity:.85;color:#fff}
+
+    /* ── Layout ── */
+    .section{position:relative;z-index:1}
+    .container{max-width:1100px;margin:0 auto;padding:0 24px}
+
+    /* ── Hero ── */
+    .hero{min-height:100vh;display:flex;align-items:center;padding:120px 0 80px}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-g);border:1px solid rgba(59,130,246,.25);border-radius:100px;padding:6px 16px;font-size:12px;color:var(--accent);font-weight:500;margin-bottom:28px}
+    .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    h1{font-family:var(--serif);font-size:clamp(40px,6vw,72px);line-height:1.1;margin-bottom:24px;font-weight:400}
+    h1 em{font-style:italic;color:var(--accent)}
+    .hero-sub{font-size:18px;color:var(--tx-2);max-width:560px;line-height:1.7;margin-bottom:40px}
+    .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:56px}
+    .btn-primary{background:var(--accent);color:#fff;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;transition:opacity .2s,transform .15s}
+    .btn-primary:hover{opacity:.9;transform:translateY(-1px);color:#fff}
+    .btn-secondary{background:transparent;color:var(--tx-1);padding:14px 32px;border-radius:10px;font-size:15px;font-weight:500;text-decoration:none;border:1px solid var(--border-hi);transition:border-color .2s,background .2s}
+    .btn-secondary:hover{border-color:var(--accent);background:var(--accent-g)}
+    .hero-metrics{display:flex;gap:40px;flex-wrap:wrap}
+    .metric-val{font-size:28px;font-weight:700;color:var(--tx-1)}
+    .metric-lbl{font-size:12px;color:var(--tx-3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+    /* ── Séparateur ── */
+    .sep{height:1px;background:linear-gradient(90deg,transparent,var(--border-hi),transparent);margin:0}
+
+    /* ── Section titles ── */
+    .section-eyebrow{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:12px}
+    .section-title{font-family:var(--serif);font-size:clamp(28px,4vw,44px);line-height:1.15;font-weight:400;margin-bottom:16px}
+    .section-sub{font-size:16px;color:var(--tx-2);max-width:500px;line-height:1.7}
+
+    /* ── Features ── */
+    .features{padding:100px 0}
+    .features-head{margin-bottom:64px}
+    .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    @media(max-width:900px){.feat-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.feat-grid{grid-template-columns:1fr}}
+    .feat-card{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:border-color .2s,transform .2s}
+    .feat-card:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+    .feat-icon{font-size:28px;margin-bottom:16px}
+    .feat-title{font-size:16px;font-weight:600;margin-bottom:8px}
+    .feat-desc{font-size:13px;color:var(--tx-2);line-height:1.65}
+    .feat-badge{display:inline-block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:4px;margin-top:14px}
+    .badge-ai{background:var(--violet-g);color:var(--violet);border:1px solid rgba(167,139,250,.2)}
+    .badge-free{background:var(--green-g);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+    .badge-pro{background:var(--accent-g);color:var(--accent);border:1px solid rgba(59,130,246,.2)}
+
+    /* ── Comparatif ── */
+    .compare{padding:100px 0;background:var(--bg-1)}
+    .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:56px}
+    @media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
+    .compare-card{background:var(--bg-0);border:1px solid var(--border);border-radius:var(--radius);padding:32px}
+    .compare-card.highlight{border-color:var(--accent);background:linear-gradient(135deg,var(--bg-2),var(--bg-0))}
+    .compare-plan{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx-3);margin-bottom:8px}
+    .compare-price{font-size:40px;font-weight:800;line-height:1;margin-bottom:6px}
+    .compare-price sup{font-size:18px;vertical-align:top;margin-top:6px}
+    .compare-price sub{font-size:14px;font-weight:400;color:var(--tx-2)}
+    .compare-desc{font-size:13px;color:var(--tx-2);margin-bottom:24px}
+    .compare-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+    .compare-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--tx-2)}
+    .compare-list li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+    .compare-list li.dim::before{content:'○';color:var(--tx-3)}
+    .compare-list li.dim{color:var(--tx-3)}
+    .compare-cta{display:block;text-align:center;padding:13px;border-radius:9px;font-size:14px;font-weight:600;text-decoration:none;transition:opacity .2s}
+    .cta-primary{background:var(--accent);color:#fff}
+    .cta-primary:hover{opacity:.85;color:#fff}
+    .cta-ghost{background:transparent;color:var(--tx-2);border:1px solid var(--border-hi)}
+    .cta-ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* ── Outils gratuits ── */
+    .tools{padding:100px 0}
+    .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+    @media(max-width:700px){.tools-grid{grid-template-columns:1fr}}
+    .tool-card{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-decoration:none;color:var(--tx-1);transition:border-color .2s,transform .2s;display:block}
+    .tool-card:hover{border-color:var(--accent);transform:translateY(-2px);color:var(--tx-1)}
+    .tool-name{font-size:15px;font-weight:600;margin-bottom:6px}
+    .tool-desc{font-size:12px;color:var(--tx-2);line-height:1.6}
+    .tool-link{font-size:11px;color:var(--accent);margin-top:12px;display:block}
+
+    /* ── Vision ── */
+    .vision{padding:100px 0;background:var(--bg-1)}
+    .vision-inner{max-width:700px;margin:0 auto;text-align:center}
+    .vision-quote{font-family:var(--serif);font-size:clamp(22px,3vw,34px);line-height:1.4;color:var(--tx-1);margin:32px 0;font-weight:400}
+    .vision-quote em{font-style:italic;color:var(--accent)}
+
+    /* ── Beta CTA ── */
+    .beta{padding:120px 0}
+    .beta-inner{max-width:600px;margin:0 auto;text-align:center}
+    .beta-form{display:flex;gap:10px;margin-top:32px;flex-wrap:wrap;justify-content:center}
+    .beta-input{flex:1;min-width:220px;background:var(--bg-2);border:1px solid var(--border-hi);border-radius:9px;padding:13px 16px;font-size:14px;color:var(--tx-1);outline:none;font-family:var(--sans);transition:border-color .2s}
+    .beta-input:focus{border-color:var(--accent)}
+    .beta-input::placeholder{color:var(--tx-3)}
+    .btn-beta{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:13px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:opacity .2s;white-space:nowrap}
+    .btn-beta:hover{opacity:.85}
+    .beta-note{font-size:12px;color:var(--tx-3);margin-top:14px}
+    .beta-flash{font-size:13px;margin-top:12px;display:none}
+    .flash-ok{color:var(--green)}
+    .flash-err{color:#f87171}
+
+    /* ── Footer ── */
+    footer{border-top:1px solid var(--border);padding:40px 0}
+    .footer-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+    .footer-left{font-size:13px;color:var(--tx-3)}
+    .footer-links{display:flex;gap:20px}
+    .footer-links a{font-size:13px;color:var(--tx-3);text-decoration:none;transition:color .2s}
+    .footer-links a:hover{color:var(--tx-1)}
+  </style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-inner">
+    <a href="/life-architect/" class="nav-logo">
+      <span class="logo-dot"></span>
+      Life Architect
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#tools">Outils gratuits</a>
+      <a href="/" style="color:var(--tx-3)">Portfolio →</a>
+      <a href="#beta" class="btn-nav">Rejoindre la bêta</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero section">
+  <div class="container">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Bêta privée — accès limité
+    </div>
+    <h1>Pilotez votre carrière<br>avec <em>l'intelligence</em><br>comme levier.</h1>
+    <p class="hero-sub">
+      Life Architect transforme votre recherche d'emploi en système intelligent.
+      CRM candidatures, scoring IA, analytics avancés, relances automatiques —
+      tout ce qu'un recruteur professionnel utilise, accessible à tous.
+    </p>
+    <div class="hero-ctas">
+      <a href="#beta" class="btn-primary">Rejoindre la bêta gratuite</a>
+      <a href="#features" class="btn-secondary">Voir les features →</a>
+    </div>
+    <div class="hero-metrics">
+      <div>
+        <div class="metric-val">100%</div>
+        <div class="metric-lbl">Données privées</div>
+      </div>
+      <div>
+        <div class="metric-val">Claude AI</div>
+        <div class="metric-lbl">Moteur IA intégré</div>
+      </div>
+      <div>
+        <div class="metric-val">0€</div>
+        <div class="metric-lbl">Pour commencer</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ── Features ── -->
+<section class="features section" id="features">
+  <div class="container">
+    <div class="features-head">
+      <div class="section-eyebrow">Features</div>
+      <h2 class="section-title">Tout ce dont vous avez besoin.<br>Rien de superflu.</h2>
+      <p class="section-sub">Conçu par un candidat en finance quantitative, pour tous ceux qui cherchent avec méthode.</p>
+    </div>
+    <div class="feat-grid">
+
+      <div class="feat-card">
+        <div class="feat-icon">🎯</div>
+        <div class="feat-title">Scoring IA automatique</div>
+        <div class="feat-desc">Claude analyse la compatibilité entre votre profil et chaque fiche de poste. Score 0-100, points forts, axes d'amélioration, recommandation personnalisée.</div>
+        <span class="feat-badge badge-ai">Claude AI</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Analytics avancés</div>
+        <div class="feat-desc">Funnel de conversion, taux de réponse par banque/secteur, heatmap d'activité, évolution mensuelle. Visualisez ce qui fonctionne vraiment.</div>
+        <span class="feat-badge badge-pro">Pro</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">🤖</div>
+        <div class="feat-title">Relances intelligentes</div>
+        <div class="feat-desc">Génération automatique d'emails de relance personnalisés par Claude. Ton, date, poste, langue — chaque relance est unique et pertinente.</div>
+        <span class="feat-badge badge-ai">Claude AI</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">📋</div>
+        <div class="feat-title">CRM candidatures</div>
+        <div class="feat-desc">Suivi complet du pipeline : Kanban, funnel visuel, filtres avancés, export CSV. Chaque contact à portée en 2 clics.</div>
+        <span class="feat-badge badge-free">Gratuit</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">📬</div>
+        <div class="feat-title">Digest hebdomadaire</div>
+        <div class="feat-desc">Résumé email automatique chaque semaine : nouveaux envois, entretiens actifs, relances dues, score moyen. Gardez le cap sans effort.</div>
+        <span class="feat-badge badge-pro">Pro</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">⭐</div>
+        <div class="feat-title">Suivi entretiens</div>
+        <div class="feat-desc">Notes structurées par entretien (téléphone, visio, cas pratique), probabilité d'offre, prochaine étape. Préparez chaque tour avec méthode.</div>
+        <span class="feat-badge badge-free">Gratuit</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ── Pricing ── -->
+<section class="compare section" id="pricing">
+  <div class="container">
+    <div class="section-eyebrow">Pricing</div>
+    <h2 class="section-title">Commencez gratuitement.<br>Évoluez quand vous êtes prêt.</h2>
+    <div class="compare-grid">
+
+      <div class="compare-card">
+        <div class="compare-plan">Career OS · Local</div>
+        <div class="compare-price"><sup>€</sup>0<sub>/toujours</sub></div>
+        <div class="compare-desc">Installez-le sur votre machine. Vos données restent chez vous, pour toujours.</div>
+        <ul class="compare-list">
+          <li>CRM candidatures illimité</li>
+          <li>Relances intelligentes Claude</li>
+          <li>Scoring IA (votre clé API)</li>
+          <li>Suivi entretiens</li>
+          <li>Export CSV</li>
+          <li class="dim">Accessible depuis mobile</li>
+          <li class="dim">Sync multi-appareils</li>
+          <li class="dim">Digest email automatique</li>
+          <li class="dim">Analytics avancés cloud</li>
+        </ul>
+        <a href="https://github.com/RoJLD/career-os" class="compare-cta cta-ghost" target="_blank">
+          Télécharger (open source)
+        </a>
+      </div>
+
+      <div class="compare-card highlight">
+        <div class="compare-plan">Life Architect · Pro</div>
+        <div class="compare-price"><sup>€</sup>9<sub>/mois</sub></div>
+        <div class="compare-desc">Accessible partout, IA mutualisée, analytics cloud. Bêta gratuite pour les 50 premiers.</div>
+        <ul class="compare-list">
+          <li>Tout Career OS local inclus</li>
+          <li>Accès depuis n'importe où</li>
+          <li>Sync multi-appareils</li>
+          <li>IA mutualisée (sans clé API)</li>
+          <li>Analytics cloud avancés</li>
+          <li>Digest email automatique</li>
+          <li>Benchmarks anonymisés</li>
+          <li>Support prioritaire</li>
+        </ul>
+        <a href="#beta" class="compare-cta cta-primary">
+          Rejoindre la bêta gratuite →
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ── Outils gratuits ── -->
+<section class="tools section" id="tools">
+  <div class="container">
+    <div class="section-eyebrow">Outils gratuits</div>
+    <h2 class="section-title">Essayez sans créer de compte.</h2>
+    <p class="section-sub">Ces outils fonctionnent directement dans votre navigateur, sans inscription.</p>
+    <div class="tools-grid">
+      <a href="/match.html" class="tool-card">
+        <div class="tool-name">Analyseur JD</div>
+        <div class="tool-desc">Analysez une fiche de poste et obtenez un score de compatibilité instantané avec vos compétences.</div>
+        <span class="tool-link">Essayer maintenant →</span>
+      </a>
+      <a href="/radar.html" class="tool-card">
+        <div class="tool-name">Skill Gap Radar</div>
+        <div class="tool-desc">Visualisez vos compétences sur un radar canvas, comparez-les aux exigences du poste visé.</div>
+        <span class="tool-link">Essayer maintenant →</span>
+      </a>
+      <a href="/simulator.html" class="tool-card">
+        <div class="tool-name">Simulateur salaire</div>
+        <div class="tool-desc">Estimez votre positionnement salarial par secteur, expérience et localisation.</div>
+        <span class="tool-link">Essayer maintenant →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ── Vision ── -->
+<section class="vision section">
+  <div class="container">
+    <div class="vision-inner">
+      <div class="section-eyebrow">Vision</div>
+      <p class="vision-quote">
+        "La recherche d'emploi est un <em>projet</em> qui mérite les mêmes outils
+        qu'un projet professionnel — données, analytics, automatisation."
+      </p>
+      <p style="font-size:13px;color:var(--tx-3)">Robin Denis — Fondateur, ECE Paris 2026</p>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ── Beta CTA ── -->
+<section class="beta section" id="beta">
+  <div class="container">
+    <div class="beta-inner">
+      <div class="section-eyebrow">Bêta privée</div>
+      <h2 class="section-title">50 places.<br>Accès gratuit pendant la bêta.</h2>
+      <p style="font-size:15px;color:var(--tx-2);margin-top:12px;">
+        Rejoignez la liste d'attente. Vous recevrez un accès dès que votre place est disponible.
+      </p>
+      <div class="beta-form">
+        <input type="email" class="beta-input" id="betaEmail" placeholder="votre@email.com">
+        <button class="btn-beta" onclick="submitBeta()">Rejoindre la bêta</button>
+      </div>
+      <div id="betaFlash" class="beta-flash"></div>
+      <p class="beta-note">Pas de spam. Désabonnement en 1 clic. Données supprimées sur demande.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-left">
+      © 2025 Robin Denis · Life Architect est en développement actif
+    </div>
+    <div class="footer-links">
+      <a href="/">Portfolio</a>
+      <a href="https://github.com/RoJLD/career-os" target="_blank">Career OS (open source)</a>
+      <a href="/match.html">Analyseur JD</a>
+      <a href="/radar.html">Skill Radar</a>
+      <a href="mailto:robin@robin-denis.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function submitBeta() {
+  const emailEl = document.getElementById('betaEmail');
+  const flash   = document.getElementById('betaFlash');
+  const email   = emailEl.value.trim();
+
+  if (!email || !email.includes('@')) {
+    flash.textContent = 'Adresse email invalide.';
+    flash.className = 'beta-flash flash-err';
+    flash.style.display = 'block';
+    return;
+  }
+
+  // Mailto fallback (sans backend pour l'instant)
+  const subject = encodeURIComponent('Life Architect — Inscription bêta');
+  const body    = encodeURIComponent('Bonjour,\n\nJe souhaite rejoindre la bêta de Life Architect.\n\nEmail : ' + email);
+  window.location.href = 'mailto:robin@robin-denis.com?subject=' + subject + '&body=' + body;
+
+  flash.textContent = 'Merci ! Votre client email va s\'ouvrir pour confirmer.';
+  flash.className = 'beta-flash flash-ok';
+  flash.style.display = 'block';
+  emailEl.value = '';
+}
+
+document.getElementById('betaEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') submitBeta();
+});
+
+// Smooth scroll pour les ancres nav
+document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+  a.addEventListener('click', function(e) {
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>
