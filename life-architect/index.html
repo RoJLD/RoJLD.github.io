@@ -392,8 +392,12 @@
 </footer>
 
 <script>
-function submitBeta() {
+// URL de l'API Life Architect — à mettre à jour après déploiement
+const API_URL = 'https://life-architect-api.onrender.com';
+
+async function submitBeta() {
   const emailEl = document.getElementById('betaEmail');
+  const btnEl   = document.querySelector('.btn-beta');
   const flash   = document.getElementById('betaFlash');
   const email   = emailEl.value.trim();
 
@@ -404,15 +408,40 @@ function submitBeta() {
     return;
   }
 
-  // Mailto fallback (sans backend pour l'instant)
-  const subject = encodeURIComponent('Life Architect — Inscription bêta');
-  const body    = encodeURIComponent('Bonjour,\n\nJe souhaite rejoindre la bêta de Life Architect.\n\nEmail : ' + email);
-  window.location.href = 'mailto:robin@robin-denis.com?subject=' + subject + '&body=' + body;
+  btnEl.disabled = true;
+  btnEl.textContent = '...';
+  flash.style.display = 'none';
 
-  flash.textContent = 'Merci ! Votre client email va s\'ouvrir pour confirmer.';
-  flash.className = 'beta-flash flash-ok';
-  flash.style.display = 'block';
-  emailEl.value = '';
+  try {
+    const res = await fetch(API_URL + '/beta/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, source: 'landing' }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      flash.textContent = data.already
+        ? 'Vous êtes déjà sur la liste — on vous contacte bientôt !'
+        : 'Inscrit ! On vous contacte dès l\'ouverture de la bêta.';
+      flash.className = 'beta-flash flash-ok';
+      emailEl.value = '';
+    } else {
+      throw new Error(data.error || 'server_error');
+    }
+  } catch {
+    // Fallback mailto si l'API est hors ligne
+    const subject = encodeURIComponent('Life Architect — Inscription bêta');
+    const body    = encodeURIComponent('Email : ' + email);
+    window.location.href = 'mailto:robin@robin-denis.com?subject=' + subject + '&body=' + body;
+    flash.textContent = 'Merci ! Votre client email va s\'ouvrir pour confirmer.';
+    flash.className = 'beta-flash flash-ok';
+    emailEl.value = '';
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = 'Rejoindre la bêta';
+    flash.style.display = 'block';
+  }
 }
 
 document.getElementById('betaEmail').addEventListener('keydown', function(e) {
