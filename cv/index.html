@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ELYSIUM CV portfolio — 6 versions per role target">
+<title>ELYSIUM — CV Portfolio</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --fg: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-hover: #79b8ff;
+  --border: #30363d;
+  --card: #161b22;
+  --tag-bg: #1f6feb22;
+  --tag-fg: #79b8ff;
+  --weight-high: #3fb950;
+  --weight-mid: #d29922;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.55;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 18px 32px;
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  background: var(--card);
+  flex-wrap: wrap;
+}
+header h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
+header .subtitle { color: var(--muted); font-size: 14px; }
+main { padding: 32px; max-width: 1100px; margin: 0 auto; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+}
+.card h2 { margin-top: 0; font-size: 16px; }
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: var(--card);
+  transition: border-color 0.15s ease;
+}
+.profile-row:hover { border-color: var(--accent); }
+.profile-row .actions { display: flex; gap: 10px; }
+.btn {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn:hover { background: var(--tag-bg); border-color: var(--accent); color: var(--accent); }
+.btn-primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.tag {
+  display: inline-block;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  margin: 2px 4px 2px 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.bullet {
+  border-left: 3px solid var(--border);
+  padding: 10px 16px;
+  margin-bottom: 14px;
+}
+.bullet.weight-9, .bullet.weight-10 { border-left-color: var(--weight-high); }
+.bullet.weight-7, .bullet.weight-8 { border-left-color: var(--accent); }
+.bullet.weight-5, .bullet.weight-6 { border-left-color: var(--weight-mid); }
+.bullet-verb { font-weight: 600; color: var(--accent); font-size: 14px; }
+.bullet-text { margin: 6px 0 8px 0; color: var(--fg); }
+.bullet-meta {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 14px;
+  color: var(--muted);
+  margin: 16px 0;
+}
+.footer {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 24px 32px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  background: var(--tag-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Σ ELYSIUM — CV Portfolio</h1>
+  <span class="subtitle">Sovereign Cognitive Architecture · 28 months</span>
+</header>
+<main>
+  <div class="card">
+    <h2>ELYSIUM</h2>
+    <blockquote><em>ORCHESTRATION MULTIAGENT MULTIMODEL ET MULTISERVER</em></blockquote>
+    <p class="bullet-meta">
+      <span><strong>Role</strong> : Architect / Solo Engineer / Owner</span>
+      <span><strong>Dates</strong> : 2024-01 → present</span>
+      <span><strong>Team</strong> : 1 engineer (solo)</span>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Choose target profile</h2>
+    <p class="bullet-text">
+      Each profile is a curated projection of the same source-of-truth YAML,
+      tuned for a specific job-target. Choose the one matching the role you're applying for.
+    </p>
+    
+        <div class="profile-row">
+          <div>
+            <div><strong>AI/ML Engineer / Research Engineer</strong></div>
+            <div class="bullet-meta">
+              <span><code>ai_ml_engineer</code></span>
+              <span>≤ 5 bullets</span>
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn btn-primary" href="./ai_ml_engineer.html">View CV</a>
+          </div>
+        </div>
+        <div class="profile-row">
+          <div>
+            <div><strong>Software Architect / Tech Lead</strong></div>
+            <div class="bullet-meta">
+              <span><code>software_architect</code></span>
+              <span>≤ 5 bullets</span>
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn btn-primary" href="./software_architect.html">View CV</a>
+          </div>
+        </div>
+        <div class="profile-row">
+          <div>
+            <div><strong>DevOps / Platform Engineer</strong></div>
+            <div class="bullet-meta">
+              <span><code>devops_platform</code></span>
+              <span>≤ 5 bullets</span>
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn btn-primary" href="./devops_platform.html">View CV</a>
+          </div>
+        </div>
+        <div class="profile-row">
+          <div>
+            <div><strong>Solo Founder / CTO Early-Stage</strong></div>
+            <div class="bullet-meta">
+              <span><code>solo_founder</code></span>
+              <span>≤ 4 bullets</span>
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn btn-primary" href="./solo_founder.html">View CV</a>
+          </div>
+        </div>
+        <div class="profile-row">
+          <div>
+            <div><strong>Quality / SRE / Reliability Engineer</strong></div>
+            <div class="bullet-meta">
+              <span><code>quality_sre</code></span>
+              <span>≤ 5 bullets</span>
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn btn-primary" href="./quality_sre.html">View CV</a>
+          </div>
+        </div>
+        <div class="profile-row">
+          <div>
+            <div><strong>Compiler / Language Engineer</strong></div>
+            <div class="bullet-meta">
+              <span><code>compiler_engineer</code></span>
+              <span>≤ 4 bullets</span>
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn btn-primary" href="./compiler_engineer.html">View CV</a>
+          </div>
+        </div>
+  </div>
+
+  <div class="card">
+    <h2>Pattern</h2>
+    <p class="bullet-text">
+      Built on a <strong>YAML-first CV-DB</strong> pattern : 28 atomic bullets tagged by domain,
+      verb, weight, and metrics. Each profile selects a subset using
+      <code>filter_bullets(domain ∩ profile_domains, weight ≥ threshold)</code>
+      then picks the verb matching profile priorities.
+      Same data, six audience-tuned exports — no drift.
+    </p>
+    <p class="bullet-meta">
+      Generated by <code>satellites/anthropos/apps/cv-gui/exporters/static_site.py</code>
+      · ELYSIUM SIGIL-ANTHROPOS-DEPLOY
+    </p>
+  </div>
+</main>
+<div class="footer">
+  Static site generated 2026-05-14T20:22:17Z · CV-DB YAML source-of-truth · ATS-friendly · zero JS
+</div>
+</body>
+</html>
