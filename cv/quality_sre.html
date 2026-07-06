@@ -138,15 +138,54 @@ code {
     <p><strong>Profile target</strong> : <em>Quality / SRE / Reliability Engineer</em></p>
     <p class="bullet-meta">
       <span><strong>Role</strong> : Architect / Solo Engineer / Owner</span>
-      <span><strong>Dates</strong> : 2024-01 → present (28 months)</span>
+      <span><strong>Dates</strong> : 2024-01 → present (30 months)</span>
       <span><strong>Type</strong> : Personal Rd Founder</span>
     </p>
     <blockquote>ORCHESTRATION MULTIAGENT MULTIMODEL ET MULTISERVER</blockquote>
   </div>
 
   <div class="card">
-    <h2>Achievements (5 / max 5)</h2>
+    <h2>Achievements (8 / max 8)</h2>
     
+        <div class="bullet weight-10">
+          <div>
+            <span class="bullet-verb">Developed</span>
+            <span class="bullet-meta">[B-PR-01 · weight 10]</span>
+          </div>
+          <p class="bullet-text">a tested cold-outbound growth engine (lead → contacted → replied → deal): a single-writer-on-NFS SQLite CRM, a human-approval gate before any send, and GDPR/CNIL compliance (L.34-5 opt-out, RFC 8058 unsubscribe, art.14 notice) — 86 TDD tests.</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">product</span><span class="tag">security</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">86_tests</span><span class="tag">gdpr_cnil</span><span class="tag">human_gate</span></div>
+            </div>
+        </div>
+        <div class="bullet weight-10">
+          <div>
+            <span class="bullet-verb">Diagnosed</span>
+            <span class="bullet-meta">[B-SRE-01 · weight 10]</span>
+          </div>
+          <p class="bullet-text">root-caused a Kubernetes control-plane brownout — a 28 GB SQLite WAL saturating disk I/O (42% iowait, not CPU) starving the apiserver — resolved via an online WAL checkpoint (28 GB freed, iowait 42%→7%) and an off-cluster systemd watchdog (in-cluster guardians die with the apiserver).</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">sre</span><span class="tag">k8s</span><span class="tag">devops</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">28GB_freed</span><span class="tag">iowait_42_to_7</span><span class="tag">off_cluster_watchdog</span></div>
+            </div>
+        </div>
+        <div class="bullet weight-9">
+          <div>
+            <span class="bullet-verb">Migrated</span>
+            <span class="bullet-meta">[B-DV-08 · weight 9]</span>
+          </div>
+          <p class="bullet-text">a CloudNativePG (Postgres) cluster&#x27;s StorageClass via ordinal reprovision with primary failover (~2.3 min), preserving 4 downstream application clients.</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">devops</span><span class="tag">k8s</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">cnpg</span><span class="tag">storageclass_migration</span><span class="tag">failover_2.3min</span></div>
+            </div>
+        </div>
         <div class="bullet weight-9">
           <div>
             <span class="bullet-verb">Executed</span>
@@ -162,6 +201,45 @@ code {
         </div>
         <div class="bullet weight-9">
           <div>
+            <span class="bullet-verb">Optimized</span>
+            <span class="bullet-meta">[B-OP-03 · weight 9]</span>
+          </div>
+          <p class="bullet-text">budget-aware LLM routing — a monthly cost cap with automatic downgrade to a local model on breach, backed by a budget sentinel and JSONL usage audit (FinOps).</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">llm</span><span class="tag">devops</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">budget_cap</span><span class="tag">local_downgrade</span><span class="tag">finops</span></div>
+            </div>
+        </div>
+        <div class="bullet weight-9">
+          <div>
+            <span class="bullet-verb">Integrated</span>
+            <span class="bullet-meta">[B-PR-02 · weight 9]</span>
+          </div>
+          <p class="bullet-text">Stripe metered billing (Stripe Meters) with a fail-open batch reconciler for a deployed B2B API, plus tier-gating of a Career OS SaaS (Free / Pro / Enterprise).</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">product</span><span class="tag">devops</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">stripe_meters</span><span class="tag">metered_billing</span><span class="tag">tier_gating</span></div>
+            </div>
+        </div>
+        <div class="bullet weight-9">
+          <div>
+            <span class="bullet-verb">Developed</span>
+            <span class="bullet-meta">[B-SEC-02 · weight 9]</span>
+          </div>
+          <p class="bullet-text">Kyverno admission policies in Enforce mode (mandatory per-pod priorityClassName, image digest-pinning of 9 critical workloads for supply-chain provenance, LimitRange) — declarative GitOps control replacing manual friction.</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">security</span><span class="tag">k8s</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">kyverno_enforce</span><span class="tag">digest_pin_9</span><span class="tag">supply_chain</span></div>
+            </div>
+        </div>
+        <div class="bullet weight-9">
+          <div>
             <span class="bullet-verb">Sustained</span>
             <span class="bullet-meta">[B-SU-01 · weight 9]</span>
           </div>
@@ -173,57 +251,18 @@ code {
               <div><strong>Metrics:</strong> <span class="tag">250_tests</span><span class="tag">100_pct_pass</span><span class="tag">5_sentinels</span><span class="tag">4_phases</span></div>
             </div>
         </div>
-        <div class="bullet weight-8">
-          <div>
-            <span class="bullet-verb">Sustained</span>
-            <span class="bullet-meta">[B-SU-04 · weight 8]</span>
-          </div>
-          <p class="bullet-text">multi-agent concurrent work environment via SQLite WAL claims layer (TTL 120s, heartbeat) preventing race conditions across 7+ parallel agent sessions and namespace-isolated worktrees.</p>
-          <div class="bullet-meta">
-            <div><strong>Domains:</strong> <span class="tag">multi-agent</span><span class="tag">devops</span></div>
-          </div>
-            <div class="bullet-meta" style="margin-top: 6px;">
-              <div><strong>Metrics:</strong> <span class="tag">7_concurrent_agents</span><span class="tag">sqlite_wal</span><span class="tag">ttl_120s</span></div>
-            </div>
-        </div>
-        <div class="bullet weight-7">
-          <div>
-            <span class="bullet-verb">Developed</span>
-            <span class="bullet-meta">[B-DV-05 · weight 7]</span>
-          </div>
-          <p class="bullet-text">a sovereign git workflow replacing GitHub PR review with a 5-stage sentinel chain (constitution + lifecycle + BST + pytest smoke + pre-push hook) and append-only JSONL audit log — eliminated 100% of permission frictions while preserving review-grade auditability.</p>
-          <div class="bullet-meta">
-            <div><strong>Domains:</strong> <span class="tag">security</span><span class="tag">devops</span></div>
-          </div>
-            <div class="bullet-meta" style="margin-top: 6px;">
-              <div><strong>Metrics:</strong> <span class="tag">5_stage_sentinel</span><span class="tag">sovereign_git</span><span class="tag">zero_friction</span></div>
-            </div>
-        </div>
-        <div class="bullet weight-7">
-          <div>
-            <span class="bullet-verb">Executed</span>
-            <span class="bullet-meta">[B-EX-02 · weight 7]</span>
-          </div>
-          <p class="bullet-text">live PXE-Diskless image generation (xorriso wrap squashfs into Ubuntu 24.04 ISO + iPXE chainload + dnsmasq proxyDHCP) enabling stateless worker nodes joining K3s cluster within 90s of cold boot.</p>
-          <div class="bullet-meta">
-            <div><strong>Domains:</strong> <span class="tag">devops</span><span class="tag">k8s</span></div>
-          </div>
-            <div class="bullet-meta" style="margin-top: 6px;">
-              <div><strong>Metrics:</strong> <span class="tag">90s_cold_boot</span><span class="tag">stateless_worker</span><span class="tag">casper_netboot</span></div>
-            </div>
-        </div>
   </div>
 
   <div class="card">
     <h2>Profile config (filter parameters)</h2>
-    <pre style="font-size: 12px; color: var(--muted); overflow-x: auto;"><code>domains_in     : tdd, security, devops, documentation-as-code
-verbs_priority : sustained, developed, established, designed
-max_bullets    : 5
+    <pre style="font-size: 12px; color: var(--muted); overflow-x: auto;"><code>domains_in     : tdd, security, devops, documentation-as-code, sre
+verbs_priority : sustained, developed, established, designed, diagnosed, resolved
+max_bullets    : 8
 min_weight     : 6</code></pre>
   </div>
 </main>
 <div class="footer">
-  Static site · CV-DB YAML source-of-truth · ATS-friendly · Generated 2026-05-14T20:22:17Z
+  Static site · CV-DB YAML source-of-truth · ATS-friendly · Generated 2026-07-06T13:01:41Z
 </div>
 </body>
 </html>

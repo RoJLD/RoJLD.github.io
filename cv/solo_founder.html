@@ -138,14 +138,14 @@ code {
     <p><strong>Profile target</strong> : <em>Solo Founder / CTO Early-Stage</em></p>
     <p class="bullet-meta">
       <span><strong>Role</strong> : Architect / Solo Engineer / Owner</span>
-      <span><strong>Dates</strong> : 2024-01 → present (28 months)</span>
+      <span><strong>Dates</strong> : 2024-01 → present (30 months)</span>
       <span><strong>Type</strong> : Personal Rd Founder</span>
     </p>
     <blockquote>ORCHESTRATION MULTIAGENT MULTIMODEL ET MULTISERVER</blockquote>
   </div>
 
   <div class="card">
-    <h2>Achievements (4 / max 4)</h2>
+    <h2>Achievements (6 / max 6)</h2>
     
         <div class="bullet weight-10">
           <div>
@@ -160,17 +160,43 @@ code {
               <div><strong>Metrics:</strong> <span class="tag">6_phases</span><span class="tag">5_pipelines</span><span class="tag">isomorphic_framework</span></div>
             </div>
         </div>
+        <div class="bullet weight-10">
+          <div>
+            <span class="bullet-verb">Built</span>
+            <span class="bullet-meta">[B-PR-01 · weight 10]</span>
+          </div>
+          <p class="bullet-text">a tested cold-outbound growth engine (lead → contacted → replied → deal): a single-writer-on-NFS SQLite CRM, a human-approval gate before any send, and GDPR/CNIL compliance (L.34-5 opt-out, RFC 8058 unsubscribe, art.14 notice) — 86 TDD tests.</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">product</span><span class="tag">security</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">86_tests</span><span class="tag">gdpr_cnil</span><span class="tag">human_gate</span></div>
+            </div>
+        </div>
+        <div class="bullet weight-10">
+          <div>
+            <span class="bullet-verb">Diagnosed</span>
+            <span class="bullet-meta">[B-SRE-01 · weight 10]</span>
+          </div>
+          <p class="bullet-text">root-caused a Kubernetes control-plane brownout — a 28 GB SQLite WAL saturating disk I/O (42% iowait, not CPU) starving the apiserver — resolved via an online WAL checkpoint (28 GB freed, iowait 42%→7%) and an off-cluster systemd watchdog (in-cluster guardians die with the apiserver).</p>
+          <div class="bullet-meta">
+            <div><strong>Domains:</strong> <span class="tag">sre</span><span class="tag">k8s</span><span class="tag">devops</span></div>
+          </div>
+            <div class="bullet-meta" style="margin-top: 6px;">
+              <div><strong>Metrics:</strong> <span class="tag">28GB_freed</span><span class="tag">iowait_42_to_7</span><span class="tag">off_cluster_watchdog</span></div>
+            </div>
+        </div>
         <div class="bullet weight-9">
           <div>
             <span class="bullet-verb">Owned</span>
             <span class="bullet-meta">[B-AR-02 · weight 9]</span>
           </div>
-          <p class="bullet-text">a self-auditing software platform spanning 90+ interdependent SIGILs, 5 AI pipelines, and 4 physical nodes — designed for continuous evolution with zero-regression guarantees.</p>
+          <p class="bullet-text">a self-auditing software platform spanning 700+ interdependent SIGILs, 5 AI pipelines, and 4 physical nodes — designed for continuous evolution with zero-regression guarantees.</p>
           <div class="bullet-meta">
             <div><strong>Domains:</strong> <span class="tag">architecture</span><span class="tag">solo-leadership</span></div>
           </div>
             <div class="bullet-meta" style="margin-top: 6px;">
-              <div><strong>Metrics:</strong> <span class="tag">90_sigils</span><span class="tag">5_pipelines</span><span class="tag">4_nodes</span></div>
+              <div><strong>Metrics:</strong> <span class="tag">700_sigils</span><span class="tag">5_pipelines</span><span class="tag">4_nodes</span></div>
             </div>
         </div>
         <div class="bullet weight-9">
@@ -188,29 +214,29 @@ code {
         </div>
         <div class="bullet weight-9">
           <div>
-            <span class="bullet-verb">Executed</span>
-            <span class="bullet-meta">[B-EX-01 · weight 9]</span>
+            <span class="bullet-verb">Migrated</span>
+            <span class="bullet-meta">[B-DV-08 · weight 9]</span>
           </div>
-          <p class="bullet-text">end-to-end deployment of a 4-node K3s GPU cluster (PXE diskless boot, AMD ROCm 6.x, kernel HWE 6.11+) hosting 90+ interdependent sub-systems and serving as the cognitive substrate of a sovereign autonomous AI architecture.</p>
+          <p class="bullet-text">a CloudNativePG (Postgres) cluster&#x27;s StorageClass via ordinal reprovision with primary failover (~2.3 min), preserving 4 downstream application clients.</p>
           <div class="bullet-meta">
-            <div><strong>Domains:</strong> <span class="tag">devops</span><span class="tag">k8s</span><span class="tag">gpu</span></div>
+            <div><strong>Domains:</strong> <span class="tag">devops</span><span class="tag">k8s</span></div>
           </div>
             <div class="bullet-meta" style="margin-top: 6px;">
-              <div><strong>Metrics:</strong> <span class="tag">4_nodes</span><span class="tag">90_subsystems</span><span class="tag">ROCm_6x</span><span class="tag">PXE_diskless</span></div>
+              <div><strong>Metrics:</strong> <span class="tag">cnpg</span><span class="tag">storageclass_migration</span><span class="tag">failover_2.3min</span></div>
             </div>
         </div>
   </div>
 
   <div class="card">
     <h2>Profile config (filter parameters)</h2>
-    <pre style="font-size: 12px; color: var(--muted); overflow-x: auto;"><code>domains_in     : solo-leadership, architecture, devops, ai-ml
-verbs_priority : led, owned, drove, architected, executed, built
-max_bullets    : 4
+    <pre style="font-size: 12px; color: var(--muted); overflow-x: auto;"><code>domains_in     : solo-leadership, architecture, devops, ai-ml, product
+verbs_priority : led, owned, drove, architected, executed, built, shipped
+max_bullets    : 6
 min_weight     : 8</code></pre>
   </div>
 </main>
 <div class="footer">
-  Static site · CV-DB YAML source-of-truth · ATS-friendly · Generated 2026-05-14T20:22:17Z
+  Static site · CV-DB YAML source-of-truth · ATS-friendly · Generated 2026-07-06T13:01:41Z
 </div>
 </body>
 </html>
