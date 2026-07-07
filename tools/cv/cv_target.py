@@ -139,9 +139,11 @@ def _sovereign_complete(prompt: str) -> str:
 
     # tools/cv -> repo site -> parent commun -> ELYSIUM/satellites/anthropos/apps/career
     here = pathlib.Path(__file__).resolve()
-    candidates = [
-        here.parents[2].parent / "ELYSIUM" / "satellites" / "anthropos" / "apps" / "career",
-    ]
+    elysium = here.parents[2].parent / "ELYSIUM"
+    rel = ("satellites", "anthropos", "apps", "career")
+    candidates = [elysium.joinpath(*rel)]
+    # Pré-merge : llm_client.py peut vivre dans un worktree (PR #492 non mergée à main).
+    candidates += sorted(elysium.glob("/".join((".claude", "worktrees", "*") + rel)))
     for c in candidates:
         if (c / "core" / "llm_client.py").exists():
             sys.path.insert(0, str(c))
