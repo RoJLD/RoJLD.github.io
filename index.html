@@ -311,6 +311,9 @@
 <!-- FAB -->
 <a class="fab" href="cv/ATS_FR_RobinDENIS_8.pdf" target="_blank" data-cv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="fab-tip" data-i18n="fab_tip">Télécharger mon CV</span></a>
 
+<script src="assets/js/cv-render.js"></script>
+<script src="assets/js/cv-select.js"></script>
+<script src="assets/js/cv-export.js"></script>
 <script>
 // ═══════════════════════════════════════════
 // i18n TRANSLATION DICTIONARY
@@ -556,6 +559,18 @@ window.addEventListener('mouseup',()=>{down=false;el.classList.remove('drag')});
 el.addEventListener('mouseleave',()=>{down=false;el.classList.remove('drag')});
 el.addEventListener('mousemove',e=>{if(!down)return;e.preventDefault();el.scrollLeft=sl-(e.pageX-sx)});
 el.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){el.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
+})();
+// CV-ATELIER Track 2 : chooser de telechargement CV (complet ATS / profil prefab / composer)
+(function(){
+  if(!window.CVExport)return;
+  window.CVExport.init({
+    getLang:function(){return document.documentElement.getAttribute('data-lang')||'fr';},
+    fullPdf:{fr:'cv/ATS_FR_RobinDENIS_8.pdf',en:'cv/ATS_english_RobinDENIS_7.pdf'}
+  }).then(function(){
+    document.querySelectorAll('[data-cv]').forEach(function(a){
+      a.addEventListener('click',function(e){e.preventDefault();window.CVExport.open();});
+    });
+  }).catch(function(){});
 })();
 </script>
 </body>
