@@ -887,8 +887,8 @@
       "id": "elysium",
       "name": "ELYSIUM — Architecture IA souveraine",
       "context": "personal",
-      "description": "Projet personnel de R&D (depuis 2024) : substrat cognitif d'une IA autonome — cluster GPU K3s 4 nœuds (AMD ROCm), graphe de connaissance auto-audité, orchestration multi-agent/multi-modèle, gouvernance par sentinels. Projet solo end-to-end.",
-      "impact": "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain — architecture solo depuis 2024",
+      "description": "Projet personnel de R&D (depuis février 2026) : substrat cognitif d'une IA autonome — cluster GPU K3s 4 nœuds (AMD ROCm), graphe de connaissance auto-audité, orchestration multi-agent/multi-modèle, gouvernance par sentinels. Projet solo end-to-end.",
+      "impact": "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain — architecture solo depuis février 2026",
       "stack": [
         "Python",
         "Kubernetes / K3s",

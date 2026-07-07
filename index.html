@@ -76,14 +76,14 @@
         .htl-wrap.drag{cursor:grabbing}
         .htl-wrap::-webkit-scrollbar{height:10px}.htl-wrap::-webkit-scrollbar-track{background:var(--bg-2);border-radius:5px}.htl-wrap::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:5px;border:2px solid var(--bg-0)}.htl-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent)}
         .htl-hint{display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:11px;color:var(--tx-3);margin:2px 8px 0;font-weight:500}
-        .htl{display:flex;gap:0;min-width:max-content;position:relative;padding:0 8px}.htl::before{content:'';position:absolute;top:40px;left:8px;right:8px;height:2px;background:linear-gradient(90deg,var(--accent),var(--violet),var(--rose),var(--warm));border-radius:1px}
+        .htl{display:flex;gap:0;min-width:max-content;position:relative;padding:0 8px}.htl::before{content:'';position:absolute;top:36px;left:8px;right:8px;height:2px;background:linear-gradient(90deg,var(--accent),var(--violet),var(--rose),var(--warm));border-radius:1px}
         .ht-item{display:flex;flex-direction:column;align-items:center;min-width:130px;position:relative}.ht-year{font-size:11px;font-weight:700;color:var(--tx-3);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase}
         .ht-dot{width:12px;height:12px;border-radius:50%;border:2.5px solid var(--accent);background:var(--bg-0);z-index:2;margin-bottom:14px;transition:all .3s var(--ease)}
         .ht-item:hover .ht-dot{background:var(--accent);transform:scale(1.4);box-shadow:0 0 16px var(--accent-g)}
         .ht-label{font-size:11.5px;font-weight:600;color:var(--tx-1);text-align:center;max-width:120px;line-height:1.35;margin-bottom:4px}
         .ht-sub{font-size:10px;color:var(--tx-3);text-align:center;max-width:120px;line-height:1.3}
-        .ht-item.edu .ht-dot{border-color:var(--violet)}.ht-item.edu:hover .ht-dot{background:var(--violet);box-shadow:0 0 16px var(--violet-g)}
-        .ht-item.proj .ht-dot{border-color:var(--warm)}.ht-item.proj:hover .ht-dot{background:var(--warm);box-shadow:0 0 16px var(--warm-g)}
+        .ht-item.edu .ht-dot{border-color:var(--accent)}.ht-item.edu:hover .ht-dot{background:var(--accent);box-shadow:0 0 16px var(--accent-g)}
+        .ht-item.proj .ht-dot{border-color:var(--accent)}.ht-item.proj:hover .ht-dot{background:var(--accent);box-shadow:0 0 16px var(--accent-g)}
         .radar-section{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
         .radar-box{flex:1;min-width:280px;display:flex;justify-content:center}.radar-box canvas{max-width:340px;width:100%}
         .skills-side{flex:1;min-width:260px}
@@ -198,10 +198,10 @@
         <div class="ht-item edu"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_prepa">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
         <div class="ht-item edu"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_ece_sub">Cycle Ingénieur</div></div>
         <div class="ht-item"><span class="ht-year" data-i18n="ht_jun24">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
-        <div class="ht-item proj"><span class="ht-year">2024 →</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_elysium">ELYSIUM</div><div class="ht-sub" data-i18n="ht_elysium_sub">Architecture IA (perso)</div></div>
         <div class="ht-item"><span class="ht-year" data-i18n="ht_feb25">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_bt">Trésorier & Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
         <div class="ht-item proj"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_pfe">PFE avec EY</div><div class="ht-sub" data-i18n="ht_pfe_sub">Couverture dynamique</div></div>
         <div class="ht-item"><span class="ht-year" data-i18n="ht_feb26">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&D</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_feb26">Fév 2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_elysium">ELYSIUM</div><div class="ht-sub" data-i18n="ht_elysium_sub">Architecture IA (perso)</div></div>
         <div class="ht-item edu"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_diplome">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
     </div></div>
     <div class="htl-hint" data-i18n="journey_hint">↔ glisser pour parcourir la frise</div>
