@@ -198,6 +198,7 @@
         <div class="ht-item edu"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_prepa">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
         <div class="ht-item edu"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_ece_sub">Cycle Ingénieur</div></div>
         <div class="ht-item"><span class="ht-year" data-i18n="ht_jun24">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
+        <div class="ht-item proj"><span class="ht-year">2024 →</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_elysium">ELYSIUM</div><div class="ht-sub" data-i18n="ht_elysium_sub">Architecture IA (perso)</div></div>
         <div class="ht-item"><span class="ht-year" data-i18n="ht_feb25">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_bt">Trésorier & Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
         <div class="ht-item proj"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_pfe">PFE avec EY</div><div class="ht-sub" data-i18n="ht_pfe_sub">Couverture dynamique</div></div>
         <div class="ht-item"><span class="ht-year" data-i18n="ht_feb26">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&D</div></div>
@@ -324,6 +325,7 @@ const i18n = {
         journey_hint: "↔ glisser pour parcourir la frise",
         ht_prepa: "Prépa MPSI", ht_ece_sub: "Cycle Ingénieur", ht_jun24: "Juin 2024", ht_feb25: "Fév 2025",
         ht_bt: "Trésorier & Dev", ht_pfe: "PFE avec EY", ht_pfe_sub: "Couverture dynamique",
+        ht_elysium: "ELYSIUM", ht_elysium_sub: "Architecture IA (perso)",
         ht_feb26: "Fév 2026", ht_diplome: "Diplôme Ingénieur",
         sec_exp: "Expérience Professionnelle",
         per_alten: "Février – Août 2026",
@@ -394,6 +396,7 @@ const i18n = {
         journey_hint: "↔ drag to explore the timeline",
         ht_prepa: "Prep School MPSI", ht_ece_sub: "Engineering Cycle", ht_jun24: "Jun 2024", ht_feb25: "Feb 2025",
         ht_bt: "Treasurer & Dev", ht_pfe: "Capstone with EY", ht_pfe_sub: "Dynamic hedging",
+        ht_elysium: "ELYSIUM", ht_elysium_sub: "AI architecture (personal)",
         ht_feb26: "Feb 2026", ht_diplome: "Engineering Degree",
         sec_exp: "Professional Experience",
         per_alten: "February – August 2026",
@@ -472,6 +475,7 @@ function applyLang(lang) {
     document.querySelectorAll('[data-cv]').forEach(a => a.setAttribute('href', cvPdf));
     // Redraw radar with translated labels
     initRadar();
+    if(typeof renderSkillsFromProfile==='function')renderSkillsFromProfile();
 }
 
 function toggleLang() {
@@ -522,8 +526,28 @@ setTimeout(()=>mcRun(50),600);
 function initRadar(){const canvas=document.getElementById('radarChart');if(!canvas)return;const ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1;canvas.style.width='320px';canvas.style.height='320px';canvas.width=320*dpr;canvas.height=320*dpr;ctx.scale(dpr,dpr);const W=320,H=320,cx=W/2,cy=H/2,R=120;const isDark=document.documentElement.getAttribute('data-theme')==='dark';
 const lang=document.documentElement.getAttribute('data-lang')||'fr';
 const labels=i18n[lang].radar_labels;
-const values=[.88,.75,.80,.82,.78,.85];const n=labels.length,step=(2*Math.PI)/n;ctx.clearRect(0,0,W,H);for(let lvl=1;lvl<=5;lvl++){const r=(lvl/5)*R;ctx.beginPath();for(let i=0;i<=n;i++){const angle=-Math.PI/2+i*step;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.strokeStyle=isDark?'rgba(59,130,246,.1)':'rgba(37,99,235,.1)';ctx.lineWidth=1;ctx.stroke()}for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*Math.cos(angle),cy+R*Math.sin(angle));ctx.strokeStyle=isDark?'rgba(59,130,246,.08)':'rgba(37,99,235,.08)';ctx.stroke()}ctx.beginPath();for(let i=0;i<=n;i++){const idx=i%n,angle=-Math.PI/2+idx*step,r=values[idx]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.fillStyle=isDark?'rgba(59,130,246,.15)':'rgba(37,99,235,.12)';ctx.fill();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;ctx.stroke();for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,r=values[i]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);ctx.beginPath();ctx.arc(x,y,4,0,2*Math.PI);ctx.fillStyle=isDark?'#3b82f6':'#2563eb';ctx.fill();ctx.strokeStyle=isDark?'#0a1020':'#f5f7fa';ctx.lineWidth=2;ctx.stroke()}ctx.font='11px "DM Sans",sans-serif';ctx.fillStyle=isDark?'#8b9aba':'#546178';ctx.textAlign='center';for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,lr=R+28;let x=cx+lr*Math.cos(angle),y=cy+lr*Math.sin(angle);if(angle>Math.PI*.25&&angle<Math.PI*.75)y+=4;if(angle<-Math.PI*.25||angle>Math.PI*1.25)y-=4;ctx.fillText(labels[i],x,y)}}
+const values=(window.RADAR_VALUES&&window.RADAR_VALUES.length===labels.length)?window.RADAR_VALUES:[.88,.75,.80,.82,.78,.85];const n=labels.length,step=(2*Math.PI)/n;ctx.clearRect(0,0,W,H);for(let lvl=1;lvl<=5;lvl++){const r=(lvl/5)*R;ctx.beginPath();for(let i=0;i<=n;i++){const angle=-Math.PI/2+i*step;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.strokeStyle=isDark?'rgba(59,130,246,.1)':'rgba(37,99,235,.1)';ctx.lineWidth=1;ctx.stroke()}for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*Math.cos(angle),cy+R*Math.sin(angle));ctx.strokeStyle=isDark?'rgba(59,130,246,.08)':'rgba(37,99,235,.08)';ctx.stroke()}ctx.beginPath();for(let i=0;i<=n;i++){const idx=i%n,angle=-Math.PI/2+idx*step,r=values[idx]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.fillStyle=isDark?'rgba(59,130,246,.15)':'rgba(37,99,235,.12)';ctx.fill();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;ctx.stroke();for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,r=values[i]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);ctx.beginPath();ctx.arc(x,y,4,0,2*Math.PI);ctx.fillStyle=isDark?'#3b82f6':'#2563eb';ctx.fill();ctx.strokeStyle=isDark?'#0a1020':'#f5f7fa';ctx.lineWidth=2;ctx.stroke()}ctx.font='11px "DM Sans",sans-serif';ctx.fillStyle=isDark?'#8b9aba':'#546178';ctx.textAlign='center';for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,lr=R+28;let x=cx+lr*Math.cos(angle),y=cy+lr*Math.sin(angle);if(angle>Math.PI*.25&&angle<Math.PI*.75)y+=4;if(angle<-Math.PI*.25||angle>Math.PI*1.25)y-=4;ctx.fillText(labels[i],x,y)}}
 setTimeout(initRadar,300);window.addEventListener('resize',()=>{initRadar();mcRun(currentMC)});
+
+// === CV-SPINE 1.2 : hydrate radar + skills from profile.json (fallback = hardcoded) ===
+var PROFILE=null;
+async function loadProfile(){if(PROFILE)return PROFILE;try{PROFILE=await fetch('profile.json').then(r=>r.ok?r.json():null)}catch(e){PROFILE=null}return PROFILE}
+function renderRadarFromProfile(){if(PROFILE&&PROFILE.skills&&PROFILE.skills.radar_scores){window.RADAR_VALUES=Object.values(PROFILE.skills.radar_scores);initRadar()}}
+function renderSkillsFromProfile(){
+  if(!PROFILE||!PROFILE.skills)return;
+  var sg=document.querySelector('.skills-side .sg');if(!sg)return;
+  var lang=document.documentElement.getAttribute('data-lang')||'fr';
+  var esc=function(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})};
+  var cats=[['programming',{fr:'Langages',en:'Languages'},'b'],['finance',{fr:'Finance',en:'Finance'},'g'],['data_ml',{fr:'Data & ML',en:'Data & ML'},'w'],['engineering',{fr:'Engineering \u2014 ELYSIUM',en:'Engineering \u2014 ELYSIUM'},'v'],['domain',{fr:'Domaines',en:'Domains'},'b']];
+  var html=cats.filter(function(c){return PROFILE.skills[c[0]]&&PROFILE.skills[c[0]].length}).map(function(c){
+    var k=c[0],lab=c[1],cls=c[2];
+    var tags=PROFILE.skills[k].map(function(s){return '<span class=\"tg '+cls+'\">'+esc(s.name)+'</span>'}).join('');
+    return '<div class=\"sk\"><h4>'+(lab[lang]||lab.fr)+'</h4><div class=\"tgs\">'+tags+'</div></div>';
+  }).join('');
+  if(html)sg.innerHTML=html;
+}
+(async function(){await loadProfile();if(!PROFILE)return;renderRadarFromProfile();renderSkillsFromProfile()})();
+
 
 // ═══ Journey drag-to-scroll ═══
 (function(){const el=document.getElementById('journeyScroll');if(!el)return;let down=false,sx=0,sl=0;
