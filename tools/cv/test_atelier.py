@@ -41,3 +41,36 @@ def test_generate_pdf_targeted_pipeline():
     txt = PdfReader(io.BytesIO(pdf)).pages[0].extract_text()
     assert "ALTEN" in txt and "ManCo" not in txt
     assert "Vasicek models" in txt
+
+
+# ── D : édition profile.json (save_profile_edit) — pas de Playwright ────────────
+
+def test_save_valid_writes(tmp_path):
+    p = tmp_path / "profile.json"
+    p.write_text('{"old":1}', encoding="utf-8")
+    res = atelier.save_profile_edit('{"$version":"1","new":2}', p, validate_fn=lambda d: [])
+    assert res["ok"] and res["errors"] == []
+    assert json.loads(p.read_text(encoding="utf-8"))["new"] == 2
+
+
+def test_save_invalid_json_no_write(tmp_path):
+    p = tmp_path / "profile.json"
+    p.write_text('{"keep":1}', encoding="utf-8")
+    res = atelier.save_profile_edit("{bad json", p, validate_fn=lambda d: [])
+    assert not res["ok"] and any("JSON invalide" in e for e in res["errors"])
+    assert p.read_text(encoding="utf-8") == '{"keep":1}'  # intact
+
+
+def test_save_validation_errors_no_write(tmp_path):
+    p = tmp_path / "profile.json"
+    p.write_text('{"keep":1}', encoding="utf-8")
+    res = atelier.save_profile_edit('{"x":1}', p, validate_fn=lambda d: ["missing domains", "bad radar"])
+    assert not res["ok"] and res["errors"] == ["missing domains", "bad radar"]
+    assert p.read_text(encoding="utf-8") == '{"keep":1}'  # intact
+
+
+def test_save_rejects_non_dict(tmp_path):
+    p = tmp_path / "profile.json"
+    p.write_text("{}", encoding="utf-8")
+    res = atelier.save_profile_edit("[1,2,3]", p, validate_fn=lambda d: [])
+    assert not res["ok"]

@@ -33,6 +33,51 @@ def generate_pdf(job_posting: str, profile: dict, lang: str = "fr",
     return cfg, pdf
 
 
+def _load_validate() -> Callable[[dict], list]:
+    """Charge validate_profile.validate (tools/, Track 0) via sys.path."""
+    import sys
+    tools_dir = str(_HERE.parent)  # tools/
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    import validate_profile  # type: ignore
+    return validate_profile.validate
+
+
+def save_profile_edit(raw_json: str, profile_path: pathlib.Path,
+                      validate_fn: Optional[Callable[[dict], list]] = None) -> dict:
+    """Parse + valide + écrit profile.json (atomique). N'écrit PAS si erreurs.
+
+    Retourne {ok, errors}. Reject-loud : JSON invalide ou règles validate_profile
+    violées → ok=False + messages, le fichier reste intact.
+    """
+    if validate_fn is None:
+        validate_fn = _load_validate()
+    try:
+        parsed = json.loads(raw_json)
+    except json.JSONDecodeError as e:
+        return {"ok": False, "errors": [f"JSON invalide : {e}"]}
+    if not isinstance(parsed, dict):
+        return {"ok": False, "errors": ["Le profil doit être un objet JSON."]}
+    errors = list(validate_fn(parsed))
+    if errors:
+        return {"ok": False, "errors": errors}
+    tmp = profile_path.parent / (profile_path.name + ".tmp")
+    tmp.write_text(json.dumps(parsed, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(profile_path)  # remplacement atomique
+    return {"ok": True, "errors": []}
+
+
+def _regen_bank() -> None:
+    import build_cv_bank  # type: ignore
+    build_cv_bank.main()
+
+
+def _git_commit(repo_root: pathlib.Path, paths: list[str], message: str) -> None:
+    import subprocess
+    subprocess.run(["git", "-C", str(repo_root), "add", *paths], check=True)
+    subprocess.run(["git", "-C", str(repo_root), "commit", "-m", message], check=True)
+
+
 _FORM = """<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <title>Atelier CV ciblé</title><style>
 body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1a1a2e}
@@ -44,6 +89,7 @@ button{background:#4361ee;color:#fff;border:none;cursor:pointer}button:disabled{
 #status{color:#666;font-size:13px;margin-left:8px}
 </style></head><body>
 <h1>Atelier CV ciblé</h1>
+<p style="font-size:13px"><a href="/edit" style="color:#4361ee">✎ Éditer le profil (profile.json)</a></p>
 <p class="sub">Colle une fiche de poste : le CV est filtré vers les expériences les plus pertinentes puis rendu en PDF (texte réel, ATS-safe).</p>
 <textarea id="job" placeholder="Colle la fiche de poste ici..."></textarea>
 <div class="row">
@@ -71,6 +117,48 @@ async function gen(){
 </script></body></html>"""
 
 
+_EDIT = """<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<title>Éditer le profil — Atelier CV</title><style>
+body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;max-width:900px;margin:30px auto;padding:0 20px;color:#1a1a2e}
+h1{font-size:20px}a{color:#4361ee}
+textarea{width:100%;min-height:58vh;border:1px solid #ccd;border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.row{display:flex;gap:16px;align-items:center;margin:12px 0;flex-wrap:wrap}
+label.cb{font-size:13px}
+button{background:#4361ee;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;cursor:pointer}button:disabled{opacity:.5}
+#status{font-size:13px}#status.ok{color:#159957}
+#errs{color:#c0392b;font-size:13px;white-space:pre-wrap;margin-top:8px}
+</style></head><body>
+<p><a href="/">← Atelier</a></p>
+<h1>Éditer le profil (profile.json)</h1>
+<p style="color:#666;font-size:13px">Validé (validate_profile) avant écriture atomique. Le site public s'hydrate de ce fichier.</p>
+<textarea id="p" spellcheck="false"></textarea>
+<div class="row">
+  <button id="go" onclick="save()">Valider &amp; Enregistrer</button>
+  <label class="cb"><input type="checkbox" id="regen"> Régénérer la banque préfab</label>
+  <label class="cb"><input type="checkbox" id="commit"> Committer localement</label>
+  <span id="status"></span>
+</div>
+<div id="errs"></div>
+<script>
+var P = __PROFILE__;
+document.getElementById('p').value = P;
+async function save(){
+  var btn=document.getElementById('go'),st=document.getElementById('status'),er=document.getElementById('errs');
+  er.textContent='';st.textContent='Validation...';st.className='';btn.disabled=true;
+  try{
+    var r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({json:document.getElementById('p').value,
+        regen:document.getElementById('regen').checked,
+        commit:document.getElementById('commit').checked})});
+    var res=await r.json();
+    if(res.ok){st.textContent='Enregistré. '+((res.actions||[]).join(', '));st.className='ok';}
+    else{st.textContent='Refusé ('+res.errors.length+' erreur(s))';er.textContent=res.errors.join('\\n');}
+  }catch(e){st.textContent='Erreur: '+e.message;}
+  btn.disabled=false;
+}
+</script></body></html>"""
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a):  # silencieux
         pass
@@ -87,15 +175,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/" or self.path.startswith("/?"):
             self._send(200, "text/html; charset=utf-8", _FORM.encode("utf-8"))
+        elif self.path == "/edit":
+            raw = _PROFILE.read_text(encoding="utf-8")
+            page = _EDIT.replace("__PROFILE__", json.dumps(raw).replace("<", "\\u003c"))
+            self._send(200, "text/html; charset=utf-8", page.encode("utf-8"))
         else:
             self._send(404, "text/plain", b"not found")
 
     def do_POST(self):
-        if self.path != "/generate":
-            return self._send(404, "text/plain", b"not found")
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length).decode("utf-8")
         try:
-            length = int(self.headers.get("Content-Length", 0))
-            data = json.loads(self.rfile.read(length).decode("utf-8"))
+            data = json.loads(body) if body else {}
+        except json.JSONDecodeError:
+            return self._send(400, "text/plain", b"bad json")
+        if self.path == "/generate":
+            return self._handle_generate(data)
+        if self.path == "/save":
+            return self._handle_save(data)
+        self._send(404, "text/plain", b"not found")
+
+    def _handle_generate(self, data):
+        try:
             job = str(data.get("job", "")); lang = "en" if data.get("lang") == "en" else "fr"
             profile = json.loads(_PROFILE.read_text(encoding="utf-8"))
             cfg, pdf = generate_pdf(job, profile, lang)
@@ -106,6 +207,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
             })
         except Exception as exc:  # atelier local : renvoie l'erreur lisible
             self._send(500, "text/plain; charset=utf-8", f"Erreur: {exc}".encode("utf-8"))
+
+    def _handle_save(self, data):
+        try:
+            res = save_profile_edit(str(data.get("json", "")), _PROFILE)
+            if res["ok"]:
+                actions = []
+                if data.get("regen"):
+                    _regen_bank(); actions.append("banque régénérée")
+                if data.get("commit"):
+                    _git_commit(_ROOT, ["profile.json", "cv/prefab"],
+                                "chore(cv): edition profile via atelier")
+                    actions.append("committé local")
+                res["actions"] = actions
+            self._send(200, "application/json; charset=utf-8",
+                       json.dumps(res, ensure_ascii=False).encode("utf-8"))
+        except Exception as exc:
+            self._send(500, "application/json; charset=utf-8",
+                       json.dumps({"ok": False, "errors": [str(exc)]}, ensure_ascii=False).encode("utf-8"))
 
 
 def main(port: int = 8010) -> int:
