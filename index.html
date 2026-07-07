@@ -72,8 +72,10 @@
         .stg{font-size:12.5px;color:var(--tx-3);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:color .3s var(--ease);border:none;background:none;font-family:var(--sans);padding:6px 0;font-weight:500}
         .stg:hover{color:var(--accent)}.stg .ar{transition:transform .3s var(--ease);font-size:9px}.stg.on .ar{transform:rotate(90deg)}
         .sp{display:none;margin-top:10px;padding:14px 18px;background:var(--accent-d);border-radius:var(--radius-sm);border-left:2px solid var(--accent)}.sp.on{display:block;animation:fadeIn .3s ease}.sp p{font-size:13px;color:var(--tx-2);margin-bottom:3px;line-height:1.5}
-        .htl-wrap{overflow-x:auto;padding:20px 0 24px;margin:-10px -8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-        .htl-wrap::-webkit-scrollbar{height:6px}.htl-wrap::-webkit-scrollbar-track{background:transparent}.htl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+        .htl-wrap{overflow-x:auto;padding:20px 0 24px;margin:-10px -8px;scrollbar-width:thin;scrollbar-color:var(--accent) transparent;cursor:grab}
+        .htl-wrap.drag{cursor:grabbing}
+        .htl-wrap::-webkit-scrollbar{height:10px}.htl-wrap::-webkit-scrollbar-track{background:var(--bg-2);border-radius:5px}.htl-wrap::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:5px;border:2px solid var(--bg-0)}.htl-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+        .htl-hint{display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:11px;color:var(--tx-3);margin:2px 8px 0;font-weight:500}
         .htl{display:flex;gap:0;min-width:max-content;position:relative;padding:0 8px}.htl::before{content:'';position:absolute;top:40px;left:8px;right:8px;height:2px;background:linear-gradient(90deg,var(--accent),var(--violet),var(--rose),var(--warm));border-radius:1px}
         .ht-item{display:flex;flex-direction:column;align-items:center;min-width:130px;position:relative}.ht-year{font-size:11px;font-weight:700;color:var(--tx-3);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase}
         .ht-dot{width:12px;height:12px;border-radius:50%;border:2.5px solid var(--accent);background:var(--bg-0);z-index:2;margin-bottom:14px;transition:all .3s var(--ease)}
@@ -178,21 +180,21 @@
 <!-- HERO -->
 <div class="hero" id="hero"><div class="hero-in">
     <div class="status"><span class="status-dot"></span><span data-i18n="status">Actuellement : Quant Researcher DeFi @ ALTEN</span></div>
-    <div class="avatar-ring"><img src="photo.jpg" alt="Robin Denis"></div>
+    <div class="avatar-ring"><img src="photo_avatar.jpg" alt="Robin Denis"></div>
     <h1>Robin Denis</h1>
     <p class="hero-tag" data-i18n="hero_tag">Ingénierie Financière & Quantitative</p>
     <p class="hero-sub">ECE Paris · Promo 2026 · Paris</p>
     <div class="pills">
         <a class="pill" href="https://www.linkedin.com/in/robin-denis-finance/" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
         <a class="pill" href="https://github.com/RoJLD" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>GitHub</a>
-        <a class="pill" href="cv/Robin_Denis_CV.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span data-i18n="pill_cv">CV</span></a>
+        <a class="pill" href="cv/ATS_FR_RobinDENIS_8.pdf" target="_blank" data-cv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span data-i18n="pill_cv">CV</span></a>
         <a class="pill" href="mailto:robin.denis1207@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>Email</a>
     </div>
 </div></div>
 
 <!-- TIMELINE HORIZONTALE -->
 <section class="rv" id="parcours"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🗺️</div><h2 class="st" data-i18n="sec_parcours">Mon Parcours</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
-    <div class="htl-wrap"><div class="htl">
+    <div class="htl-wrap" id="journeyScroll"><div class="htl">
         <div class="ht-item edu"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_prepa">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
         <div class="ht-item edu"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_ece_sub">Cycle Ingénieur</div></div>
         <div class="ht-item"><span class="ht-year" data-i18n="ht_jun24">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
@@ -201,6 +203,7 @@
         <div class="ht-item"><span class="ht-year" data-i18n="ht_feb26">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&D</div></div>
         <div class="ht-item edu"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_diplome">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
     </div></div>
+    <div class="htl-hint" data-i18n="journey_hint">↔ glisser pour parcourir la frise</div>
 </div></div></section>
 
 <!-- EXPÉRIENCE -->
@@ -270,7 +273,7 @@
 <!-- BLOG -->
 <section id="blog" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">✍️</div><h2 class="st" data-i18n="sec_blog">Articles & Notes</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="blog-grid">
     <a class="blog-card" href="articles/couverture-dynamique.html"><div class="blog-date" data-i18n="blog1_date">Mars 2026</div><h4 data-i18n="blog1_title">Couverture dynamique : théorie vs pratique en assurance</h4><p data-i18n="blog1_desc">Retour d'expérience sur mon PFE avec EY — comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.</p><div class="blog-tags"><span class="blog-tag">Finance</span><span class="blog-tag">Hedging</span><span class="blog-tag">PFE</span></div></a>
-    <a class="blog-card" href="articles/on-chain-analytics.html"><div class="blog-date" data-i18n="blog2_date">Avril 2026</div><h4 data-i18n="blog2_title">Analyse on-chain : détecter les signaux faibles en DeFi</h4><p data-i18n="blog2_desc">Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.</p><div class="blog-tags"><span class="blog-tag">DeFi</span><span class="blog-tag">Data</span><span class="blog-tag">Python</span></div></a>
+    <div class="blog-card" style="opacity:.55;cursor:default"><div class="blog-date" data-i18n="blog2_date">Avril 2026</div><h4 data-i18n="blog2_title">Analyse on-chain : détecter les signaux faibles en DeFi</h4><p data-i18n="blog2_desc">Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.</p><div class="blog-tags"><span class="blog-tag">DeFi</span><span class="blog-tag">Data</span><span class="blog-tag" data-i18n="blog_soon" style="background:var(--warm-g);color:var(--warm)">À venir</span></div></div>
 </div></div></div></section>
 
 <!-- LANGUES & INTÉRÊTS -->
@@ -305,7 +308,7 @@
 </div>
 
 <!-- FAB -->
-<a class="fab" href="cv/Robin_Denis_CV.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="fab-tip" data-i18n="fab_tip">Télécharger mon CV</span></a>
+<a class="fab" href="cv/ATS_FR_RobinDENIS_8.pdf" target="_blank" data-cv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="fab-tip" data-i18n="fab_tip">Télécharger mon CV</span></a>
 
 <script>
 // ═══════════════════════════════════════════
@@ -318,6 +321,7 @@ const i18n = {
         hero_tag: "Ingénierie Financière & Quantitative",
         pill_cv: "CV",
         sec_parcours: "Mon Parcours",
+        journey_hint: "↔ glisser pour parcourir la frise",
         ht_prepa: "Prépa MPSI", ht_ece_sub: "Cycle Ingénieur", ht_jun24: "Juin 2024", ht_feb25: "Fév 2025",
         ht_bt: "Trésorier & Dev", ht_pfe: "PFE avec EY", ht_pfe_sub: "Couverture dynamique",
         ht_feb26: "Fév 2026", ht_diplome: "Diplôme Ingénieur",
@@ -367,6 +371,7 @@ const i18n = {
         blog1_desc: "Retour d'expérience sur mon PFE avec EY — comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.",
         blog2_date: "Avril 2026", blog2_title: "Analyse on-chain : détecter les signaux faibles en DeFi",
         blog2_desc: "Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.",
+        blog_soon: "À venir",
         sec_interests: "Langues & Centres d'intérêt",
         lang_fr: "Français", lang_fr_lvl: "Langue maternelle",
         lang_en: "Anglais", lang_en_lvl: "Courant — C1",
@@ -386,8 +391,9 @@ const i18n = {
         hero_tag: "Financial & Quantitative Engineering",
         pill_cv: "Resume",
         sec_parcours: "My Journey",
+        journey_hint: "↔ drag to explore the timeline",
         ht_prepa: "Prep School MPSI", ht_ece_sub: "Engineering Cycle", ht_jun24: "Jun 2024", ht_feb25: "Feb 2025",
-        ht_bt: "Treasurer & Dev", ht_pfe: "Thesis with EY", ht_pfe_sub: "Dynamic hedging",
+        ht_bt: "Treasurer & Dev", ht_pfe: "Capstone with EY", ht_pfe_sub: "Dynamic hedging",
         ht_feb26: "Feb 2026", ht_diplome: "Engineering Degree",
         sec_exp: "Professional Experience",
         per_alten: "February – August 2026",
@@ -435,6 +441,7 @@ const i18n = {
         blog1_desc: "Lessons from my capstone project with EY — how theoretical models face operational constraints in portfolio hedging.",
         blog2_date: "April 2026", blog2_title: "On-Chain Analytics: Detecting Weak Signals in DeFi",
         blog2_desc: "Methodology for collecting and analyzing on-chain metrics (TVL, APY, Volume) to identify patterns on emerging protocols.",
+        blog_soon: "Coming soon",
         sec_interests: "Languages & Interests",
         lang_fr: "French", lang_fr_lvl: "Native",
         lang_en: "English", lang_en_lvl: "Fluent — C1",
@@ -460,6 +467,9 @@ function applyLang(lang) {
     document.documentElement.setAttribute('data-lang', lang);
     document.documentElement.setAttribute('lang', lang);
     document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
+    // Language-aware CV download (Track 0 interim; Track 2 = complete/specific chooser)
+    const cvPdf = {fr:'cv/ATS_FR_RobinDENIS_8.pdf', en:'cv/ATS_english_RobinDENIS_7.pdf'}[lang];
+    document.querySelectorAll('[data-cv]').forEach(a => a.setAttribute('href', cvPdf));
     // Redraw radar with translated labels
     initRadar();
 }
@@ -514,6 +524,15 @@ const lang=document.documentElement.getAttribute('data-lang')||'fr';
 const labels=i18n[lang].radar_labels;
 const values=[.88,.75,.80,.82,.78,.85];const n=labels.length,step=(2*Math.PI)/n;ctx.clearRect(0,0,W,H);for(let lvl=1;lvl<=5;lvl++){const r=(lvl/5)*R;ctx.beginPath();for(let i=0;i<=n;i++){const angle=-Math.PI/2+i*step;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.strokeStyle=isDark?'rgba(59,130,246,.1)':'rgba(37,99,235,.1)';ctx.lineWidth=1;ctx.stroke()}for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*Math.cos(angle),cy+R*Math.sin(angle));ctx.strokeStyle=isDark?'rgba(59,130,246,.08)':'rgba(37,99,235,.08)';ctx.stroke()}ctx.beginPath();for(let i=0;i<=n;i++){const idx=i%n,angle=-Math.PI/2+idx*step,r=values[idx]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.fillStyle=isDark?'rgba(59,130,246,.15)':'rgba(37,99,235,.12)';ctx.fill();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;ctx.stroke();for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,r=values[i]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);ctx.beginPath();ctx.arc(x,y,4,0,2*Math.PI);ctx.fillStyle=isDark?'#3b82f6':'#2563eb';ctx.fill();ctx.strokeStyle=isDark?'#0a1020':'#f5f7fa';ctx.lineWidth=2;ctx.stroke()}ctx.font='11px "DM Sans",sans-serif';ctx.fillStyle=isDark?'#8b9aba':'#546178';ctx.textAlign='center';for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,lr=R+28;let x=cx+lr*Math.cos(angle),y=cy+lr*Math.sin(angle);if(angle>Math.PI*.25&&angle<Math.PI*.75)y+=4;if(angle<-Math.PI*.25||angle>Math.PI*1.25)y-=4;ctx.fillText(labels[i],x,y)}}
 setTimeout(initRadar,300);window.addEventListener('resize',()=>{initRadar();mcRun(currentMC)});
+
+// ═══ Journey drag-to-scroll ═══
+(function(){const el=document.getElementById('journeyScroll');if(!el)return;let down=false,sx=0,sl=0;
+el.addEventListener('mousedown',e=>{down=true;el.classList.add('drag');sx=e.pageX;sl=el.scrollLeft});
+window.addEventListener('mouseup',()=>{down=false;el.classList.remove('drag')});
+el.addEventListener('mouseleave',()=>{down=false;el.classList.remove('drag')});
+el.addEventListener('mousemove',e=>{if(!down)return;e.preventDefault();el.scrollLeft=sl-(e.pageX-sx)});
+el.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){el.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
+})();
 </script>
 </body>
 </html>
