@@ -1,0 +1,82 @@
+[
+  {
+    "id": "quant",
+    "label": {
+      "fr": "Finance quantitative",
+      "en": "Quantitative Finance"
+    },
+    "lang": "fr",
+    "file": "cv/prefab/quant_fr.pdf",
+    "n_experiences": 3
+  },
+  {
+    "id": "quant",
+    "label": {
+      "fr": "Finance quantitative",
+      "en": "Quantitative Finance"
+    },
+    "lang": "en",
+    "file": "cv/prefab/quant_en.pdf",
+    "n_experiences": 3
+  },
+  {
+    "id": "dev",
+    "label": {
+      "fr": "Développement / Data",
+      "en": "Software / Data"
+    },
+    "lang": "fr",
+    "file": "cv/prefab/dev_fr.pdf",
+    "n_experiences": 2
+  },
+  {
+    "id": "dev",
+    "label": {
+      "fr": "Développement / Data",
+      "en": "Software / Data"
+    },
+    "lang": "en",
+    "file": "cv/prefab/dev_en.pdf",
+    "n_experiences": 2
+  },
+  {
+    "id": "risk",
+    "label": {
+      "fr": "Gestion des risques",
+      "en": "Risk Management"
+    },
+    "lang": "fr",
+    "file": "cv/prefab/risk_fr.pdf",
+    "n_experiences": 3
+  },
+  {
+    "id": "risk",
+    "label": {
+      "fr": "Gestion des risques",
+      "en": "Risk Management"
+    },
+    "lang": "en",
+    "file": "cv/prefab/risk_en.pdf",
+    "n_experiences": 3
+  },
+  {
+    "id": "full",
+    "label": {
+      "fr": "Profil complet",
+      "en": "Full profile"
+    },
+    "lang": "fr",
+    "file": "cv/prefab/full_fr.pdf",
+    "n_experiences": 3
+  },
+  {
+    "id": "full",
+    "label": {
+      "fr": "Profil complet",
+      "en": "Full profile"
+    },
+    "lang": "en",
+    "file": "cv/prefab/full_en.pdf",
+    "n_experiences": 3
+  }
+]

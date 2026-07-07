@@ -1,0 +1,37 @@
+{
+  "$comment": "Σ-CV-ATELIER — cfgs de préfabriqués (format sous-projet A). Filtrage AUTO niveau-expérience via experience.relevance + experience.domains.",
+  "profiles": [
+    {
+      "id": "quant",
+      "label": {"fr": "Finance quantitative", "en": "Quantitative Finance"},
+      "relevance_key": "quant",
+      "min_relevance": 0.6,
+      "domains_in": ["quant", "finance", "defi"],
+      "max_experiences": null
+    },
+    {
+      "id": "dev",
+      "label": {"fr": "Développement / Data", "en": "Software / Data"},
+      "relevance_key": "dev",
+      "min_relevance": 0.5,
+      "domains_in": ["dev", "data", "ai", "infra", "architecture"],
+      "max_experiences": null
+    },
+    {
+      "id": "risk",
+      "label": {"fr": "Gestion des risques", "en": "Risk Management"},
+      "relevance_key": "risk",
+      "min_relevance": 0.5,
+      "domains_in": ["risk", "finance"],
+      "max_experiences": null
+    },
+    {
+      "id": "full",
+      "label": {"fr": "Profil complet", "en": "Full profile"},
+      "relevance_key": "general",
+      "min_relevance": 0.0,
+      "domains_in": [],
+      "max_experiences": null
+    }
+  ]
+}
