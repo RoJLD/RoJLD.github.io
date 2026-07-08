@@ -83,7 +83,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
   <p>Réalisations académiques, personnelles et professionnelles — de la finance quantitative à l'infrastructure souveraine, en passant par le hardware.</p>
 </header>
 
-<div class="filters" id="filters"><button class="f-btn active" data-filter="all">Tous</button><button class="f-btn" data-filter="architecture">Architecture</button><button class="f-btn" data-filter="ai-ml">IA / ML</button><button class="f-btn" data-filter="kubernetes">Kubernetes</button><button class="f-btn" data-filter="knowledge-graph">Knowledge Graph</button><button class="f-btn" data-filter="devops">DevOps</button><button class="f-btn" data-filter="python">Python</button><button class="f-btn" data-filter="finance">Finance</button><button class="f-btn" data-filter="hedging">Hedging</button><button class="f-btn" data-filter="derivatives">Dérivés</button><button class="f-btn" data-filter="quant">Quant Finance</button><button class="f-btn" data-filter="simulation">Simulation</button><button class="f-btn" data-filter="ml">Machine Learning</button><button class="f-btn" data-filter="cnn">CNN / Vision</button><button class="f-btn" data-filter="trading">Trading Algo</button><button class="f-btn" data-filter="c-sharp">C#</button><button class="f-btn" data-filter="vba">VBA / Excel</button><button class="f-btn" data-filter="data-eng">Data Engineering</button><button class="f-btn" data-filter="vhdl">VHDL / FPGA</button><button class="f-btn" data-filter="hardware">Hardware</button><button class="f-btn" data-filter="robotics">Robotique</button><button class="f-btn" data-filter="3d-printing">Impression 3D</button><button class="f-btn" data-filter="open-source">Open Source</button><button class="f-btn" data-filter="treasury">Trésorerie</button><button class="f-btn" data-filter="defi">DeFi</button></div>
+<div class="filters" id="filters"><button class="f-btn active" data-filter="all">Tous</button><button class="f-btn" data-filter="architecture">Architecture</button><button class="f-btn" data-filter="ai-ml">IA / ML</button><button class="f-btn" data-filter="kubernetes">Kubernetes</button><button class="f-btn" data-filter="knowledge-graph">Knowledge Graph</button><button class="f-btn" data-filter="devops">DevOps</button><button class="f-btn" data-filter="python">Python</button><button class="f-btn" data-filter="finance">Finance</button><button class="f-btn" data-filter="hedging">Hedging</button><button class="f-btn" data-filter="derivatives">Dérivés</button><button class="f-btn" data-filter="quant">Quant Finance</button><button class="f-btn" data-filter="ml">Machine Learning</button><button class="f-btn" data-filter="open-source">Open Source</button><button class="f-btn" data-filter="simulation">Simulation</button><button class="f-btn" data-filter="cnn">CNN / Vision</button><button class="f-btn" data-filter="trading">Trading Algo</button><button class="f-btn" data-filter="c-sharp">C#</button><button class="f-btn" data-filter="vba">VBA / Excel</button><button class="f-btn" data-filter="data-eng">Data Engineering</button><button class="f-btn" data-filter="vhdl">VHDL / FPGA</button><button class="f-btn" data-filter="hardware">Hardware</button><button class="f-btn" data-filter="robotics">Robotique</button><button class="f-btn" data-filter="3d-printing">Impression 3D</button><button class="f-btn" data-filter="treasury">Trésorerie</button><button class="f-btn" data-filter="defi">DeFi</button></div>
 
 <div class="grid" id="grid">
 <article id="elysium" class="p-card featured" data-tags="architecture,ai-ml,kubernetes,knowledge-graph,devops,python" data-type="personal">
@@ -103,7 +103,7 @@ def sage_layer(H, A, W_self, W_neigh):
     out = H @ W_self + neigh @ W_neigh         # self + voisinage
     return np.maximum(out, 0.0)                # ReLU
 </code></pre><p class="snip-note">Une couche d&#x27;agrégation moyenne des voisins, combinée à l&#x27;état du nœud — le cœur du routage d&#x27;intentions sémantiques sur le graphe.</p></details>
-  <div class="p-links"><a class="p-link" href="https://github.com/RoJLD/ELYSIUM" target="_blank" rel="noopener">GitHub</a></div>
+  <div class="p-links"><span class="p-status">Privé — cœur souverain</span></div>
 </article>
 <article id="pfe-hedging" class="p-card featured" data-tags="finance,hedging,derivatives,quant" data-type="academic">
   <div class="p-head">
@@ -115,6 +115,28 @@ def sage_layer(H, A, W_self, W_neigh):
   <div class="p-tags"><span class="p-tag" data-tag="finance">Finance</span><span class="p-tag" data-tag="hedging">Hedging</span><span class="p-tag" data-tag="derivatives">Dérivés</span><span class="p-tag" data-tag="quant">Quant Finance</span></div>
   
   <div class="p-links"><a class="p-link" href="articles/couverture-dynamique.html" target="_blank" rel="noopener">Article</a></div>
+</article>
+<article id="anthropos" class="p-card" data-tags="python,architecture" data-type="personal">
+  <div class="p-head">
+    <span class="p-type tg b">Personnel</span>
+    <span class="p-date">2026</span>
+  </div>
+  <h3 class="p-title">Anthropos — Career OS &amp; Life Architect</h3>
+  <p class="p-summary">Plateforme local-first (FastAPI) de gestion de carrière et de développement personnel : career management, recherche d&#x27;emploi, architecture de vie. API-first.</p>
+  <div class="p-tags"><span class="p-tag" data-tag="python">Python</span><span class="p-tag" data-tag="architecture">Architecture</span></div>
+  
+  <div class="p-links"><a class="p-link" href="https://github.com/RoJLD/Anthropos" target="_blank" rel="noopener">GitHub</a></div>
+</article>
+<article id="hmm-studio" class="p-card" data-tags="ml,quant,python,open-source" data-type="personal">
+  <div class="p-head">
+    <span class="p-type tg b">Personnel</span>
+    <span class="p-date">2026</span>
+  </div>
+  <h3 class="p-title">hmm-studio — Modèles de Markov cachés contraints</h3>
+  <p class="p-summary">Bibliothèque HMM Python (pip-installable, compatible scikit-learn, native Jupyter) : moteur Baum-Welch contraint (topologies left-right/Bakis, priors de Dirichlet, NHMM, apprentissage supervisé) et studio optionnel FastAPI/React. Licence MIT.</p>
+  <div class="p-tags"><span class="p-tag" data-tag="ml">Machine Learning</span><span class="p-tag" data-tag="quant">Quant Finance</span><span class="p-tag" data-tag="python">Python</span><span class="p-tag" data-tag="open-source">Open Source</span></div>
+  
+  <div class="p-links"><a class="p-link" href="https://github.com/RoJLD/HMMstudio" target="_blank" rel="noopener">GitHub</a><a class="p-link" href="https://rojld.github.io/HMMstudio/" target="_blank" rel="noopener">Live</a></div>
 </article>
 <article id="derivatives-pricer" class="p-card" data-tags="quant,finance,derivatives,python" data-type="academic">
   <div class="p-head">
@@ -255,9 +277,20 @@ def gbm_paths(S0, mu, sigma, T, steps, n):
   
   <div class="p-links"><span class="p-status">Propriété ALTEN</span></div>
 </article>
+<article id="ppe-politique-monetaire" class="p-card" data-tags="finance,python" data-type="academic">
+  <div class="p-head">
+    <span class="p-type tg v">Académique</span>
+    <span class="p-date">2023</span>
+  </div>
+  <h3 class="p-title">Recherche &amp; fixation de la politique monétaire (PPE)</h3>
+  <p class="p-summary">Projet de recherche (PPE) sur la conduite et la fixation de la politique monétaire.</p>
+  <div class="p-tags"><span class="p-tag" data-tag="finance">Finance</span><span class="p-tag" data-tag="python">Python</span></div>
+  
+  <div class="p-links"><a class="p-link" href="https://github.com/RoJLD/PPE_Recherche_et_fixation_mon-taire" target="_blank" rel="noopener">GitHub</a></div>
+</article>
 </div>
 
-<footer>Robin Denis · 2026-07-06 · <a href="/" style="color:var(--accent);text-decoration:none">Retour à l'accueil</a></footer>
+<footer>Robin Denis · 2026-07-08 · <a href="/" style="color:var(--accent);text-decoration:none">Retour à l'accueil</a></footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>

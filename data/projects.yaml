@@ -19,7 +19,7 @@
 # ============================================================================
 
 meta:
-  updated: "2026-07-06"
+  updated: "2026-07-08"
   github_profile: "https://github.com/RoJLD"
 
 tag_labels:
@@ -61,8 +61,7 @@ projects:
       cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds
       indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds,
       chaîne d'audit git souveraine. ~30 mois en solo.
-    links:
-      github: "https://github.com/RoJLD/ELYSIUM"
+    code_status: "Privé — cœur souverain"
     snippet:
       lang: python
       label: "GraphSAGE-lite (NumPy pur, zéro dépendance deep-learning)"
@@ -89,6 +88,30 @@ projects:
       livrables (note de cadrage, état de l'art, prototype, soutenance).
     links:
       article: "articles/couverture-dynamique.html"
+
+  - id: anthropos
+    title: "Anthropos — Career OS & Life Architect"
+    type: personal
+    date: "2026"
+    tags: [python, architecture]
+    summary: >
+      Plateforme local-first (FastAPI) de gestion de carrière et de développement personnel :
+      career management, recherche d'emploi, architecture de vie. API-first.
+    links:
+      github: "https://github.com/RoJLD/Anthropos"
+
+  - id: hmm-studio
+    title: "hmm-studio — Modèles de Markov cachés contraints"
+    type: personal
+    date: "2026"
+    tags: [ml, quant, python, open-source]
+    summary: >
+      Bibliothèque HMM Python (pip-installable, compatible scikit-learn, native Jupyter) :
+      moteur Baum-Welch contraint (topologies left-right/Bakis, priors de Dirichlet, NHMM,
+      apprentissage supervisé) et studio optionnel FastAPI/React. Licence MIT.
+    links:
+      github: "https://github.com/RoJLD/HMMstudio"
+      live: "https://rojld.github.io/HMMstudio/"
 
   - id: derivatives-pricer
     title: "Pricer d'options européennes (Black-Scholes)"
@@ -228,3 +251,13 @@ projects:
       modèles statistiques/ML (HMM, transfert d'entropie, copules, causalité), collecte
       on-chain automatisée (TVL, APY, Volume), env. reproductible Docker/Azure DevOps.
     code_status: "Propriété ALTEN"
+
+  - id: ppe-politique-monetaire
+    title: "Recherche & fixation de la politique monétaire (PPE)"
+    type: academic
+    date: "2023"
+    tags: [finance, python]
+    summary: >
+      Projet de recherche (PPE) sur la conduite et la fixation de la politique monétaire.
+    links:
+      github: "https://github.com/RoJLD/PPE_Recherche_et_fixation_mon-taire"
