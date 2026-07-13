@@ -141,7 +141,7 @@
         "title": "Couverture dynamique en assurance et en banque",
         "partner": "EY",
         "role": "Chef de projet",
-        "description": "Modélisation et pilotage de stratégies de couverture dynamique — confrontation des modèles théoriques aux contraintes opérationnelles du hedging.",
+        "description": "Modélisation et pilotage de stratégies de couverture dynamique : confrontation des modèles théoriques aux contraintes opérationnelles du hedging.",
         "tags": [
           "hedging",
           "assurance",
@@ -747,7 +747,7 @@
         ],
         "rarity": "very_rare",
         "market_premium_pct": 20,
-        "narrative": "Quant avec expérience on-chain — profil quasi inexistant sur le marché FR"
+        "narrative": "Quant avec expérience on-chain, profil quasi inexistant sur le marché FR"
       },
       {
         "id": "treasury_dev",
@@ -758,7 +758,7 @@
         ],
         "rarity": "rare",
         "market_premium_pct": 15,
-        "narrative": "Trésorier qui code — pont entre finance corporate et engineering"
+        "narrative": "Trésorier qui code : pont entre finance corporate et engineering"
       },
       {
         "id": "risk_quant",
@@ -769,7 +769,7 @@
         ],
         "rarity": "uncommon",
         "market_premium_pct": 10,
-        "narrative": "Risk Manager avec background stochastique — rare chez les juniors"
+        "narrative": "Risk Manager avec background stochastique, rare chez les juniors"
       }
     ]
   },
@@ -838,7 +838,7 @@
     },
     {
       "id": "pfe_hedging",
-      "name": "Couverture Dynamique — PFE avec EY",
+      "name": "Couverture Dynamique, PFE avec EY",
       "context": "ece",
       "description": "Modélisation et pilotage de stratégies de couverture dynamique en assurance et banque.",
       "impact": "Projet de fin d'études, chef de projet",
@@ -862,7 +862,7 @@
     },
     {
       "id": "portfolio_site",
-      "name": "Portfolio Career OS",
+      "name": "Portfolio Anthropos",
       "context": "personal",
       "description": "Site portfolio bilingue + interface admin locale (FastAPI) + bot de candidature automatisé.",
       "impact": "100% statique, GitHub Pages, système admin complet",
@@ -885,10 +885,10 @@
     },
     {
       "id": "elysium",
-      "name": "ELYSIUM — Architecture IA souveraine",
+      "name": "ELYSIUM, Architecture IA souveraine",
       "context": "personal",
-      "description": "Projet personnel de R&D (depuis février 2026) : substrat cognitif d'une IA autonome — cluster GPU K3s 4 nœuds (AMD ROCm), graphe de connaissance auto-audité, orchestration multi-agent/multi-modèle, gouvernance par sentinels. Projet solo end-to-end.",
-      "impact": "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain — architecture solo depuis février 2026",
+      "description": "Projet personnel de R&D (depuis février 2026) : substrat cognitif d'une IA autonome : cluster GPU K3s 4 nœuds (AMD ROCm), graphe de connaissance auto-audité, orchestration multi-agent/multi-modèle, gouvernance par sentinels. Projet solo end-to-end.",
+      "impact": "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain : architecture solo depuis février 2026",
       "stack": [
         "Python",
         "Kubernetes / K3s",
@@ -956,8 +956,8 @@
       "id": "student_pop",
       "author": "Ouriel Darmon",
       "role": {
-        "fr": "Président-Directeur Général — Student Pop",
-        "en": "CEO — Student Pop"
+        "fr": "Président-Directeur Général, Student Pop",
+        "en": "CEO, Student Pop"
       },
       "initials": "OD",
       "text": {
@@ -971,13 +971,13 @@
       "id": "manco_paris",
       "author": "André MAYENS",
       "role": {
-        "fr": "Directeur Général — ManCo Paris",
-        "en": "CEO — ManCo Paris"
+        "fr": "Directeur Général, ManCo Paris",
+        "en": "CEO, ManCo Paris"
       },
       "initials": "AM",
       "text": {
-        "fr": "Sa vision analytique et sa capacité à travailler en autonomie comme en équipe font de lui un excellent candidat. Il allie des compétences techniques solides — VBA, SQL, Access — à une bonne compréhension des enjeux métiers. Robin s'est très vite imposé comme un collaborateur sérieux, curieux et extrêmement impliqué.",
-        "en": "His analytical vision and ability to work independently or as a team make him an excellent candidate. He combines strong technical skills — VBA, SQL, Access — with a solid understanding of business challenges. Robin quickly established himself as a serious, curious and highly dedicated team member."
+        "fr": "Sa vision analytique et sa capacité à travailler en autonomie comme en équipe font de lui un excellent candidat. Il allie des compétences techniques solides (VBA, SQL, Access) à une bonne compréhension des enjeux métiers. Robin s'est très vite imposé comme un collaborateur sérieux, curieux et extrêmement impliqué.",
+        "en": "His analytical vision and ability to work independently or as a team make him an excellent candidate. He combines strong technical skills (VBA, SQL, Access) with a solid understanding of business challenges. Robin quickly established himself as a serious, curious and highly dedicated team member."
       },
       "pdfs": [
         "recommandations/Reco_Academique_Manco_signed 2025-06-10 06_50_03.pdf",

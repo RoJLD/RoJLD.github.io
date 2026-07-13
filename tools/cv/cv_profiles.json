@@ -1,5 +1,5 @@
 {
-  "$comment": "Σ-CV-ATELIER — cfgs de préfabriqués (format sous-projet A). Filtrage AUTO niveau-expérience via experience.relevance + experience.domains.",
+  "$comment": "Σ-CV-ATELIER : cfgs de préfabriqués (format sous-projet A). Filtrage AUTO niveau-expérience via experience.relevance + experience.domains.",
   "profiles": [
     {
       "id": "quant",

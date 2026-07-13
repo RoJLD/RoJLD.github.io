@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Projets — Robin Denis</title>
-<meta name="description" content="Projets académiques, personnels et professionnels de Robin Denis — quant, ML, infrastructure, hardware.">
+<title>Projets · Robin Denis</title>
+<meta name="description" content="Projets académiques, personnels et professionnels de Robin Denis : quant, ML, infrastructure, hardware.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -80,7 +80,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
 <div class="wrap">
 <header class="hd">
   <h1>Projets</h1>
-  <p>Réalisations académiques, personnelles et professionnelles — de la finance quantitative à l'infrastructure souveraine, en passant par le hardware.</p>
+  <p>Réalisations académiques, personnelles et professionnelles, de la finance quantitative à l'infrastructure souveraine, en passant par le hardware.</p>
 </header>
 
 <div class="filters" id="filters"><button class="f-btn active" data-filter="all">Tous</button><button class="f-btn" data-filter="architecture">Architecture</button><button class="f-btn" data-filter="ai-ml">IA / ML</button><button class="f-btn" data-filter="kubernetes">Kubernetes</button><button class="f-btn" data-filter="knowledge-graph">Knowledge Graph</button><button class="f-btn" data-filter="devops">DevOps</button><button class="f-btn" data-filter="python">Python</button><button class="f-btn" data-filter="finance">Finance</button><button class="f-btn" data-filter="hedging">Hedging</button><button class="f-btn" data-filter="derivatives">Dérivés</button><button class="f-btn" data-filter="quant">Quant Finance</button><button class="f-btn" data-filter="ml">Machine Learning</button><button class="f-btn" data-filter="open-source">Open Source</button><button class="f-btn" data-filter="simulation">Simulation</button><button class="f-btn" data-filter="cnn">CNN / Vision</button><button class="f-btn" data-filter="trading">Trading Algo</button><button class="f-btn" data-filter="c-sharp">C#</button><button class="f-btn" data-filter="vba">VBA / Excel</button><button class="f-btn" data-filter="data-eng">Data Engineering</button><button class="f-btn" data-filter="vhdl">VHDL / FPGA</button><button class="f-btn" data-filter="hardware">Hardware</button><button class="f-btn" data-filter="robotics">Robotique</button><button class="f-btn" data-filter="3d-printing">Impression 3D</button><button class="f-btn" data-filter="treasury">Trésorerie</button><button class="f-btn" data-filter="defi">DeFi</button></div>
@@ -89,9 +89,9 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
 <article id="elysium" class="p-card featured" data-tags="architecture,ai-ml,kubernetes,knowledge-graph,devops,python" data-type="personal">
   <div class="p-head">
     <span class="p-type tg b">Personnel</span>
-    <span class="p-date">2024 — présent</span>
+    <span class="p-date">Depuis 2024</span>
   </div>
-  <h3 class="p-title">ELYSIUM — Sovereign Cognitive Architecture</h3>
+  <h3 class="p-title">ELYSIUM, Sovereign Cognitive Architecture</h3>
   <p class="p-summary">Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d&#x27;une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l&#x27;AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d&#x27;audit git souveraine. ~30 mois en solo.</p>
   <div class="p-tags"><span class="p-tag" data-tag="architecture">Architecture</span><span class="p-tag" data-tag="ai-ml">IA / ML</span><span class="p-tag" data-tag="kubernetes">Kubernetes</span><span class="p-tag" data-tag="knowledge-graph">Knowledge Graph</span><span class="p-tag" data-tag="devops">DevOps</span><span class="p-tag" data-tag="python">Python</span></div>
   <details class="snip"><summary><span class="snip-ic">&lt;/&gt;</span> GraphSAGE-lite (NumPy pur, zéro dépendance deep-learning)</summary><pre class="snip-pre"><code class="language-python">import numpy as np
@@ -102,13 +102,13 @@ def sage_layer(H, A, W_self, W_neigh):
     neigh = (A @ H) / np.clip(deg, 1, None)   # moyenne des voisins
     out = H @ W_self + neigh @ W_neigh         # self + voisinage
     return np.maximum(out, 0.0)                # ReLU
-</code></pre><p class="snip-note">Une couche d&#x27;agrégation moyenne des voisins, combinée à l&#x27;état du nœud — le cœur du routage d&#x27;intentions sémantiques sur le graphe.</p></details>
-  <div class="p-links"><span class="p-status">Privé — cœur souverain</span></div>
+</code></pre><p class="snip-note">Une couche d&#x27;agrégation moyenne des voisins, combinée à l&#x27;état du nœud : le cœur du routage d&#x27;intentions sémantiques sur le graphe.</p></details>
+  <div class="p-links"><span class="p-status">Privé, cœur souverain</span></div>
 </article>
 <article id="pfe-hedging" class="p-card featured" data-tags="finance,hedging,derivatives,quant" data-type="academic">
   <div class="p-head">
     <span class="p-type tg v">Académique</span>
-    <span class="p-date">2025 — 2026</span>
+    <span class="p-date">2025 à 2026</span>
   </div>
   <h3 class="p-title">Couverture dynamique en assurance/banque (PFE × EY)</h3>
   <p class="p-summary">Projet de fin d&#x27;études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l&#x27;art, prototype, soutenance).</p>
@@ -121,7 +121,7 @@ def sage_layer(H, A, W_self, W_neigh):
     <span class="p-type tg b">Personnel</span>
     <span class="p-date">2026</span>
   </div>
-  <h3 class="p-title">Anthropos — Career OS &amp; Life Architect</h3>
+  <h3 class="p-title">Anthropos : Ergon &amp; Telos</h3>
   <p class="p-summary">Plateforme local-first (FastAPI) de gestion de carrière et de développement personnel : career management, recherche d&#x27;emploi, architecture de vie. API-first.</p>
   <div class="p-tags"><span class="p-tag" data-tag="python">Python</span><span class="p-tag" data-tag="architecture">Architecture</span></div>
   
@@ -132,7 +132,7 @@ def sage_layer(H, A, W_self, W_neigh):
     <span class="p-type tg b">Personnel</span>
     <span class="p-date">2026</span>
   </div>
-  <h3 class="p-title">hmm-studio — Modèles de Markov cachés contraints</h3>
+  <h3 class="p-title">hmm-studio : Modèles de Markov cachés contraints</h3>
   <p class="p-summary">Bibliothèque HMM Python (pip-installable, compatible scikit-learn, native Jupyter) : moteur Baum-Welch contraint (topologies left-right/Bakis, priors de Dirichlet, NHMM, apprentissage supervisé) et studio optionnel FastAPI/React. Licence MIT.</p>
   <div class="p-tags"><span class="p-tag" data-tag="ml">Machine Learning</span><span class="p-tag" data-tag="quant">Quant Finance</span><span class="p-tag" data-tag="python">Python</span><span class="p-tag" data-tag="open-source">Open Source</span></div>
   
@@ -144,9 +144,9 @@ def sage_layer(H, A, W_self, W_neigh):
     <span class="p-date">ECE Paris</span>
   </div>
   <h3 class="p-title">Pricer d&#x27;options européennes (Black-Scholes)</h3>
-  <p class="p-summary">Pricing d&#x27;options européennes en temps réel (call/put + delta) — la démo interactive de la page d&#x27;accueil. Formule fermée de Black-Scholes.</p>
+  <p class="p-summary">Pricing d&#x27;options européennes en temps réel (call/put + delta), la démo interactive de la page d&#x27;accueil. Formule fermée de Black-Scholes.</p>
   <div class="p-tags"><span class="p-tag" data-tag="quant">Quant Finance</span><span class="p-tag" data-tag="finance">Finance</span><span class="p-tag" data-tag="derivatives">Dérivés</span><span class="p-tag" data-tag="python">Python</span></div>
-  <details class="snip"><summary><span class="snip-ic">&lt;/&gt;</span> Black-Scholes — prix call/put + delta</summary><pre class="snip-pre"><code class="language-python">from math import log, sqrt, exp, erf
+  <details class="snip"><summary><span class="snip-ic">&lt;/&gt;</span> Black-Scholes : prix call/put + delta</summary><pre class="snip-pre"><code class="language-python">from math import log, sqrt, exp, erf
 
 def norm_cdf(x):
     return 0.5 * (1.0 + erf(x / sqrt(2.0)))
@@ -165,8 +165,8 @@ def black_scholes(S, K, T, r, sigma):
     <span class="p-type tg v">Académique</span>
     <span class="p-date">ECE Paris</span>
   </div>
-  <h3 class="p-title">Simulation Monte-Carlo — Mouvement Brownien Géométrique</h3>
-  <p class="p-summary">Génération de trajectoires GBM pour le pricing d&#x27;options par simulation — la 2ᵉ démo interactive de la page d&#x27;accueil.</p>
+  <h3 class="p-title">Simulation Monte-Carlo : Mouvement Brownien Géométrique</h3>
+  <p class="p-summary">Génération de trajectoires GBM pour le pricing d&#x27;options par simulation, la 2ᵉ démo interactive de la page d&#x27;accueil.</p>
   <div class="p-tags"><span class="p-tag" data-tag="quant">Quant Finance</span><span class="p-tag" data-tag="finance">Finance</span><span class="p-tag" data-tag="python">Python</span><span class="p-tag" data-tag="simulation">Simulation</span></div>
   <details class="snip"><summary><span class="snip-ic">&lt;/&gt;</span> Trajectoires GBM vectorisées (NumPy)</summary><pre class="snip-pre"><code class="language-python">import numpy as np
 
@@ -238,7 +238,7 @@ def gbm_paths(S0, mu, sigma, T, steps, n):
     <span class="p-type tg v">Académique</span>
     <span class="p-date">ECE Paris</span>
   </div>
-  <h3 class="p-title">Robot pince — modélisation 3D, impression &amp; assemblage</h3>
+  <h3 class="p-title">Robot pince : modélisation 3D, impression &amp; assemblage</h3>
   <p class="p-summary">Conception mécanique 3D d&#x27;un robot pince (SolidWorks), impression 3D des pièces, assemblage et intégration des actionneurs.</p>
   <div class="p-tags"><span class="p-tag" data-tag="robotics">Robotique</span><span class="p-tag" data-tag="3d-printing">Impression 3D</span><span class="p-tag" data-tag="hardware">Hardware</span></div>
   
@@ -249,11 +249,11 @@ def gbm_paths(S0, mu, sigma, T, steps, n):
     <span class="p-type tg b">Personnel</span>
     <span class="p-date">Perso</span>
   </div>
-  <h3 class="p-title">Plugin Octoprint — Bed Leveller &amp; Visualizer</h3>
+  <h3 class="p-title">Plugin Octoprint : Bed Leveller &amp; Visualizer</h3>
   <p class="p-summary">Plugin Octoprint en Python : lecture du capteur de nivellement (BLTouch/probe), carte de chaleur de la planéité du plateau et suggestions de correction mécanique.</p>
   <div class="p-tags"><span class="p-tag" data-tag="open-source">Open Source</span><span class="p-tag" data-tag="python">Python</span><span class="p-tag" data-tag="3d-printing">Impression 3D</span></div>
   
-  <div class="p-links"><span class="p-status">Open-source — lien à ajouter</span></div>
+  <div class="p-links"><span class="p-status">Open-source, lien à ajouter</span></div>
 </article>
 <article id="tms-bouygues" class="p-card" data-tags="finance,treasury,python,data-eng" data-type="professional">
   <div class="p-head">
@@ -271,7 +271,7 @@ def gbm_paths(S0, mu, sigma, T, steps, n):
     <span class="p-type tg g">Professionnel</span>
     <span class="p-date">2026</span>
   </div>
-  <h3 class="p-title">CryptoExploration — recherche quant DeFi (ALTEN)</h3>
+  <h3 class="p-title">CryptoExploration : recherche quant DeFi (ALTEN)</h3>
   <p class="p-summary">Détection et évaluation des fluctuations d&#x27;actifs sur protocoles DeFi émergents : modèles statistiques/ML (HMM, transfert d&#x27;entropie, copules, causalité), collecte on-chain automatisée (TVL, APY, Volume), env. reproductible Docker/Azure DevOps.</p>
   <div class="p-tags"><span class="p-tag" data-tag="quant">Quant Finance</span><span class="p-tag" data-tag="defi">DeFi</span><span class="p-tag" data-tag="ml">Machine Learning</span><span class="p-tag" data-tag="data-eng">Data Engineering</span></div>
   

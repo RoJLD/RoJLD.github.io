@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Job Match Analyzer — Robin Denis</title>
+  <title>Job Match Analyzer par Robin Denis</title>
   <meta name="robots" content="noindex">
   <style>
     :root {
@@ -134,7 +134,7 @@
       Fiche de poste
       <span class="card-badge">Ctrl+Enter pour lancer</span>
     </div>
-    <p class="input-hint">Collez le texte brut d'une offre d'emploi — FR et EN supportés.</p>
+    <p class="input-hint">Collez le texte brut d'une offre d'emploi (FR et EN supportés).</p>
     <textarea id="jd-input" placeholder="Collez ici la fiche de poste complète...&#10;&#10;Ex: Nous recherchons un Quant Researcher avec 2-3 ans d'expérience en finance quantitative, maîtrise de Python, modèles de pricing d'options..."></textarea>
     <div class="input-actions">
       <button class="btn-analyze" id="btn-analyze" onclick="runAnalysis()">Analyser</button>
@@ -155,7 +155,7 @@
       <div class="card-title">Vue d'ensemble <span class="card-badge" id="score-badge-top"></span></div>
       <div class="score-row">
         <div class="score-main">
-          <div class="score-pct" id="score-display">—</div>
+          <div class="score-pct" id="score-display">…</div>
           <div class="score-label">activation profil</div>
           <div class="score-verdict" id="score-verdict"></div>
           <a id="radar-link" href="radar.html" target="_blank"
@@ -169,14 +169,14 @@
               <div class="meta-pill-dot" id="seniority-dot"></div>
               <div class="meta-pill-inner">
                 <div class="meta-pill-label">Séniorité</div>
-                <div class="meta-pill-val" id="seniority-val">—</div>
+                <div class="meta-pill-val" id="seniority-val">…</div>
               </div>
             </div>
             <div class="meta-pill">
               <div class="meta-pill-dot" id="tone-dot"></div>
               <div class="meta-pill-inner">
                 <div class="meta-pill-label">Secteur</div>
-                <div class="meta-pill-val" id="tone-val">—</div>
+                <div class="meta-pill-val" id="tone-val">…</div>
               </div>
             </div>
           </div>
@@ -196,11 +196,11 @@
       </div>
     </div>
 
-    <!-- Bigrams section — populated by JS -->
+    <!-- Bigrams section, populated by JS -->
     <div id="bigrams-section" class="card" style="display:none">
       <div class="card-title" id="bigrams-title">Termes bi-grams fréquents</div>
       <div id="bigrams-list" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px"></div>
-      <p class="gap-note" style="margin-top:10px">Expressions bi-grams apparaissant ≥ 2× dans la fiche — indicateurs de focus du recruteur.</p>
+      <p class="gap-note" style="margin-top:10px">Expressions bi-grams apparaissant ≥ 2× dans la fiche : indicateurs de focus du recruteur.</p>
     </div>
 
     <div class="card">
@@ -239,7 +239,7 @@ function el(tag, attrs, children) {
   return node;
 }
 
-// Safe clear — no innerHTML
+// Safe clear, no innerHTML
 function clearEl(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
@@ -366,7 +366,7 @@ const SKILL_ALIASES = {
   ]
 };
 
-// Gap terms — tech found in JD but not covered by our skills
+// Gap terms : tech found in JD but not covered by our skills
 const GAP_TERMS = [
   {term:"rust",label:"Rust"},{term:"golang",label:"Go/Golang"},
   {term:"scala",label:"Scala"},{term:"rstudio",label:"R (RStudio)"},
@@ -491,7 +491,7 @@ function buildRecs(score, matched, gaps, combos, seniority, tone) {
 
   if (score < 0.40) {
     recs.push({
-      title: 'Score faible — adaptez l\'angle d\'attaque',
+      title: 'Score faible : adaptez l\'angle d\'attaque',
       body: 'Moins de 40 % du profil activé. Concentrez la candidature sur les skills communs et justifiez par la complémentarité, pas la similarité.'
     });
   }
@@ -508,21 +508,21 @@ function buildRecs(score, matched, gaps, combos, seniority, tone) {
 
   if (seniority && (seniority.label.includes('Senior') || seniority.label.includes('Management'))) {
     recs.push({
-      title: 'Poste senior — valorisez l\'impact quantifié',
+      title: 'Poste senior : valorisez l\'impact quantifié',
       body: 'Utilisez vos métriques concrètes : 4h/jour économisées, 250+ règles suivies, 10+ protocoles analysés.'
     });
   }
 
   if (seniority && (seniority.label.includes('Junior') || seniority.label.includes('Stage'))) {
     recs.push({
-      title: 'Poste junior / stage — risque de surqualification perçue',
+      title: 'Poste junior / stage : risque de surqualification perçue',
       body: 'Ce poste cible un profil 0-2 ans. Votre profil peut paraître surqualifié. Insistez sur votre motivation à apprendre rapidement, votre agilité, et évitez de sur-vendre l\'expérience. La curiosité bat l\'expertise ici.'
     });
   }
 
   if (tone) {
     const toneMap = {
-      'Startup / Fintech': 'Valorisez l\'autonomie, la vitesse, votre expérience DeFi et votre side project Career OS.',
+      'Startup / Fintech': 'Valorisez l\'autonomie, la vitesse, votre expérience DeFi et votre side project Ergon.',
       'Buy-Side / Trading': 'Mettez en avant calcul stochastique, Monte Carlo, backtesting. Évitez le jargon corporate.',
       'Banque / IBD': 'Structurez en trois parties (formation, expériences, adéquation). Formalisez le ton.',
       'Consulting': 'Insistez sur la structure analytique, le Problem Solving, votre PFE avec EY.',
@@ -638,7 +638,7 @@ function renderResults(res) {
   clearEl(gapList);
 
   if (res.gaps.length === 0) {
-    gapList.appendChild(el('div',{className:'gap-ok',textContent:'Aucun terme technique manquant détecté — profil bien couvrant.'}));
+    gapList.appendChild(el('div',{className:'gap-ok',textContent:'Aucun terme technique manquant détecté : profil bien couvrant.'}));
   } else {
     const wrap = el('div',{style:'padding:4px 0'});
     for (const g of res.gaps)

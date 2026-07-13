@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skill Stack Analyzer — Robin Denis</title>
+  <title>Skill Stack Analyzer par Robin Denis</title>
   <meta name="robots" content="noindex">
   <style>
     :root {
@@ -116,7 +116,7 @@
       </div>
       <div>
         <div class="card">
-          <div class="card-title">Hidden Edge — Combinaisons rares</div>
+          <div class="card-title">Hidden Edge : Combinaisons rares</div>
           <div id="combos"></div>
         </div>
         <div class="card">
@@ -124,7 +124,7 @@
           <div class="radar-wrap"><canvas id="radar" width="300" height="300"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-title">Ikigai — Zone de convergence</div>
+          <div class="card-title">Ikigai : Zone de convergence</div>
           <div class="ikigai-grid" id="ikigai"></div>
           <div class="sweet-spot" id="ikigai-sweet"></div>
         </div>
@@ -169,7 +169,7 @@ function rarityLabel(r) {
   return { very_rare: 'Très rare', rare: 'Rare', uncommon: 'Peu commun' }[r] || esc(r);
 }
 
-// ── Helpers DOM — évite innerHTML avec données non-fiables ───────────────────
+// ── Helpers DOM : évite innerHTML avec données non-fiables ───────────────────
 function el(tag, attrs = {}, children = []) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
@@ -220,7 +220,7 @@ function renderSkills(data) {
       separatorAdded = true;
       const sep = el('div', { class: 'rule-sep' }, [
         el('div', { class: 'rule-line' }),
-        el('span', {}, ['↓ 80% de la valeur marché — seuil 80/20']),
+        el('span', {}, ['↓ 80% de la valeur marché (seuil 80/20)']),
         el('div', { class: 'rule-line' }),
       ]);
       wrap.appendChild(sep);

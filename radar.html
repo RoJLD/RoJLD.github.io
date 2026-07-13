@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skill Gap Radar — Robin Denis</title>
+  <title>Skill Gap Radar par Robin Denis</title>
   <meta name="robots" content="noindex">
   <style>
     :root {
@@ -126,7 +126,7 @@
         <div class="score-bar-wrap">
           <div class="score-bar-label">
             <span>Adéquation globale</span>
-            <span id="global-pct" style="font-family:var(--mono);color:var(--accent)">—</span>
+            <span id="global-pct" style="font-family:var(--mono);color:var(--accent)">…</span>
           </div>
           <div class="score-bar-track">
             <div class="score-bar-fill" id="global-bar" style="width:0%;background:var(--accent)"></div>
@@ -267,7 +267,7 @@ function renderSliders() {
     // Required level
     const reqEl = mkEl("div", { class: "req-val", id: "rv-" + i });
     reqEl.style.color = sk.reqLevel > 0 ? "var(--muted)" : "var(--border)";
-    reqEl.textContent = sk.reqLevel > 0 ? String(sk.reqLevel) : "—";
+    reqEl.textContent = sk.reqLevel > 0 ? String(sk.reqLevel) : "…";
 
     // Gap dot
     const dot = mkEl("div", { class: "gap-dot", id: "gi-" + i });
@@ -307,7 +307,7 @@ function updateGlobalScore() {
   summary.textContent = "";
 
   if (!active.length) {
-    pctEl.textContent = "—";
+    pctEl.textContent = "…";
     bar.style.width = "0%";
     return;
   }

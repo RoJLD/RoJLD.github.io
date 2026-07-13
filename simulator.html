@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Path Simulator — Robin Denis</title>
+  <title>Path Simulator, par Robin Denis</title>
   <meta name="robots" content="noindex">
   <style>
     :root {
@@ -125,7 +125,7 @@
 <div class="header">
   <div>
     <div class="header-title">Path Simulator</div>
-    <div class="header-sub">Projection 10 ans — trajectoire actuelle vs redesignée</div>
+    <div class="header-sub">Projection 10 ans : trajectoire actuelle vs redesignée</div>
   </div>
   <a href="/" class="header-back">← Portfolio</a>
 </div>
@@ -315,22 +315,22 @@
   <!-- Metrics -->
   <div class="metrics-row">
     <div class="metric-card">
-      <div class="metric-val" id="m-crossover" style="color:var(--green)">—</div>
+      <div class="metric-val" id="m-crossover" style="color:var(--green)">…</div>
       <div class="metric-lbl">Croisement</div>
       <div class="metric-sub" id="m-crossover-sub">année où redesigné dépasse actuel</div>
     </div>
     <div class="metric-card">
-      <div class="metric-val" id="m-gain10" style="color:var(--accent)">—</div>
+      <div class="metric-val" id="m-gain10" style="color:var(--accent)">…</div>
       <div class="metric-lbl">Gain à 10 ans</div>
       <div class="metric-sub">revenus cumulés supplémentaires</div>
     </div>
     <div class="metric-card">
-      <div class="metric-val" id="m-freedom-year" style="color:var(--yellow)">—</div>
+      <div class="metric-val" id="m-freedom-year" style="color:var(--yellow)">…</div>
       <div class="metric-lbl">Freedom Year</div>
       <div class="metric-sub">MRR ≥ dépenses mensuelles</div>
     </div>
     <div class="metric-card">
-      <div class="metric-val" id="m-hours-freed" style="color:var(--orange)">—</div>
+      <div class="metric-val" id="m-hours-freed" style="color:var(--orange)">…</div>
       <div class="metric-lbl">H libérées / an</div>
       <div class="metric-sub" id="m-hours-freed-sub">heures récupérées</div>
     </div>
@@ -500,7 +500,7 @@ function computePaths(p) {
     }
   }
 
-  // Wealth accumulation (compounding simplified — savings added each year)
+  // Wealth accumulation (compounding simplified, savings added each year)
   for (let t = 1; t <= N; t++) {
     currentWealth.push(currentWealth[t-1] + currentIncome[t] * p.savingsRate);
     redesignedWealth.push(redesignedWealth[t-1] + redesignedIncome[t] * p.savingsRate);
@@ -752,7 +752,7 @@ function updateMetrics(paths) {
     fyEl.textContent = 'Année ' + paths.freedomYear;
     fyEl.style.color = '#facc15';
   } else if (p.initialMRR === 0) {
-    fyEl.textContent = '—';
+    fyEl.textContent = '…';
     fyEl.style.color = '#52566b';
   } else {
     fyEl.textContent = '> 10 ans';
@@ -808,7 +808,7 @@ function updateMetrics(paths) {
      desc: 'Tu peux vivre ' + runwayMonths + ' mois sans aucun revenu avec ton épargne actuelle ('+ fmtK(p.savings) +').'},
     {title:'Sécurité de pivot', val: pivotMonths < 99 ? pivotMonths + ' mois' : '∞', color: pivotColor, pct: pivotPct,
      desc: p.salary === p.targetSalary
-       ? 'Pas de baisse de salaire prévue — pivot sans risque financier immédiat.'
+       ? 'Pas de baisse de salaire prévue : pivot sans risque financier immédiat.'
        : 'Ton épargne couvre ' + pivotMonths + ' mois de baisse de revenu pendant la transition.'},
     {title:'Freedom Progress', val: freePctDisp + '%', color: freeColor, pct: freePct,
      desc: p.initialMRR > 0
