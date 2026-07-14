@@ -933,7 +933,12 @@
         "Hedging",
         "PFE",
         "EY"
-      ]
+      ],
+      "desc": {
+        "fr": "Retour d'expérience sur mon PFE avec EY : comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.",
+        "en": "Lessons from my capstone project with EY: how theoretical models face operational constraints in portfolio hedging."
+      },
+      "status": "published"
     },
     {
       "id": "onchain_analytics",
@@ -941,14 +946,18 @@
         "fr": "Analyse on-chain : détecter les signaux faibles en DeFi",
         "en": "On-Chain Analytics: Detecting Weak Signals in DeFi"
       },
-      "url": "articles/on-chain-analytics.html",
       "date": "2026-04",
       "tags": [
         "DeFi",
         "Data",
         "Python",
         "ML"
-      ]
+      ],
+      "desc": {
+        "fr": "Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.",
+        "en": "Methodology for collecting and analyzing on-chain metrics (TVL, APY, Volume) to identify patterns on emerging protocols."
+      },
+      "status": "soon"
     }
   ],
   "recommendations": [
