@@ -775,14 +775,52 @@
   },
   "languages": [
     {
-      "lang": "Français",
-      "level": "native",
-      "code": "fr"
+      "code": "fr",
+      "flag": "🇫🇷",
+      "name": {
+        "fr": "Français",
+        "en": "French"
+      },
+      "level": {
+        "fr": "Langue maternelle",
+        "en": "Native"
+      }
     },
     {
-      "lang": "English",
-      "level": "fluent",
-      "code": "en"
+      "code": "en",
+      "flag": "🇬🇧",
+      "name": {
+        "fr": "Anglais",
+        "en": "English"
+      },
+      "level": {
+        "fr": "Courant (C1)",
+        "en": "Fluent (C1)"
+      }
+    },
+    {
+      "code": "es",
+      "flag": "🇪🇸",
+      "name": {
+        "fr": "Espagnol",
+        "en": "Spanish"
+      },
+      "level": {
+        "fr": "Intermédiaire (B1)",
+        "en": "Intermediate (B1)"
+      }
+    },
+    {
+      "code": "cn",
+      "flag": "🇨🇳",
+      "name": {
+        "fr": "Chinois",
+        "en": "Chinese"
+      },
+      "level": {
+        "fr": "Notions (A1)",
+        "en": "Beginner (A1)"
+      }
     }
   ],
   "projects": [
@@ -1075,5 +1113,35 @@
     "schema_version": "1.1.0",
     "public": true,
     "note": "Ce fichier est la source de vérité machine-readable du profil. Les champs lifestyle.freedom_number et finances personnelles sont dans profile_private.json (non commité)."
-  }
+  },
+  "interests": [
+    {
+      "fr": "♟️ Échecs",
+      "en": "♟️ Chess"
+    },
+    {
+      "fr": "📚 Finance quantitative",
+      "en": "📚 Quantitative finance"
+    },
+    {
+      "fr": "🧠 Psychologie & Discipline",
+      "en": "🧠 Psychology & Discipline"
+    },
+    {
+      "fr": "🖨️ Impression 3D",
+      "en": "🖨️ 3D Printing"
+    },
+    {
+      "fr": "💻 Open-source",
+      "en": "💻 Open-source"
+    },
+    {
+      "fr": "🏄 Planche à voile",
+      "en": "🏄 Windsurfing"
+    },
+    {
+      "fr": "🏍️ Moto & Mécanique",
+      "en": "🏍️ Motorbike & Mechanics"
+    }
+  ]
 }

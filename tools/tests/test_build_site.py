@@ -58,6 +58,24 @@ def test_gen_i18n_blog_bilingual():
     assert "blog1_title" in fr and "blog1_desc" in fr
 
 
+# ── Rendu #interests depuis profile.json ──────────────────────────────────────
+def test_render_interests_from_profile():
+    p = bs.load_profile()
+    html = bs.render_interests(p)
+    for L in p["languages"]:
+        assert bs.esc(L["name"]["fr"]) in html and L["flag"] in html
+        assert f'data-i18n="lang_{L["code"]}"' in html
+    for it in p["interests"]:
+        assert bs.esc(it["fr"]) in html  # esc : & -> &amp; (HTML valide)
+
+def test_gen_i18n_langs_ints_bilingual():
+    p = bs.load_profile()
+    assert p["languages"][0]["name"]["fr"] in bs.gen_i18n_langs(p, "fr")
+    assert p["languages"][0]["name"]["en"] in bs.gen_i18n_langs(p, "en")
+    assert p["interests"][0]["fr"] in bs.gen_i18n_ints(p, "fr")
+    assert p["interests"][0]["en"] in bs.gen_i18n_ints(p, "en")
+
+
 # ── Build intégré (index.html instrumenté réel) ───────────────────────────────
 def _built():
     p = bs.load_profile()
@@ -66,10 +84,14 @@ def _built():
 
 def test_build_fills_markers_and_content_present():
     out, p = _built()
-    for name in ["blog"]:
+    for name in ["blog", "interests"]:
         assert f"<!-- BUILD:{name} -->" in out and f"<!-- /BUILD:{name} -->" in out
     for a in p["articles"]:
         assert a["title"]["fr"] in out
+    for L in p["languages"]:
+        assert bs.esc(L["name"]["fr"]) in out
+    for it in p["interests"]:
+        assert bs.esc(it["fr"]) in out
 
 def test_build_idempotent():
     p = bs.load_profile()

@@ -107,14 +107,51 @@ def gen_i18n_blog(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Section #interests (langues + centres d'intérêt) ──────────────────────────
+def render_interests(profile):
+    """Markup .langs + label + .ints depuis profile.languages[] et profile.interests[].
+    Clés data-i18n : lang_<code>/lang_<code>_lvl (langues), int_<N> (intérêts).
+    lbl_interests reste une clé CHROME (label de sous-section)."""
+    langs = "\n        ".join(
+        f'<div class="lang"><span class="lf">{L["flag"]}</span>'
+        f'<div><div class="ln" data-i18n="lang_{L["code"]}">{esc(_bi(L["name"], "fr"))}</div>'
+        f'<div class="ll" data-i18n="lang_{L["code"]}_lvl">{esc(_bi(L["level"], "fr"))}</div>'
+        f'</div></div>'
+        for L in profile["languages"]
+    )
+    ints = "\n        ".join(
+        f'<span class="int" data-i18n="int_{i}">{esc(_bi(it, "fr"))}</span>'
+        for i, it in enumerate(profile["interests"], start=1)
+    )
+    return (f'\n    <div class="langs">\n        {langs}\n    </div>\n'
+            f'    <div class="label" data-i18n="lbl_interests">Centres d\'intérêt</div>\n'
+            f'    <div class="ints">\n        {ints}\n    </div>\n')
+
+
+def gen_i18n_langs(profile, lang):
+    out = [f'        lang_{L["code"]}: {js_str(_bi(L["name"], lang))}, '
+           f'lang_{L["code"]}_lvl: {js_str(_bi(L["level"], lang))},'
+           for L in profile["languages"]]
+    return "\n" + "\n".join(out) + "\n"
+
+
+def gen_i18n_ints(profile, lang):
+    out = [f'        int_{i}: {js_str(_bi(it, lang))},'
+           for i, it in enumerate(profile["interests"], start=1)]
+    return "\n" + "\n".join(out) + "\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
-# name -> (marqueur HTML body, fonction render)
+# name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
     "blog": render_blog,
+    "interests": render_interests,
 }
-# clé i18n de contenu -> fonction gen(profile, lang)
+# name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
     "blog": gen_i18n_blog,
+    "langs": gen_i18n_langs,
+    "ints": gen_i18n_ints,
 }
 
 
