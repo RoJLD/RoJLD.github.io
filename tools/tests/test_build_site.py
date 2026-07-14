@@ -76,6 +76,25 @@ def test_gen_i18n_langs_ints_bilingual():
     assert p["interests"][0]["en"] in bs.gen_i18n_ints(p, "en")
 
 
+# ── Rendu #testimonials depuis profile.json ───────────────────────────────────
+def test_render_testimonials_from_profile():
+    p = bs.load_profile()
+    html = bs.render_testimonials(p)
+    for i, r in enumerate(p["recommendations"], start=1):
+        assert bs.esc(r["text"]["fr"]) in html
+        assert r["author"] in html and r["initials"] in html
+        assert f'data-i18n="testi{i}"' in html
+        for m, d in enumerate(r["docs"], start=1):
+            assert d["path"] in html and f'data-i18n="testi{i}_doc{m}"' in html
+
+def test_gen_i18n_testi_bilingual():
+    p = bs.load_profile()
+    fr, en = bs.gen_i18n_testi(p, "fr"), bs.gen_i18n_testi(p, "en")
+    assert p["recommendations"][0]["text"]["fr"] in fr
+    assert p["recommendations"][0]["text"]["en"] in en
+    assert "testi1_doc1" in fr
+
+
 # ── Build intégré (index.html instrumenté réel) ───────────────────────────────
 def _built():
     p = bs.load_profile()
@@ -84,8 +103,10 @@ def _built():
 
 def test_build_fills_markers_and_content_present():
     out, p = _built()
-    for name in ["blog", "interests"]:
+    for name in ["blog", "interests", "testimonials"]:
         assert f"<!-- BUILD:{name} -->" in out and f"<!-- /BUILD:{name} -->" in out
+    for r in p["recommendations"]:
+        assert r["author"] in out
     for a in p["articles"]:
         assert a["title"]["fr"] in out
     for L in p["languages"]:

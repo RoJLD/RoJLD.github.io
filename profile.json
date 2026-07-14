@@ -1011,8 +1011,16 @@
         "fr": "Robin figure parmi les 2% des meilleurs profils de notre communauté de 40 000 étudiants. Son engagement, ses résultats et son professionnalisme en font un candidat d'exception. Il a démontré un dynamisme remarquable et une bonne autonomie, avec des retours positifs sur sa présentation et son adaptabilité.",
         "en": "Robin ranks among the top 2% of our 40,000-student community. His commitment, results, and professionalism make him an exceptional candidate. He demonstrated remarkable drive and autonomy, with positive feedback on his presentation and adaptability."
       },
-      "pdf": "recommandations/Lettre de recommandation Robin DENIS Student Pop.pdf",
-      "date": "2025"
+      "date": "2025",
+      "docs": [
+        {
+          "path": "recommandations/Lettre de recommandation Robin DENIS Student Pop.pdf",
+          "label": {
+            "fr": "📄 Voir la lettre",
+            "en": "📄 View letter"
+          }
+        }
+      ]
     },
     {
       "id": "manco_paris",
@@ -1026,11 +1034,23 @@
         "fr": "Sa vision analytique et sa capacité à travailler en autonomie comme en équipe font de lui un excellent candidat. Il allie des compétences techniques solides (VBA, SQL, Access) à une bonne compréhension des enjeux métiers. Robin s'est très vite imposé comme un collaborateur sérieux, curieux et extrêmement impliqué.",
         "en": "His analytical vision and ability to work independently or as a team make him an excellent candidate. He combines strong technical skills (VBA, SQL, Access) with a solid understanding of business challenges. Robin quickly established himself as a serious, curious and highly dedicated team member."
       },
-      "pdfs": [
-        "recommandations/Reco_Academique_Manco_signed 2025-06-10 06_50_03.pdf",
-        "recommandations/Reco_Professionnelle_Manco_signed 2025-06-10 06_48_35.pdf"
-      ],
-      "date": "2025"
+      "date": "2025",
+      "docs": [
+        {
+          "path": "recommandations/Reco_Academique_Manco_signed 2025-06-10 06_50_03.pdf",
+          "label": {
+            "fr": "📄 Reco. académique",
+            "en": "📄 Academic reference"
+          }
+        },
+        {
+          "path": "recommandations/Reco_Professionnelle_Manco_signed 2025-06-10 06_48_35.pdf",
+          "label": {
+            "fr": "📄 Reco. professionnelle",
+            "en": "📄 Professional reference"
+          }
+        }
+      ]
     }
   ],
   "ikigai": {

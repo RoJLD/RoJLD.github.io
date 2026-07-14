@@ -141,17 +141,60 @@ def gen_i18n_ints(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Section #testimonials (recommandations) ───────────────────────────────────
+_DOC_STYLE = ("font-size:12px;color:var(--accent);text-decoration:none;"
+              "display:inline-flex;align-items:center;gap:5px")
+
+
+def render_testimonials(profile):
+    """Markup .testi-grid depuis profile.recommendations[]. Modèle docs[{path,label}]
+    (corrige le bug pré-existant : lien 'académique' écrasé par testi_pdf). Clés
+    data-i18n : testi{N}(text), testi{N}_name, testi{N}_role, testi{N}_doc{M}."""
+    cards = []
+    for i, r in enumerate(profile["recommendations"], start=1):
+        docs = r["docs"]
+        links = "".join(
+            f'<a href="{esc(d["path"])}" target="_blank" style="{_DOC_STYLE}" '
+            f'data-i18n="testi{i}_doc{m}">{esc(_bi(d["label"], "fr"))}</a>'
+            for m, d in enumerate(docs, start=1)
+        )
+        wrap = "margin-top:14px;display:flex;gap:10px" if len(docs) > 1 else "margin-top:14px"
+        cards.append(
+            f'<div class="testi"><p class="testi-text" data-i18n="testi{i}">{esc(_bi(r["text"], "fr"))}</p>'
+            f'<div class="testi-author"><div class="testi-avatar">{esc(r["initials"])}</div>'
+            f'<div><div class="testi-name" data-i18n="testi{i}_name">{esc(r["author"])}</div>'
+            f'<div class="testi-role" data-i18n="testi{i}_role">{esc(_bi(r["role"], "fr"))}</div>'
+            f'</div></div><div style="{wrap}">{links}</div></div>'
+        )
+    grid = "\n        ".join(cards)
+    return f'\n    <div class="testi-grid">\n        {grid}\n    </div>\n'
+
+
+def gen_i18n_testi(profile, lang):
+    out = []
+    for i, r in enumerate(profile["recommendations"], start=1):
+        out.append(f'        testi{i}: {js_str(_bi(r["text"], lang))},')
+    for i, r in enumerate(profile["recommendations"], start=1):
+        out.append(f'        testi{i}_name: {js_str(r["author"])},')
+        out.append(f'        testi{i}_role: {js_str(_bi(r["role"], lang))},')
+        for m, d in enumerate(r["docs"], start=1):
+            out.append(f'        testi{i}_doc{m}: {js_str(_bi(d["label"], lang))},')
+    return "\n" + "\n".join(out) + "\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
     "blog": render_blog,
     "interests": render_interests,
+    "testimonials": render_testimonials,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
     "blog": gen_i18n_blog,
     "langs": gen_i18n_langs,
     "ints": gen_i18n_ints,
+    "testi": gen_i18n_testi,
 }
 
 
