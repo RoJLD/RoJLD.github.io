@@ -182,12 +182,68 @@ def gen_i18n_testi(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Section #experience ───────────────────────────────────────────────────────
+def fmt_range(start, end, lang):
+    """'2026-02','2026-08' -> 'Février – Août 2026' (en-dash U+2013). Même année → une seule."""
+    ms, me = re.match(r"^(\d{4})-(\d{2})$", str(start or "")), re.match(r"^(\d{4})-(\d{2})$", str(end or ""))
+    if not ms or not me:
+        raise BuildError(f"plage attendue YYYY-MM, reçu {start!r}–{end!r}")
+    ys, mos, ye, moe = ms.group(1), int(ms.group(2)), me.group(1), int(me.group(2))
+    M = _MONTHS[lang]
+    if ys == ye:
+        return f"{M[mos]} – {M[moe]} {ye}"
+    return f"{M[mos]} {ys} – {M[moe]} {ye}"
+
+
+def _org(exp, lang):
+    """company[, division, ville] — ville seulement si division présente (fidèle à l'existant)."""
+    parts = [exp["company"]]
+    div = exp.get("division")
+    if div:
+        parts.append(_bi(div, lang) if isinstance(div, dict) else div)
+        city = (exp.get("location") or "").split(",")[0].strip()
+        if city:
+            parts.append(city)
+    return ", ".join(parts)
+
+
+def render_experience(profile):
+    """.tl (3 cartes) depuis profile.experiences[] (déjà bilingue, CV-consommé via _loc → additif).
+    Clés data-i18n systématiques exp{i}_title/org/per/b{j}."""
+    cards = []
+    for i, e in enumerate(profile["experiences"], start=1):
+        lis = "\n        ".join(
+            f'<li data-i18n="exp{i}_b{j}">{esc(b)}</li>'
+            for j, b in enumerate(_bi(e["bullets"], "fr"), start=1)
+        )
+        cards.append(
+            f'<div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info">'
+            f'<h3 data-i18n="exp{i}_title">{esc(_bi(e["title"], "fr"))}</h3>'
+            f'<span class="org" data-i18n="exp{i}_org">{esc(_org(e, "fr"))}</span>'
+            f'<span class="per" data-i18n="exp{i}_per">{esc(fmt_range(e["start"], e["end"], "fr"))}</span>'
+            f'</div></div><div class="cd-b"><ul>\n        {lis}\n    </ul></div></div></div>'
+        )
+    return '<div class="tl">\n    ' + "\n    ".join(cards) + "\n</div>"
+
+
+def gen_i18n_exp(profile, lang):
+    out = []
+    for i, e in enumerate(profile["experiences"], start=1):
+        out.append(f'        exp{i}_title: {js_str(_bi(e["title"], lang))},')
+        out.append(f'        exp{i}_org: {js_str(_org(e, lang))},')
+        out.append(f'        exp{i}_per: {js_str(fmt_range(e["start"], e["end"], lang))},')
+        for j, b in enumerate(_bi(e["bullets"], lang), start=1):
+            out.append(f'        exp{i}_b{j}: {js_str(b)},')
+    return "\n" + "\n".join(out) + "\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
     "blog": render_blog,
     "interests": render_interests,
     "testimonials": render_testimonials,
+    "experience": render_experience,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
@@ -195,6 +251,7 @@ I18N_SECTIONS = {
     "langs": gen_i18n_langs,
     "ints": gen_i18n_ints,
     "testi": gen_i18n_testi,
+    "exp": gen_i18n_exp,
 }
 
 

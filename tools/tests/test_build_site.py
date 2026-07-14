@@ -95,6 +95,29 @@ def test_gen_i18n_testi_bilingual():
     assert "testi1_doc1" in fr
 
 
+# ── Rendu #experience depuis profile.json (bilingue déjà, CV-consommé) ────────
+def test_fmt_range_bilingual():
+    assert bs.fmt_range("2026-02", "2026-08", "fr") == "Février – Août 2026"
+    assert bs.fmt_range("2026-02", "2026-08", "en") == "February – August 2026"
+
+def test_render_experience_from_profile():
+    p = bs.load_profile()
+    html = bs.render_experience(p)
+    for i, e in enumerate(p["experiences"], start=1):
+        assert bs.esc(e["title"]["fr"]) in html
+        assert f'data-i18n="exp{i}_title"' in html and f'data-i18n="exp{i}_per"' in html
+        assert e["company"] in html
+        for j in range(1, len(e["bullets"]["fr"]) + 1):
+            assert f'data-i18n="exp{i}_b{j}"' in html
+
+def test_gen_i18n_exp_bilingual():
+    p = bs.load_profile()
+    fr, en = bs.gen_i18n_exp(p, "fr"), bs.gen_i18n_exp(p, "en")
+    assert p["experiences"][0]["title"]["fr"] in fr
+    assert p["experiences"][0]["title"]["en"] in en
+    assert "Février" in fr and "February" in en  # dates résolues par langue
+
+
 # ── Build intégré (index.html instrumenté réel) ───────────────────────────────
 def _built():
     p = bs.load_profile()
@@ -103,10 +126,12 @@ def _built():
 
 def test_build_fills_markers_and_content_present():
     out, p = _built()
-    for name in ["blog", "interests", "testimonials"]:
+    for name in ["blog", "interests", "testimonials", "experience"]:
         assert f"<!-- BUILD:{name} -->" in out and f"<!-- /BUILD:{name} -->" in out
     for r in p["recommendations"]:
         assert r["author"] in out
+    for e in p["experiences"]:
+        assert e["company"] in out
     for a in p["articles"]:
         assert a["title"]["fr"] in out
     for L in p["languages"]:

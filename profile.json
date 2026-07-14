@@ -156,7 +156,10 @@
     {
       "id": "alten_2026",
       "company": "ALTEN",
-      "division": "Lab R&D",
+      "division": {
+        "fr": "Lab R&D",
+        "en": "Lab R&D"
+      },
       "location": "Sèvres, France",
       "title": {
         "fr": "Quantitative Researcher DeFi",
@@ -226,7 +229,10 @@
     {
       "id": "bouygues_2025",
       "company": "Bouygues Telecom",
-      "division": "Département Financier",
+      "division": {
+        "fr": "Département Financier",
+        "en": "Finance Department"
+      },
       "location": "Vélizy, France",
       "title": {
         "fr": "Trésorier & Développeur Full Stack",
