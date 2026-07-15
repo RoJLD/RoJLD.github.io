@@ -237,6 +237,69 @@ def gen_i18n_exp(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Section #education ────────────────────────────────────────────────────────
+def _edu_courses(e, i):
+    """Collapsible « cours clés » si l'entrée porte des cours ; '' sinon."""
+    courses = e.get("courses") or []
+    if not courses:
+        return ""
+    ps = "".join(f'<p data-i18n="edu{i}_c{k}">{esc(_bi(c, "fr"))}</p>'
+                 for k, c in enumerate(courses, start=1))
+    return (f'\n        <div style="margin-top:12px"><button class="stg" onclick="sub(this,event)">'
+            f'<span class="ar">▸</span> '
+            f'<span data-i18n="edu{i}_courses_label">{esc(_bi(e["courses_label"], "fr"))}</span></button>'
+            f'<div class="sp">{ps}</div></div>')
+
+
+def _edu_capstone(e, i):
+    """Collapsible projet de fin d'études si l'entrée porte un capstone ; '' sinon."""
+    cap = e.get("capstone")
+    if not cap:
+        return ""
+    return (f'\n        <div style="margin-top:8px"><button class="stg" onclick="sub(this,event)">'
+            f'<span class="ar">▸</span> '
+            f'<span data-i18n="edu{i}_pfe_label">{esc(_bi(cap["label"], "fr"))}</span></button>'
+            f'<div class="sp"><p><strong data-i18n="edu{i}_pfe_role">{esc(_bi(cap["role"], "fr"))}</strong> : '
+            f'<span data-i18n="edu{i}_pfe_desc">{esc(_bi(cap["summary"], "fr"))}</span></p></div></div>')
+
+
+def render_education(profile):
+    """.tl (N cartes) depuis profile.education[] (bilingue ; NON lu par les tools CV → restructure sûre).
+    Chaque carte : titre + org + période littérale ; collapsibles cours/PFE si présents.
+    Réconciliation : le 1er cours gagne une clé data-i18n (bug latent EN corrigé) ; la Prépa remonte
+    dans la donnée (était affichage-only) ; la carte montre capstone.summary (texte live court), la
+    description longue reste en donnée pour SP1."""
+    cards = []
+    for i, e in enumerate(profile["education"], start=1):
+        head = (f'<div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info">'
+                f'<h3 data-i18n="edu{i}_title">{esc(_bi(e["title"], "fr"))}</h3>'
+                f'<span class="org" data-i18n="edu{i}_org">{esc(_bi(e["org"], "fr"))}</span>'
+                f'<span class="per">{esc(e["period"])}</span></div></div>')
+        body = _edu_courses(e, i) + _edu_capstone(e, i)
+        tail = "\n    </div></div>" if body else "</div></div>"
+        cards.append(head + body + tail)
+    return '<div class="tl">\n    ' + "\n    ".join(cards) + "\n</div>"
+
+
+def gen_i18n_edu(profile, lang):
+    """Entrées CONTENU du dict i18n pour #education (les labels de section restent chrome)."""
+    out = []
+    for i, e in enumerate(profile["education"], start=1):
+        out.append(f'        edu{i}_title: {js_str(_bi(e["title"], lang))}, '
+                   f'edu{i}_org: {js_str(_bi(e["org"], lang))},')
+        courses = e.get("courses") or []
+        if courses:
+            out.append(f'        edu{i}_courses_label: {js_str(_bi(e["courses_label"], lang))},')
+            for k, c in enumerate(courses, start=1):
+                out.append(f'        edu{i}_c{k}: {js_str(_bi(c, lang))},')
+        cap = e.get("capstone")
+        if cap:
+            out.append(f'        edu{i}_pfe_label: {js_str(_bi(cap["label"], lang))}, '
+                       f'edu{i}_pfe_role: {js_str(_bi(cap["role"], lang))},')
+            out.append(f'        edu{i}_pfe_desc: {js_str(_bi(cap["summary"], lang))},')
+    return "\n" + "\n".join(out) + "\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -244,6 +307,7 @@ HTML_SECTIONS = {
     "interests": render_interests,
     "testimonials": render_testimonials,
     "experience": render_experience,
+    "education": render_education,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
@@ -252,6 +316,7 @@ I18N_SECTIONS = {
     "ints": gen_i18n_ints,
     "testi": gen_i18n_testi,
     "exp": gen_i18n_exp,
+    "edu": gen_i18n_edu,
 }
 
 

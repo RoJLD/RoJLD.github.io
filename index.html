@@ -228,13 +228,13 @@
 </div><!-- /BUILD:experience --></div></div></div></section>
 
 <!-- FORMATION -->
-<section id="education" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🎓</div><h2 class="st" data-i18n="sec_edu">Formation</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="tl">
-    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3 data-i18n="ece_title">ECE Paris, Cycle Ingénieur</h3><span class="org" data-i18n="ece_major">Majeure Ingénierie Financière et Quantitative</span><span class="per">2021 – 2026</span></div></div>
-        <div style="margin-top:12px"><button class="stg" onclick="sub(this,event)"><span class="ar">▸</span> <span data-i18n="cours_cles">Cours clés</span></button><div class="sp"><p>Calcul stochastique & SDE</p><p data-i18n="cours2">Finance de marché</p><p data-i18n="cours3">Recherche opérationnelle & optimisation numérique</p><p data-i18n="cours4">Machine Learning appliqué</p><p data-i18n="cours5">Contrôle optimal et Hamiltonien</p><p data-i18n="cours6">Modèles DSGE</p></div></div>
-        <div style="margin-top:8px"><button class="stg" onclick="sub(this,event)"><span class="ar">▸</span> <span data-i18n="pfe_label">Projet de fin d'études (avec EY)</span></button><div class="sp"><p><strong data-i18n="pfe_role">Chef de projet</strong> : <span data-i18n="pfe_desc">Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque</span></p></div></div>
+<section id="education" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🎓</div><h2 class="st" data-i18n="sec_edu">Formation</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><!-- BUILD:education --><div class="tl">
+    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3 data-i18n="edu1_title">ECE Paris, Cycle Ingénieur</h3><span class="org" data-i18n="edu1_org">Majeure Ingénierie Financière et Quantitative</span><span class="per">2021 – 2026</span></div></div>
+        <div style="margin-top:12px"><button class="stg" onclick="sub(this,event)"><span class="ar">▸</span> <span data-i18n="edu1_courses_label">Cours clés</span></button><div class="sp"><p data-i18n="edu1_c1">Calcul stochastique &amp; SDE</p><p data-i18n="edu1_c2">Finance de marché</p><p data-i18n="edu1_c3">Recherche opérationnelle &amp; optimisation numérique</p><p data-i18n="edu1_c4">Machine Learning appliqué</p><p data-i18n="edu1_c5">Contrôle optimal et Hamiltonien</p><p data-i18n="edu1_c6">Modèles DSGE</p></div></div>
+        <div style="margin-top:8px"><button class="stg" onclick="sub(this,event)"><span class="ar">▸</span> <span data-i18n="edu1_pfe_label">Projet de fin d'études (avec EY)</span></button><div class="sp"><p><strong data-i18n="edu1_pfe_role">Chef de projet</strong> : <span data-i18n="edu1_pfe_desc">Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque</span></p></div></div>
     </div></div>
-    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3 data-i18n="prepa_title">Classes Préparatoires MPSI – MP</h3><span class="org" data-i18n="prepa_desc">Mathématiques, Physique et Sciences de l'Ingénieur</span><span class="per">2019 – 2021 · Bourg-en-Bresse</span></div></div></div></div>
-</div></div></div></section>
+    <div class="tl-i"><div class="cd"><div class="cd-h"><div class="cd-info"><h3 data-i18n="edu2_title">Classes Préparatoires MPSI – MP</h3><span class="org" data-i18n="edu2_org">Mathématiques, Physique et Sciences de l'Ingénieur</span><span class="per">2019 – 2021 · Bourg-en-Bresse</span></div></div></div></div>
+</div><!-- /BUILD:education --></div></div></section>
 
 <!-- COMPÉTENCES + RADAR -->
 <section id="skills" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">⚡</div><h2 class="st" data-i18n="sec_skills">Compétences</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
@@ -353,16 +353,19 @@ const i18n = {
         exp3_b4: "Calculs actuariels, amélioration d'outils et automatisation (Excel, VBA, Access)",
 /* /BUILD:i18n_exp_fr */
         sec_edu: "Formation",
-        ece_title: "ECE Paris, Cycle Ingénieur",
-        ece_major: "Majeure Ingénierie Financière et Quantitative",
-        cours_cles: "Cours clés",
-        cours2: "Finance de marché", cours3: "Recherche opérationnelle & optimisation numérique",
-        cours4: "Machine Learning appliqué", cours5: "Contrôle optimal et Hamiltonien", cours6: "Modèles DSGE",
-        pfe_label: "Projet de fin d'études (avec EY)",
-        pfe_role: "Chef de projet",
-        pfe_desc: "Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque",
-        prepa_title: "Classes Préparatoires MPSI – MP",
-        prepa_desc: "Mathématiques, Physique et Sciences de l'Ingénieur",
+/* BUILD:i18n_edu_fr */
+        edu1_title: "ECE Paris, Cycle Ingénieur", edu1_org: "Majeure Ingénierie Financière et Quantitative",
+        edu1_courses_label: "Cours clés",
+        edu1_c1: "Calcul stochastique & SDE",
+        edu1_c2: "Finance de marché",
+        edu1_c3: "Recherche opérationnelle & optimisation numérique",
+        edu1_c4: "Machine Learning appliqué",
+        edu1_c5: "Contrôle optimal et Hamiltonien",
+        edu1_c6: "Modèles DSGE",
+        edu1_pfe_label: "Projet de fin d'études (avec EY)", edu1_pfe_role: "Chef de projet",
+        edu1_pfe_desc: "Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque",
+        edu2_title: "Classes Préparatoires MPSI – MP", edu2_org: "Mathématiques, Physique et Sciences de l'Ingénieur",
+/* /BUILD:i18n_edu_fr */
         sec_skills: "Compétences", sk_lang: "Langages", sk_infra: "Infrastructure",
         lbl_certs: "Certifications",
         sec_demos: "Démos Interactives",
@@ -445,16 +448,19 @@ const i18n = {
         exp3_b4: "Performed actuarial calculations, improved tools and automated processes (Excel, VBA, Access)",
 /* /BUILD:i18n_exp_en */
         sec_edu: "Education",
-        ece_title: "ECE Paris, Engineering Program",
-        ece_major: "Major in Financial & Quantitative Engineering",
-        cours_cles: "Key courses",
-        cours2: "Financial markets", cours3: "Operations research & numerical optimization",
-        cours4: "Applied Machine Learning", cours5: "Optimal control & Hamiltonian", cours6: "DSGE models",
-        pfe_label: "Capstone project (with EY)",
-        pfe_role: "Project lead",
-        pfe_desc: "Modeling and management of dynamic hedging strategies in insurance and banking",
-        prepa_title: "Preparatory Classes MPSI – MP",
-        prepa_desc: "Mathematics, Physics & Engineering Sciences",
+/* BUILD:i18n_edu_en */
+        edu1_title: "ECE Paris, Engineering Program", edu1_org: "Major in Financial & Quantitative Engineering",
+        edu1_courses_label: "Key courses",
+        edu1_c1: "Stochastic calculus & SDE",
+        edu1_c2: "Financial markets",
+        edu1_c3: "Operations research & numerical optimization",
+        edu1_c4: "Applied Machine Learning",
+        edu1_c5: "Optimal control & Hamiltonian",
+        edu1_c6: "DSGE models",
+        edu1_pfe_label: "Capstone project (with EY)", edu1_pfe_role: "Project lead",
+        edu1_pfe_desc: "Modeling and management of dynamic hedging strategies in insurance and banking",
+        edu2_title: "Preparatory Classes MPSI – MP", edu2_org: "Mathematics, Physics & Engineering Sciences",
+/* /BUILD:i18n_edu_en */
         sec_skills: "Skills", sk_lang: "Languages", sk_infra: "Infrastructure",
         lbl_certs: "Certifications",
         sec_demos: "Interactive Demos",

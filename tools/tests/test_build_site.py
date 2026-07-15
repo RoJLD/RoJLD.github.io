@@ -126,7 +126,7 @@ def _built():
 
 def test_build_fills_markers_and_content_present():
     out, p = _built()
-    for name in ["blog", "interests", "testimonials", "experience"]:
+    for name in ["blog", "interests", "testimonials", "experience", "education"]:
         assert f"<!-- BUILD:{name} -->" in out and f"<!-- /BUILD:{name} -->" in out
     for r in p["recommendations"]:
         assert r["author"] in out
@@ -151,3 +151,53 @@ def test_chrome_i18n_preserved():
     assert 'sec_blog: "Articles & Notes"' in out
     assert "nav_exp:" in out
     assert 'blog_soon: "À venir"' in out  # badge label reste chrome
+
+
+# ── Rendu #education depuis profile.json (restructuré, bilingue, NON CV-lu) ────
+def test_education_has_prepa_entry():
+    p = bs.load_profile()
+    ids = [e["id"] for e in p["education"]]
+    assert ids == ["ece", "prepa"]  # Prépa remontée dans la donnée (était affichage-only)
+
+def test_render_education_from_profile():
+    p = bs.load_profile()
+    html = bs.render_education(p)
+    for i, e in enumerate(p["education"], start=1):
+        assert bs.esc(bs._bi(e["title"], "fr")) in html
+        assert f'data-i18n="edu{i}_title"' in html and f'data-i18n="edu{i}_org"' in html
+        assert f'<span class="per">{bs.esc(e["period"])}</span>' in html
+    # ECE a des cours (dont le 1er désormais traduisible) + un capstone
+    assert 'data-i18n="edu1_courses_label"' in html
+    assert 'data-i18n="edu1_c1"' in html  # bug latent corrigé : 1er cours a une clé
+    assert 'data-i18n="edu1_pfe_role"' in html and 'data-i18n="edu1_pfe_desc"' in html
+    assert 'onclick="sub(this,event)"' in html  # handler collapsible préservé
+    # Prépa n'a NI cours NI capstone
+    assert 'data-i18n="edu2_courses_label"' not in html
+    assert 'data-i18n="edu2_pfe_label"' not in html
+
+def test_render_education_pfe_shows_summary_not_long_desc():
+    p = bs.load_profile()
+    html = bs.render_education(p)
+    cap = p["education"][0]["capstone"]
+    assert bs.esc(bs._bi(cap["summary"], "fr")) in html          # texte live (court)
+    assert bs.esc(bs._bi(cap["description"], "fr")) not in html  # desc longue réservée SP1
+
+def test_gen_i18n_edu_bilingual():
+    p = bs.load_profile()
+    fr, en = bs.gen_i18n_edu(p, "fr"), bs.gen_i18n_edu(p, "en")
+    assert p["education"][0]["title"]["fr"] in fr
+    assert p["education"][0]["title"]["en"] in en
+    # 1er cours traduit dans les deux langues (était FR-only avant le fix)
+    assert p["education"][0]["courses"][0]["fr"] in fr
+    assert p["education"][0]["courses"][0]["en"] in en
+    assert "edu1_c1" in fr and "edu2_title" in en
+
+def test_build_education_integrated():
+    p = bs.load_profile()
+    html = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    out = bs.build_html(html, p)
+    assert "<!-- BUILD:education -->" in out and "<!-- /BUILD:education -->" in out
+    for e in p["education"]:
+        assert bs.esc(bs._bi(e["title"], "fr")) in out
+    assert 'sec_edu: "Formation"' in out   # label de section reste chrome
+    assert "edu1_courses_label:" in out    # ancien cours_cles migré en contenu généré

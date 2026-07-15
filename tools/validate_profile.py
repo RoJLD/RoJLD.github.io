@@ -71,6 +71,9 @@ def validate(profile: dict) -> list[str]:
     for e in profile.get("experiences", []):
         _needs_bilingual(e.get("title", {}), f"experience '{e.get('id')}'.title")
         _needs_bilingual(e.get("bullets", {}), f"experience '{e.get('id')}'.bullets")
+    for e in profile.get("education", []):
+        _needs_bilingual(e.get("title", {}), f"education '{e.get('id')}'.title")
+        _needs_bilingual(e.get("org", {}), f"education '{e.get('id')}'.org")
 
     # radar_scores present & non-empty.
     if not (profile.get("skills", {}) or {}).get("radar_scores"):

@@ -124,24 +124,69 @@
     {
       "id": "ece",
       "school": "ECE Paris",
+      "title": {
+        "fr": "ECE Paris, Cycle Ingénieur",
+        "en": "ECE Paris, Engineering Program"
+      },
+      "org": {
+        "fr": "Majeure Ingénierie Financière et Quantitative",
+        "en": "Major in Financial & Quantitative Engineering"
+      },
+      "period": "2021 – 2026",
       "degree": "Diplôme d'Ingénieur",
       "major": "Ingénierie Financière et Quantitative",
       "start": "2021-09",
       "end": "2026-09",
       "gpa": null,
-      "highlights": [
-        "Calcul stochastique & SDE",
-        "Finance de marché",
-        "Recherche opérationnelle & optimisation numérique",
-        "Machine Learning appliqué",
-        "Contrôle optimal et Hamiltonien",
-        "Modèles DSGE"
+      "courses_label": {
+        "fr": "Cours clés",
+        "en": "Key courses"
+      },
+      "courses": [
+        {
+          "fr": "Calcul stochastique & SDE",
+          "en": "Stochastic calculus & SDE"
+        },
+        {
+          "fr": "Finance de marché",
+          "en": "Financial markets"
+        },
+        {
+          "fr": "Recherche opérationnelle & optimisation numérique",
+          "en": "Operations research & numerical optimization"
+        },
+        {
+          "fr": "Machine Learning appliqué",
+          "en": "Applied Machine Learning"
+        },
+        {
+          "fr": "Contrôle optimal et Hamiltonien",
+          "en": "Optimal control & Hamiltonian"
+        },
+        {
+          "fr": "Modèles DSGE",
+          "en": "DSGE models"
+        }
       ],
       "capstone": {
+        "label": {
+          "fr": "Projet de fin d'études (avec EY)",
+          "en": "Capstone project (with EY)"
+        },
+        "role": {
+          "fr": "Chef de projet",
+          "en": "Project lead"
+        },
+        "summary": {
+          "fr": "Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque",
+          "en": "Modeling and management of dynamic hedging strategies in insurance and banking"
+        },
         "title": "Couverture dynamique en assurance et en banque",
         "partner": "EY",
-        "role": "Chef de projet",
-        "description": "Modélisation et pilotage de stratégies de couverture dynamique : confrontation des modèles théoriques aux contraintes opérationnelles du hedging.",
+        "description": {
+          "fr": "Modélisation et pilotage de stratégies de couverture dynamique : confrontation des modèles théoriques aux contraintes opérationnelles du hedging.",
+          "en": "Modeling and steering of dynamic hedging strategies: confronting theoretical models with the operational constraints of hedging."
+        },
         "tags": [
           "hedging",
           "assurance",
@@ -150,6 +195,23 @@
         ]
       },
       "ranking_context": "Top 2% sur communauté de 40 000 étudiants (Student Pop)"
+    },
+    {
+      "id": "prepa",
+      "school": "Classes Préparatoires MPSI – MP",
+      "title": {
+        "fr": "Classes Préparatoires MPSI – MP",
+        "en": "Preparatory Classes MPSI – MP"
+      },
+      "org": {
+        "fr": "Mathématiques, Physique et Sciences de l'Ingénieur",
+        "en": "Mathematics, Physics & Engineering Sciences"
+      },
+      "period": "2019 – 2021 · Bourg-en-Bresse",
+      "start": "2019-09",
+      "end": "2021-06",
+      "courses": [],
+      "capstone": null
     }
   ],
   "experiences": [
