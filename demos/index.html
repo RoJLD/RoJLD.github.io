@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Démos — Robin Denis</title>
+<meta name="description" content="Démos interactives de finance quantitative — pricing d'options, simulation Monte-Carlo.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+<style>
+:root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px;--radius-sm:8px;--ease:cubic-bezier(.4,0,.2,1)}
+[data-theme="dark"]{--bg-0:#060a12;--bg-1:#0a1020;--bg-2:#111a2e;--bg-3:#162244;--border:#1a2847;--border-hi:#253a68;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--accent-g:rgba(59,130,246,.12);--warm:#f59e42;--green:#22c55e;--violet:#a78bfa;--glass:rgba(10,16,32,.75);--shadow:rgba(0,0,0,.3)}
+[data-theme="light"]{--bg-0:#f5f7fa;--bg-1:#edf0f5;--bg-2:#ffffff;--bg-3:#f0f3f8;--border:#d8dfe9;--border-hi:#c2cbda;--tx-1:#1a2035;--tx-2:#546178;--tx-3:#8594ad;--accent:#2563eb;--accent-g:rgba(37,99,235,.08);--warm:#d97706;--green:#16a34a;--violet:#7c3aed;--glass:rgba(245,247,250,.8);--shadow:rgba(0,0,0,.06)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
+.blob{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}.b1{width:700px;height:700px;top:-300px;right:-200px;background:var(--accent);opacity:.04}
+nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
+.nav-i{max-width:1000px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em;text-decoration:none}.nav-brand b{color:var(--accent)}
+.nav-r{display:flex;align-items:center;gap:20px}
+.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease)}
+.nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
+.ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
+.ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+header.hd{padding:130px 0 20px;text-align:center}
+header.hd h1{font-family:var(--serif);font-size:clamp(38px,6vw,56px);font-weight:400;letter-spacing:-.03em;margin-bottom:10px}
+header.hd p{color:var(--tx-2);font-size:16px;font-weight:300;max-width:560px;margin:0 auto}
+.filters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:34px 0 30px;position:sticky;top:60px;z-index:50;padding:10px 0;background:linear-gradient(var(--bg-0) 70%,transparent)}
+.f-btn{padding:7px 16px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-2);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .25s var(--ease);font-family:var(--sans)}
+.f-btn:hover{border-color:var(--border-hi);color:var(--tx-1)}
+.f-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;padding-bottom:60px}
+.d-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;transition:all .3s var(--ease);display:flex;flex-direction:column}
+.d-card:hover{border-color:var(--border-hi);box-shadow:0 12px 32px var(--shadow)}
+.d-card.hide{display:none}
+.d-cat{font-size:11px;padding:3px 11px;border-radius:100px;background:var(--accent-g);color:var(--accent);font-weight:600}
+.d-title{font-size:17px;font-weight:600;margin:12px 0 6px}
+.d-desc{font-size:13.5px;color:var(--tx-2);line-height:1.6;margin-bottom:14px}
+.d-live{background:var(--bg-1);padding:20px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:14px;display:flex;justify-content:center}
+.d-links{margin-top:auto}
+.p-link{font-size:12px;font-weight:500;color:var(--accent);text-decoration:none}.p-link:hover{text-decoration:underline}
+.snip{margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.snip summary{cursor:pointer;padding:9px 14px;font-size:12.5px;font-weight:600;color:var(--tx-2);background:var(--bg-1);user-select:none;font-family:var(--mono);list-style:none}
+.snip summary::-webkit-details-marker{display:none}
+.snip summary:hover{color:var(--accent)}.snip-ic{color:var(--accent);font-weight:700;margin-right:4px}
+.snip-pre{margin:0;overflow-x:auto}.snip-pre code.hljs{font-family:var(--mono);font-size:12.5px;line-height:1.6;padding:16px 18px;background:#0b1120}
+.bs-mini{width:100%;max-width:340px}.bs-mini label{display:flex;justify-content:space-between;font-size:11px;color:var(--tx-3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.bs-mini input[type=range]{width:100%;margin-bottom:12px;accent-color:var(--accent);height:4px}
+.bs-result{display:flex;gap:16px;margin-top:8px}.bs-val{text-align:center;flex:1;padding:10px;background:var(--bg-0);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.bs-val .num{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--accent)}.bs-val .lbl{font-size:10px;color:var(--tx-3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.mc-mini{width:100%;max-width:340px;text-align:center}.mc-mini canvas{width:100%;height:180px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-0)}
+.mc-controls{display:flex;gap:8px;margin-top:10px;justify-content:center}
+.mc-btn{padding:6px 16px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-2);font-size:12px;font-weight:600;cursor:pointer;transition:all .3s var(--ease);font-family:var(--sans)}
+.mc-btn:hover,.mc-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-g)}
+footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-top:1px solid var(--border)}
+@media(max-width:640px){.wrap{padding:0 18px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div>
+<nav><div class="nav-i">
+  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
+  <div class="nav-r">
+    <a href="/#experience">Expérience</a>
+    <a class="on" href="/demos/">Démos</a>
+    <a href="/projects/">Projets</a>
+    <a href="/#contact">Contact</a>
+    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
+  </div>
+</div></nav>
+<div class="wrap">
+<header class="hd">
+  <h1>Démos interactives</h1>
+  <p>Finance quantitative jouable dans le navigateur — ajuste les paramètres, observe en temps réel. Le code source de chaque démo est ouvert.</p>
+</header>
+<div class="filters" id="filters"><button class="f-btn active" data-filter="all">Toutes</button><button class="f-btn" data-filter="Finance quantitative">Finance quantitative</button></div>
+<div class="grid" id="grid">
+<article id="bs" class="d-card" data-cat="Finance quantitative">
+  <div class="d-head"><span class="d-cat">Finance quantitative</span></div>
+  <h3 class="d-title">Black-Scholes Pricer</h3>
+  <p class="d-desc">Pricing d&#x27;options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l&#x27;impact sur le prix.</p>
+  <div class="d-live"><div class="bs-mini">
+        <label>Spot (S) <span id="bsS">100</span></label><input type="range" min="50" max="200" value="100" id="slS" oninput="bsCalc()">
+        <label>Strike (K) <span id="bsK">100</span></label><input type="range" min="50" max="200" value="100" id="slK" oninput="bsCalc()">
+        <label data-i18n="bs_vol">Volatilité (σ)</label> <span id="bsV">20%</span><input type="range" min="5" max="80" value="20" id="slV" oninput="bsCalc()">
+        <label data-i18n="bs_mat">Maturité (T)</label> <span id="bsT">1.0</span><input type="range" min="1" max="36" value="12" id="slT" oninput="bsCalc()">
+        <div class="bs-result"><div class="bs-val"><div class="num" id="callP">–</div><div class="lbl">Call</div></div><div class="bs-val"><div class="num" id="putP">–</div><div class="lbl">Put</div></div><div class="bs-val"><div class="num" id="deltaV">–</div><div class="lbl">Δ Call</div></div></div>
+    </div></div>
+  <details class="snip"><summary><span class="snip-ic">&lt;/&gt;</span> Code source</summary>
+  <pre class="snip-pre"><code class="language-python">from math import log, sqrt, exp, erf
+
+def norm_cdf(x):
+    return 0.5 * (1.0 + erf(x / sqrt(2.0)))
+
+def black_scholes(S, K, T, r, sigma):
+    d1 = (log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * sqrt(T))
+    d2 = d1 - sigma * sqrt(T)
+    call = S * norm_cdf(d1) - K * exp(-r * T) * norm_cdf(d2)
+    put = K * exp(-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1)
+    return {"call": call, "put": put, "delta": norm_cdf(d1)}
+</code></pre></details>
+  <div class="d-links"><a class="p-link" href="/projects/#derivatives-pricer">Projet complet →</a></div>
+</article>
+<article id="mc" class="d-card" data-cat="Finance quantitative">
+  <div class="d-head"><span class="d-cat">Finance quantitative</span></div>
+  <h3 class="d-title">Simulation Monte Carlo (GBM)</h3>
+  <p class="d-desc">Trajectoires d&#x27;un mouvement brownien géométrique pour le pricing d&#x27;options par simulation.</p>
+  <div class="d-live"><div class="mc-mini"><canvas id="mcCanvas"></canvas><div class="mc-controls"><button class="mc-btn active" onclick="mcRun(50)" id="mc50">50 paths</button><button class="mc-btn" onclick="mcRun(200)" id="mc200">200 paths</button><button class="mc-btn" onclick="mcRun(1000)" id="mc1000">1000 paths</button></div></div></div>
+  <details class="snip"><summary><span class="snip-ic">&lt;/&gt;</span> Code source</summary>
+  <pre class="snip-pre"><code class="language-python">import numpy as np
+
+def gbm_paths(S0, mu, sigma, T, steps, n):
+    dt = T / steps
+    Z = np.random.standard_normal((n, steps))
+    incr = (mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z
+    return S0 * np.exp(np.cumsum(incr, axis=1))
+</code></pre></details>
+  <div class="d-links"><a class="p-link" href="/projects/#monte-carlo-gbm">Projet complet →</a></div>
+</article>
+</div>
+<footer>Robin Denis · <a href="/" style="color:var(--accent);text-decoration:none">Retour à l'accueil</a></footer>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script>
+  if (window.hljs) hljs.highlightAll();
+  // Filtrage par catégorie
+  const grid = document.getElementById('grid');
+  document.getElementById('filters').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.f-btn'); if (!btn) return;
+    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    grid.querySelectorAll('.d-card').forEach(c => {
+      c.classList.toggle('hide', f !== 'all' && c.dataset.cat !== f);
+    });
+  });
+  // Widgets (extraits — source unique demos/widgets/*.js)
+function normCdf(x){const a1=.254829592,a2=-.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=.3275911;const sign=x<0?-1:1;x=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*x);const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);return .5*(1+sign*y)}
+function bsCalc(){const S=+document.getElementById('slS').value,K=+document.getElementById('slK').value,v=+document.getElementById('slV').value/100,T=+document.getElementById('slT').value/12,r=.05;document.getElementById('bsS').textContent=S;document.getElementById('bsK').textContent=K;document.getElementById('bsV').textContent=(v*100).toFixed(0)+'%';document.getElementById('bsT').textContent=T.toFixed(1);if(T<=0||v<=0)return;const d1=(Math.log(S/K)+(r+v*v/2)*T)/(v*Math.sqrt(T)),d2=d1-v*Math.sqrt(T);const call=S*normCdf(d1)-K*Math.exp(-r*T)*normCdf(d2),put=K*Math.exp(-r*T)*normCdf(-d2)-S*normCdf(-d1),delta=normCdf(d1);document.getElementById('callP').textContent=call.toFixed(2);document.getElementById('putP').textContent=put.toFixed(2);document.getElementById('deltaV').textContent=delta.toFixed(2)}
+
+let currentMC=50;
+function mcRun(n){currentMC=n;document.querySelectorAll('.mc-btn').forEach(b=>b.classList.remove('active'));const btn=document.getElementById('mc'+n);if(btn)btn.classList.add('active');const canvas=document.getElementById('mcCanvas'),ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1,rect=canvas.getBoundingClientRect();canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);const W=rect.width,H=rect.height;const S0=100,mu=.08,sigma=.25,T=1,steps=252,dt=T/steps;const isDark=document.documentElement.getAttribute('data-theme')==='dark';ctx.clearRect(0,0,W,H);ctx.strokeStyle=isDark?'rgba(59,130,246,.06)':'rgba(37,99,235,.06)';ctx.lineWidth=.5;for(let i=0;i<=4;i++){const y=i*H/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}let allPaths=[];for(let p=0;p<n;p++){let path=[S0],s=S0;for(let i=0;i<steps;i++){const z=Math.sqrt(-2*Math.log(Math.random()))*Math.cos(2*Math.PI*Math.random());s*=Math.exp((mu-.5*sigma*sigma)*dt+sigma*Math.sqrt(dt)*z);path.push(s)}allPaths.push(path)}const allVals=allPaths.flat(),mn=Math.min(...allVals)*.95,mx=Math.max(...allVals)*1.05;const colors=['rgba(59,130,246,','rgba(167,139,250,','rgba(232,121,168,','rgba(245,158,66,','rgba(34,197,94,'];allPaths.forEach((path,pi)=>{const c=colors[pi%colors.length];ctx.beginPath();ctx.strokeStyle=c+(n>100?'0.08)':'0.25)');ctx.lineWidth=n>100?.5:1;path.forEach((v,i)=>{const x=(i/steps)*W,y=H-((v-mn)/(mx-mn))*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.stroke()});ctx.beginPath();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;for(let i=0;i<=steps;i++){const avg=allPaths.reduce((s,p)=>s+p[i],0)/n;const x=(i/steps)*W,y=H-((avg-mn)/(mx-mn))*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}
+
+  // Init widgets
+  if (typeof bsCalc === 'function') bsCalc();
+  if (typeof mcRun === 'function') mcRun(50);
+  // Thème (partagé avec l'accueil via localStorage) + re-render widgets
+  const root = document.documentElement;
+  const saved = localStorage.getItem('theme');
+  if (saved) root.setAttribute('data-theme', saved);
+  document.getElementById('themeBtn').textContent = root.getAttribute('data-theme') === 'light' ? '☀️' : '🌙';
+  function tgTheme() {
+    const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    document.getElementById('themeBtn').textContent = next === 'light' ? '☀️' : '🌙';
+    if (typeof mcRun === 'function' && typeof currentMC !== 'undefined') mcRun(currentMC);
+  }
+  window.addEventListener('resize', () => { if (typeof mcRun === 'function' && typeof currentMC !== 'undefined') mcRun(currentMC); });
+</script>
+</body>
+</html>
