@@ -893,107 +893,29 @@
   ],
   "projects": [
     {
-      "id": "treasury_ms",
-      "name": "Treasury Management System",
-      "context": "bouygues_2025",
-      "description": "Système de gestion de trésorerie intégrant pricing de swaps de taux, prévisions automatisées et ETL.",
-      "impact": "~4h économisées par jour",
-      "stack": [
-        "Python",
-        "SQL",
-        "VBA",
-        "ODBC",
-        "BigQuery",
-        "Dataiku"
-      ],
-      "tags": [
-        "treasury",
-        "automation",
-        "finance"
-      ],
-      "domains": [
-        "finance",
-        "dev",
-        "data"
-      ]
-    },
-    {
-      "id": "crypto_exploration",
-      "name": "CryptoExploration",
-      "context": "alten_2026",
-      "description": "Pipeline de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) avec modèles ML pour détection de patterns sur protocoles DeFi émergents.",
-      "impact": "Analyse de 10+ protocoles, 3 modèles ML déployés",
-      "stack": [
-        "Python",
-        "Machine Learning",
-        "DeFi",
-        "Data Engineering"
-      ],
-      "tags": [
-        "DeFi",
-        "ML",
-        "on-chain",
-        "quant"
-      ],
-      "domains": [
-        "quant",
-        "data",
-        "defi",
-        "ai"
-      ]
-    },
-    {
-      "id": "pfe_hedging",
-      "name": "Couverture Dynamique, PFE avec EY",
-      "context": "ece",
-      "description": "Modélisation et pilotage de stratégies de couverture dynamique en assurance et banque.",
-      "impact": "Projet de fin d'études, chef de projet",
-      "stack": [
-        "Finance de marché",
-        "Calcul stochastique",
-        "Python"
-      ],
-      "tags": [
-        "hedging",
-        "assurance",
-        "quant",
-        "EY"
-      ],
-      "domains": [
-        "quant",
-        "risk",
-        "finance",
-        "research"
-      ]
-    },
-    {
-      "id": "portfolio_site",
-      "name": "Portfolio Anthropos",
-      "context": "personal",
-      "description": "Site portfolio bilingue + interface admin locale (FastAPI) + bot de candidature automatisé.",
-      "impact": "100% statique, GitHub Pages, système admin complet",
-      "stack": [
-        "HTML",
-        "CSS",
-        "JS",
-        "Python",
-        "FastAPI"
-      ],
-      "tags": [
-        "dev",
-        "fullstack",
-        "career"
-      ],
-      "domains": [
-        "dev",
-        "product"
-      ]
-    },
-    {
       "id": "elysium",
-      "name": "ELYSIUM, Architecture IA souveraine",
+      "name": "ELYSIUM — Sovereign Cognitive Architecture",
+      "type": "personal",
+      "date": "2024 — présent",
       "context": "personal",
-      "description": "Projet personnel de R&D (depuis février 2026) : substrat cognitif d'une IA autonome : cluster GPU K3s 4 nœuds (AMD ROCm), graphe de connaissance auto-audité, orchestration multi-agent/multi-modèle, gouvernance par sentinels. Projet solo end-to-end.",
+      "summary": "Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d'audit git souveraine. ~30 mois en solo.",
+      "tags": [
+        "architecture",
+        "ai-ml",
+        "kubernetes",
+        "knowledge-graph",
+        "devops",
+        "python"
+      ],
+      "domains": [
+        "ai",
+        "architecture",
+        "infra",
+        "knowledge-graph",
+        "research",
+        "dev"
+      ],
+      "featured": true,
       "impact": "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain : architecture solo depuis février 2026",
       "stack": [
         "Python",
@@ -1004,24 +926,360 @@
         "Multi-Agent",
         "TDD"
       ],
+      "code_status": "Privé — cœur souverain",
+      "snippet": {
+        "lang": "python",
+        "label": "GraphSAGE-lite (NumPy pur, zéro dépendance deep-learning)",
+        "file": "snippets/elysium.py",
+        "note": "Une couche d'agrégation moyenne des voisins, combinée à l'état du nœud — le cœur du routage d'intentions sémantiques sur le graphe."
+      }
+    },
+    {
+      "id": "pfe-hedging",
+      "name": "Couverture dynamique en assurance/banque (PFE × EY)",
+      "type": "academic",
+      "date": "2025 — 2026",
+      "context": "ece",
+      "summary": "Projet de fin d'études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l'art, prototype, soutenance).",
+      "tags": [
+        "finance",
+        "hedging",
+        "derivatives",
+        "quant"
+      ],
       "domains": [
-        "ai",
-        "architecture",
-        "infra",
-        "knowledge-graph",
-        "research",
+        "quant",
+        "risk",
+        "finance",
+        "research"
+      ],
+      "featured": true,
+      "impact": "Projet de fin d'études, chef de projet",
+      "stack": [
+        "Finance de marché",
+        "Calcul stochastique",
+        "Python"
+      ],
+      "links": {
+        "article": "articles/couverture-dynamique.html"
+      }
+    },
+    {
+      "id": "anthropos",
+      "name": "Anthropos — Career OS & Life Architect",
+      "type": "personal",
+      "date": "2026",
+      "context": "personal",
+      "summary": "Plateforme local-first (FastAPI) de gestion de carrière et de développement personnel : career management, recherche d'emploi, architecture de vie. API-first.",
+      "tags": [
+        "python",
+        "architecture"
+      ],
+      "domains": [
+        "dev",
+        "product",
+        "ai"
+      ],
+      "links": {
+        "github": "https://github.com/RoJLD/Anthropos"
+      }
+    },
+    {
+      "id": "hmm-studio",
+      "name": "hmm-studio — Modèles de Markov cachés contraints",
+      "type": "personal",
+      "date": "2026",
+      "context": "personal",
+      "summary": "Bibliothèque HMM Python (pip-installable, compatible scikit-learn, native Jupyter) : moteur Baum-Welch contraint (topologies left-right/Bakis, priors de Dirichlet, NHMM, apprentissage supervisé) et studio optionnel FastAPI/React. Licence MIT.",
+      "tags": [
+        "ml",
+        "quant",
+        "python",
+        "open-source"
+      ],
+      "domains": [
+        "quant",
+        "data",
+        "research"
+      ],
+      "links": {
+        "github": "https://github.com/RoJLD/HMMstudio",
+        "live": "https://rojld.github.io/HMMstudio/"
+      }
+    },
+    {
+      "id": "derivatives-pricer",
+      "name": "Pricer d'options européennes (Black-Scholes)",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Pricing d'options européennes en temps réel (call/put + delta) — la démo interactive de la page d'accueil. Formule fermée de Black-Scholes.",
+      "tags": [
+        "quant",
+        "finance",
+        "derivatives",
+        "python"
+      ],
+      "domains": [
+        "quant",
+        "finance"
+      ],
+      "links": {
+        "demo": "index.html#demos"
+      },
+      "snippet": {
+        "lang": "python",
+        "label": "Black-Scholes — prix call/put + delta",
+        "file": "snippets/derivatives-pricer.py"
+      }
+    },
+    {
+      "id": "monte-carlo-gbm",
+      "name": "Simulation Monte-Carlo — Mouvement Brownien Géométrique",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Génération de trajectoires GBM pour le pricing d'options par simulation — la 2ᵉ démo interactive de la page d'accueil.",
+      "tags": [
+        "quant",
+        "finance",
+        "python",
+        "simulation"
+      ],
+      "domains": [
+        "quant",
+        "data"
+      ],
+      "links": {
+        "demo": "index.html#demos"
+      },
+      "snippet": {
+        "lang": "python",
+        "label": "Trajectoires GBM vectorisées (NumPy)",
+        "file": "snippets/monte-carlo-gbm.py"
+      }
+    },
+    {
+      "id": "sudoku-cnn",
+      "name": "Résolution de Sudoku par réseau de neurones convolutif",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Pipeline vision : pré-traitement d'image (binarisation, segmentation des cellules), reconnaissance des chiffres par CNN, puis résolution algorithmique de la grille.",
+      "tags": [
+        "ml",
+        "cnn",
+        "python"
+      ],
+      "domains": [
+        "data",
+        "ai"
+      ],
+      "code_status": "Code sur demande"
+    },
+    {
+      "id": "trading-algo-csharp",
+      "name": "Algorithme de trading crypto / forex (C#)",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Algorithme de trading automatisé en C# pour marchés crypto et forex (stratégie, backtesting, connexion API marché).",
+      "tags": [
+        "trading",
+        "c-sharp",
+        "quant"
+      ],
+      "domains": [
+        "quant",
         "dev"
       ],
+      "code_status": "Code sur demande"
+    },
+    {
+      "id": "vba-index-tool",
+      "name": "Outil VBA d'analyse & visualisation d'indices boursiers",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Outil Excel/VBA : récupération automatique de cours, calcul d'indicateurs techniques (moyennes mobiles, RSI, volatilité) et graphiques dynamiques (CAC 40, S&P 500…).",
       "tags": [
-        "AI",
-        "architecture",
-        "knowledge-graph",
-        "k8s",
-        "multi-agent"
+        "vba",
+        "finance",
+        "data-eng"
       ],
-      "visibility": "public_summary",
+      "domains": [
+        "finance",
+        "data"
+      ],
+      "code_status": "Code sur demande"
+    },
+    {
+      "id": "vhdl-calculator",
+      "name": "Calculatrice 4 opérations en VHDL (FPGA)",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Conception et synthèse d'une calculatrice (add/sub/mul/div) en VHDL sur FPGA : ALU, gestion clavier matriciel, affichage 7 segments, machine à états finis.",
+      "tags": [
+        "vhdl",
+        "hardware"
+      ],
+      "domains": [
+        "dev"
+      ],
+      "code_status": "Code sur demande"
+    },
+    {
+      "id": "atc-simulation",
+      "name": "Simulation de tour de contrôle aérienne",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Développement d'une simulation logicielle de tour de contrôle du trafic aérien.",
+      "tags": [
+        "simulation"
+      ],
+      "domains": [
+        "dev"
+      ],
+      "code_status": "Code sur demande"
+    },
+    {
+      "id": "gripper-robot",
+      "name": "Robot pince — modélisation 3D, impression & assemblage",
+      "type": "academic",
+      "date": "ECE Paris",
+      "context": "ece",
+      "summary": "Conception mécanique 3D d'un robot pince (SolidWorks), impression 3D des pièces, assemblage et intégration des actionneurs.",
+      "tags": [
+        "robotics",
+        "3d-printing",
+        "hardware"
+      ],
+      "domains": [
+        "dev"
+      ],
+      "code_status": "Projet matériel"
+    },
+    {
+      "id": "octoprint-bed-leveller",
+      "name": "Plugin Octoprint — Bed Leveller & Visualizer",
+      "type": "personal",
+      "date": "Perso",
+      "context": "personal",
+      "summary": "Plugin Octoprint en Python : lecture du capteur de nivellement (BLTouch/probe), carte de chaleur de la planéité du plateau et suggestions de correction mécanique.",
+      "tags": [
+        "open-source",
+        "python",
+        "3d-printing"
+      ],
+      "domains": [
+        "dev"
+      ],
+      "code_status": "Open-source — lien à ajouter"
+    },
+    {
+      "id": "tms-bouygues",
+      "name": "Treasury Management System (Bouygues Telecom)",
+      "type": "professional",
+      "date": "2025",
+      "context": "bouygues_2025",
+      "summary": "Conception et déploiement en production d'un TMS (Python/SQL/VBA, ODBC) : ~4h/jour gagnées pour l'équipe trésorerie, prévisions de cash automatisées, pricing d'IRS intégré, pipelines ETL Dataiku/BigQuery.",
+      "tags": [
+        "finance",
+        "treasury",
+        "python",
+        "data-eng"
+      ],
+      "domains": [
+        "finance",
+        "dev",
+        "data"
+      ],
+      "impact": "~4h économisées par jour",
+      "stack": [
+        "Python",
+        "SQL",
+        "VBA",
+        "ODBC",
+        "BigQuery",
+        "Dataiku"
+      ],
+      "code_status": "Propriété Bouygues Telecom"
+    },
+    {
+      "id": "crypto-exploration",
+      "name": "CryptoExploration — recherche quant DeFi (ALTEN)",
+      "type": "professional",
+      "date": "2026",
+      "context": "alten_2026",
+      "summary": "Détection et évaluation des fluctuations d'actifs sur protocoles DeFi émergents : modèles statistiques/ML (HMM, transfert d'entropie, copules, causalité), collecte on-chain automatisée (TVL, APY, Volume), env. reproductible Docker/Azure DevOps.",
+      "tags": [
+        "quant",
+        "defi",
+        "ml",
+        "data-eng"
+      ],
+      "domains": [
+        "quant",
+        "data",
+        "defi",
+        "ai"
+      ],
+      "impact": "Analyse de 10+ protocoles, 3 modèles ML déployés",
+      "stack": [
+        "Python",
+        "Machine Learning",
+        "DeFi",
+        "Data Engineering"
+      ],
+      "code_status": "Propriété ALTEN"
+    },
+    {
+      "id": "ppe-politique-monetaire",
+      "name": "Recherche & fixation de la politique monétaire (PPE)",
+      "type": "academic",
+      "date": "2023",
+      "context": "ece",
+      "summary": "Projet de recherche (PPE) sur la conduite et la fixation de la politique monétaire.",
+      "tags": [
+        "finance",
+        "python"
+      ],
+      "domains": [
+        "finance",
+        "research"
+      ],
       "links": {
-        "github": "https://github.com/RoJLD/ELYSIUM"
+        "github": "https://github.com/RoJLD/PPE_Recherche_et_fixation_mon-taire"
+      }
+    },
+    {
+      "id": "portfolio-site",
+      "name": "robin-denis.com — site portfolio & pipeline candidature",
+      "type": "personal",
+      "date": "2026",
+      "context": "personal",
+      "summary": "Site portfolio bilingue + interface admin locale (FastAPI) + bot de candidature automatisé.",
+      "tags": [
+        "python",
+        "open-source",
+        "architecture"
+      ],
+      "domains": [
+        "dev",
+        "product"
+      ],
+      "impact": "100% statique, GitHub Pages, système admin complet",
+      "stack": [
+        "HTML",
+        "CSS",
+        "JS",
+        "Python",
+        "FastAPI"
+      ],
+      "links": {
+        "github": "https://github.com/RoJLD/RoJLD.github.io"
       }
     }
   ],
@@ -1337,5 +1595,35 @@
       },
       "link": "/projects/#monte-carlo-gbm"
     }
-  ]
+  ],
+  "project_tag_labels": {
+    "quant": "Quant Finance",
+    "ml": "Machine Learning",
+    "ai-ml": "IA / ML",
+    "finance": "Finance",
+    "hedging": "Hedging",
+    "derivatives": "Dérivés",
+    "trading": "Trading Algo",
+    "data-eng": "Data Engineering",
+    "python": "Python",
+    "c-sharp": "C#",
+    "vba": "VBA / Excel",
+    "vhdl": "VHDL / FPGA",
+    "hardware": "Hardware",
+    "robotics": "Robotique",
+    "3d-printing": "Impression 3D",
+    "simulation": "Simulation",
+    "architecture": "Architecture",
+    "kubernetes": "Kubernetes",
+    "knowledge-graph": "Knowledge Graph",
+    "devops": "DevOps",
+    "defi": "DeFi",
+    "treasury": "Trésorerie",
+    "cnn": "CNN / Vision",
+    "open-source": "Open Source"
+  },
+  "projects_meta": {
+    "updated": "2026-07-08",
+    "github_profile": "https://github.com/RoJLD"
+  }
 }
