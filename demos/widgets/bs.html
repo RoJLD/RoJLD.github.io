@@ -1,0 +1,7 @@
+<div class="bs-mini">
+        <label>Spot (S) <span id="bsS">100</span></label><input type="range" min="50" max="200" value="100" id="slS" oninput="bsCalc()">
+        <label>Strike (K) <span id="bsK">100</span></label><input type="range" min="50" max="200" value="100" id="slK" oninput="bsCalc()">
+        <label data-i18n="bs_vol">Volatilité (σ)</label> <span id="bsV">20%</span><input type="range" min="5" max="80" value="20" id="slV" oninput="bsCalc()">
+        <label data-i18n="bs_mat">Maturité (T)</label> <span id="bsT">1.0</span><input type="range" min="1" max="36" value="12" id="slT" oninput="bsCalc()">
+        <div class="bs-result"><div class="bs-val"><div class="num" id="callP">–</div><div class="lbl">Call</div></div><div class="bs-val"><div class="num" id="putP">–</div><div class="lbl">Put</div></div><div class="bs-val"><div class="num" id="deltaV">–</div><div class="lbl">Δ Call</div></div></div>
+    </div>
