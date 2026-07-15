@@ -21,7 +21,7 @@ def _valid_profile():
             {"id": "quant", "label": {"fr": "Q", "en": "Q"}},
             {"id": "dev", "label": {"fr": "D", "en": "D"}},
         ],
-        "education": [{"id": "ece"}],
+        "education": [{"id": "ece", "title": {"fr": "t", "en": "t"}, "org": {"fr": "o", "en": "o"}}],
         "experiences": [{
             "id": "job1",
             "title": {"fr": "t", "en": "t"},
@@ -29,8 +29,8 @@ def _valid_profile():
             "domains": ["quant"],
         }],
         "projects": [
-            {"id": "proj1", "context": "job1", "domains": ["dev"]},
-            {"id": "elysium", "context": "personal", "domains": ["dev"]},
+            {"id": "proj1", "name": "P1", "type": "personal", "context": "job1", "domains": ["dev"]},
+            {"id": "elysium", "name": "Ely", "type": "personal", "context": "personal", "domains": ["dev"]},
         ],
         "skills": {
             "programming": [{"name": "Python", "used_in": ["job1", "proj1"]}],
