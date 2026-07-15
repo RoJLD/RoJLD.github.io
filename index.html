@@ -165,6 +165,12 @@
 .modal-impact{color:var(--warm);font-size:13px;font-style:italic;margin:10px 0}
 .modal-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .ht-item[data-ref]:hover .ht-label{color:var(--accent)}
+.demo-teaser{display:flex;flex-direction:column;text-decoration:none;color:inherit;padding:22px;transition:all .3s var(--ease)}
+.demo-teaser:hover{border-color:var(--border-hi);transform:translateY(-3px)}
+.demo-teaser h4{font-size:16px;font-weight:600;margin:10px 0 6px}
+.demo-teaser p{font-size:13.5px;color:var(--tx-2);line-height:1.6}
+.demo-cat{font-size:11px;padding:3px 11px;border-radius:100px;background:var(--accent-g);color:var(--accent);font-weight:600;align-self:flex-start}
+.demo-cta{color:var(--accent);font-size:13px;font-weight:600;margin-top:12px}
     </style>
 </head>
 <body>
@@ -266,16 +272,10 @@
 </div></div></section>
 
 <!-- DÉMOS INTERACTIVES -->
-<section id="demos" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🧪</div><h2 class="st" data-i18n="sec_demos">Démos Interactives</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="demos-grid">
-    <div class="demo-card"><div class="demo-preview"><div class="bs-mini">
-        <label>Spot (S) <span id="bsS">100</span></label><input type="range" min="50" max="200" value="100" id="slS" oninput="bsCalc()">
-        <label>Strike (K) <span id="bsK">100</span></label><input type="range" min="50" max="200" value="100" id="slK" oninput="bsCalc()">
-        <label data-i18n="bs_vol">Volatilité (σ)</label> <span id="bsV">20%</span><input type="range" min="5" max="80" value="20" id="slV" oninput="bsCalc()">
-        <label data-i18n="bs_mat">Maturité (T)</label> <span id="bsT">1.0</span><input type="range" min="1" max="36" value="12" id="slT" oninput="bsCalc()">
-        <div class="bs-result"><div class="bs-val"><div class="num" id="callP">–</div><div class="lbl">Call</div></div><div class="bs-val"><div class="num" id="putP">–</div><div class="lbl">Put</div></div><div class="bs-val"><div class="num" id="deltaV">–</div><div class="lbl">Δ Call</div></div></div>
-    </div></div><!-- BUILD:demo_bs --><div class="demo-info"><h4>Black-Scholes Pricer</h4><p data-i18n="bs_desc">Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.</p><div class="demo-links"><a href="/projects/#derivatives-pricer" data-i18n="code_src">💻 Code source</a></div></div><!-- /BUILD:demo_bs --></div>
-    <div class="demo-card"><div class="demo-preview"><div class="mc-mini"><canvas id="mcCanvas"></canvas><div class="mc-controls"><button class="mc-btn active" onclick="mcRun(50)" id="mc50">50 paths</button><button class="mc-btn" onclick="mcRun(200)" id="mc200">200 paths</button><button class="mc-btn" onclick="mcRun(1000)" id="mc1000">1000 paths</button></div></div></div><!-- BUILD:demo_mc --><div class="demo-info"><h4>Simulation Monte Carlo (GBM)</h4><p data-i18n="mc_desc">Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.</p><div class="demo-links"><a href="/projects/#monte-carlo-gbm" data-i18n="code_src">💻 Code source</a></div></div><!-- /BUILD:demo_mc --></div>
-</div></div></div></section>
+<section id="demos" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🧪</div><h2 class="st" data-i18n="sec_demos">Démos Interactives</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="demos-grid"><!-- BUILD:demos -->
+    <a class="demo-card demo-teaser" href="/demos/#bs"><span class="demo-cat">Finance quantitative</span><h4>Black-Scholes Pricer</h4><p data-i18n="bs_desc">Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.</p><span class="demo-cta">Essayer la démo →</span></a>
+    <a class="demo-card demo-teaser" href="/demos/#mc"><span class="demo-cat">Finance quantitative</span><h4>Simulation Monte Carlo (GBM)</h4><p data-i18n="mc_desc">Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.</p><span class="demo-cta">Essayer la démo →</span></a>
+<!-- /BUILD:demos --></div></div></div></section>
 
 <!-- TÉMOIGNAGES -->
 <section id="testimonials" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">💬</div><h2 class="st" data-i18n="sec_testi">Recommandations</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><!-- BUILD:testimonials -->
@@ -587,7 +587,7 @@ function toggleTheme(){
     const h=document.documentElement,b=document.getElementById('themeBtn');
     if(h.getAttribute('data-theme')==='dark'){h.setAttribute('data-theme','light');b.textContent='☀️';localStorage.setItem('theme','light')}
     else{h.setAttribute('data-theme','dark');b.textContent='🌙';localStorage.setItem('theme','dark')}
-    initRadar();mcRun(currentMC);
+    initRadar();
 }
 
 // ═══ Restore saved prefs ═══
@@ -610,21 +610,15 @@ const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)e.tar
 document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
 
 // ═══ Black-Scholes ═══
-function normCdf(x){const a1=.254829592,a2=-.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=.3275911;const sign=x<0?-1:1;x=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*x);const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);return .5*(1+sign*y)}
-function bsCalc(){const S=+document.getElementById('slS').value,K=+document.getElementById('slK').value,v=+document.getElementById('slV').value/100,T=+document.getElementById('slT').value/12,r=.05;document.getElementById('bsS').textContent=S;document.getElementById('bsK').textContent=K;document.getElementById('bsV').textContent=(v*100).toFixed(0)+'%';document.getElementById('bsT').textContent=T.toFixed(1);if(T<=0||v<=0)return;const d1=(Math.log(S/K)+(r+v*v/2)*T)/(v*Math.sqrt(T)),d2=d1-v*Math.sqrt(T);const call=S*normCdf(d1)-K*Math.exp(-r*T)*normCdf(d2),put=K*Math.exp(-r*T)*normCdf(-d2)-S*normCdf(-d1),delta=normCdf(d1);document.getElementById('callP').textContent=call.toFixed(2);document.getElementById('putP').textContent=put.toFixed(2);document.getElementById('deltaV').textContent=delta.toFixed(2)}
-bsCalc();
 
 // ═══ Monte Carlo ═══
-let currentMC=50;
-function mcRun(n){currentMC=n;document.querySelectorAll('.mc-btn').forEach(b=>b.classList.remove('active'));const btn=document.getElementById('mc'+n);if(btn)btn.classList.add('active');const canvas=document.getElementById('mcCanvas'),ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1,rect=canvas.getBoundingClientRect();canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);const W=rect.width,H=rect.height;const S0=100,mu=.08,sigma=.25,T=1,steps=252,dt=T/steps;const isDark=document.documentElement.getAttribute('data-theme')==='dark';ctx.clearRect(0,0,W,H);ctx.strokeStyle=isDark?'rgba(59,130,246,.06)':'rgba(37,99,235,.06)';ctx.lineWidth=.5;for(let i=0;i<=4;i++){const y=i*H/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}let allPaths=[];for(let p=0;p<n;p++){let path=[S0],s=S0;for(let i=0;i<steps;i++){const z=Math.sqrt(-2*Math.log(Math.random()))*Math.cos(2*Math.PI*Math.random());s*=Math.exp((mu-.5*sigma*sigma)*dt+sigma*Math.sqrt(dt)*z);path.push(s)}allPaths.push(path)}const allVals=allPaths.flat(),mn=Math.min(...allVals)*.95,mx=Math.max(...allVals)*1.05;const colors=['rgba(59,130,246,','rgba(167,139,250,','rgba(232,121,168,','rgba(245,158,66,','rgba(34,197,94,'];allPaths.forEach((path,pi)=>{const c=colors[pi%colors.length];ctx.beginPath();ctx.strokeStyle=c+(n>100?'0.08)':'0.25)');ctx.lineWidth=n>100?.5:1;path.forEach((v,i)=>{const x=(i/steps)*W,y=H-((v-mn)/(mx-mn))*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.stroke()});ctx.beginPath();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;for(let i=0;i<=steps;i++){const avg=allPaths.reduce((s,p)=>s+p[i],0)/n;const x=(i/steps)*W,y=H-((avg-mn)/(mx-mn))*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}
-setTimeout(()=>mcRun(50),600);
 
 // ═══ Radar Chart ═══
 function initRadar(){const canvas=document.getElementById('radarChart');if(!canvas)return;const ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1;canvas.style.width='320px';canvas.style.height='320px';canvas.width=320*dpr;canvas.height=320*dpr;ctx.scale(dpr,dpr);const W=320,H=320,cx=W/2,cy=H/2,R=120;const isDark=document.documentElement.getAttribute('data-theme')==='dark';
 const lang=document.documentElement.getAttribute('data-lang')||'fr';
 const labels=i18n[lang].radar_labels;
 const values=(window.RADAR_VALUES&&window.RADAR_VALUES.length===labels.length)?window.RADAR_VALUES:[.88,.75,.80,.82,.78,.85];const n=labels.length,step=(2*Math.PI)/n;ctx.clearRect(0,0,W,H);for(let lvl=1;lvl<=5;lvl++){const r=(lvl/5)*R;ctx.beginPath();for(let i=0;i<=n;i++){const angle=-Math.PI/2+i*step;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.strokeStyle=isDark?'rgba(59,130,246,.1)':'rgba(37,99,235,.1)';ctx.lineWidth=1;ctx.stroke()}for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*Math.cos(angle),cy+R*Math.sin(angle));ctx.strokeStyle=isDark?'rgba(59,130,246,.08)':'rgba(37,99,235,.08)';ctx.stroke()}ctx.beginPath();for(let i=0;i<=n;i++){const idx=i%n,angle=-Math.PI/2+idx*step,r=values[idx]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath();ctx.fillStyle=isDark?'rgba(59,130,246,.15)':'rgba(37,99,235,.12)';ctx.fill();ctx.strokeStyle=isDark?'#3b82f6':'#2563eb';ctx.lineWidth=2;ctx.stroke();for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,r=values[i]*R;const x=cx+r*Math.cos(angle),y=cy+r*Math.sin(angle);ctx.beginPath();ctx.arc(x,y,4,0,2*Math.PI);ctx.fillStyle=isDark?'#3b82f6':'#2563eb';ctx.fill();ctx.strokeStyle=isDark?'#0a1020':'#f5f7fa';ctx.lineWidth=2;ctx.stroke()}ctx.font='11px "DM Sans",sans-serif';ctx.fillStyle=isDark?'#8b9aba':'#546178';ctx.textAlign='center';for(let i=0;i<n;i++){const angle=-Math.PI/2+i*step,lr=R+28;let x=cx+lr*Math.cos(angle),y=cy+lr*Math.sin(angle);if(angle>Math.PI*.25&&angle<Math.PI*.75)y+=4;if(angle<-Math.PI*.25||angle>Math.PI*1.25)y-=4;ctx.fillText(labels[i],x,y)}}
-setTimeout(initRadar,300);window.addEventListener('resize',()=>{initRadar();mcRun(currentMC)});
+setTimeout(initRadar,300);window.addEventListener('resize',()=>{initRadar()});
 
 // === CV-SPINE 1.2 : hydrate radar + skills from profile.json (fallback = hardcoded) ===
 var PROFILE=null;

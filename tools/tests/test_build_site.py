@@ -126,7 +126,7 @@ def _built():
 
 def test_build_fills_markers_and_content_present():
     out, p = _built()
-    for name in ["blog", "interests", "testimonials", "experience", "education", "journey", "demo_bs", "demo_mc"]:
+    for name in ["blog", "interests", "testimonials", "experience", "education", "journey", "demos"]:
         assert f"<!-- BUILD:{name} -->" in out and f"<!-- /BUILD:{name} -->" in out
     for r in p["recommendations"]:
         assert r["author"] in out
@@ -250,16 +250,13 @@ def test_demos_present():
     p = bs.load_profile()
     assert [d["id"] for d in p["demos"]] == ["bs", "mc"]
 
-def test_render_demo_info():
+def test_render_demos_teaser():
     p = bs.load_profile()
-    for did, render in (("bs", bs.render_demo_bs), ("mc", bs.render_demo_mc)):
-        d = next(x for x in p["demos"] if x["id"] == did)
-        html = render(p)
-        assert f'<h4>{bs.esc(d["title"])}</h4>' in html
-        assert f'data-i18n="{did}_desc"' in html
-        assert bs.esc(bs._bi(d["desc"], "fr")) in html
-        assert f'href="{bs.esc(d["link"])}"' in html
-        assert 'data-i18n="code_src"' in html  # label lien reste chrome
+    html = bs.render_demos(p)
+    for d in p["demos"]:
+        assert f'href="/demos/#{d["id"]}"' in html          # teaser -> /demos/
+        assert bs.esc(d["title"]) in html and bs.esc(d["category"]) in html
+        assert f'data-i18n="{d["id"]}_desc"' in html
 
 def test_gen_i18n_demos_bilingual():
     p = bs.load_profile()
@@ -267,16 +264,17 @@ def test_gen_i18n_demos_bilingual():
     assert p["demos"][0]["desc"]["fr"] in fr and p["demos"][0]["desc"]["en"] in en
     assert "bs_desc" in fr and "mc_desc" in en
 
-def test_build_demos_preserves_widgets():
+def test_homepage_demos_is_teaser_no_widgets():
     p = bs.load_profile()
-    html = (bs.ROOT / "index.html").read_text(encoding="utf-8")
-    out = bs.build_html(html, p)
-    assert "<!-- BUILD:demo_bs -->" in out and "<!-- BUILD:demo_mc -->" in out
-    # widgets JS-bound INTOUCHÉS (hors marqueurs)
-    for wid in ('id="slS"', 'id="mcCanvas"', 'oninput="bsCalc()"', 'onclick="mcRun(50)"', 'id="callP"'):
-        assert wid in out
-    # méta data-driven présente
-    assert "Black-Scholes Pricer" in out and "Simulation Monte Carlo (GBM)" in out
+    out = bs.build_html((bs.ROOT / "index.html").read_text(encoding="utf-8"), p)
+    for d in p["demos"]:
+        assert f'/demos/#{d["id"]}' in out                  # teaser cliquable
+    assert 'id="mcCanvas"' not in out and 'oninput="bsCalc()"' not in out  # widgets partis
+
+def test_index_html_no_demo_js():
+    src = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    for fn in ("function bsCalc", "function mcRun", "function normCdf", "let currentMC"):
+        assert fn not in src, fn
 
 
 def test_build_also_generates_projects_page():

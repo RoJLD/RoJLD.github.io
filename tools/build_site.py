@@ -346,28 +346,21 @@ def gen_i18n_journey(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
-# ── Section #demos (méta : titre/desc/lien ; widgets JS-bound préservés) ──────
-def _demo(profile, did):
+# ── Section #demos (teaser → /demos/ ; les widgets vivent sur la page /demos/) ─
+def render_demos(profile):
+    """Teaser #demos : cartes cliquables vers /demos/#<id> (galerie interactive SP2).
+    desc bilingue réutilise les clés {id}_desc ; catégorie affichée."""
+    cards = []
     for d in profile["demos"]:
-        if d["id"] == did:
-            return d
-    raise BuildError(f"demo '{did}' absent de profile.demos")
-
-
-def _demo_info(d):
-    """Bloc .demo-info : titre statique + desc bilingue + lien code source. Le widget
-    interactif .demo-preview (sliders/canvas JS-bound) reste HORS marqueur, intouché."""
-    return (f'<div class="demo-info"><h4>{esc(d["title"])}</h4>'
-            f'<p data-i18n="{d["id"]}_desc">{esc(_bi(d["desc"], "fr"))}</p>'
-            f'<div class="demo-links"><a href="{esc(d["link"])}" data-i18n="code_src">💻 Code source</a></div></div>')
-
-
-def render_demo_bs(profile):
-    return _demo_info(_demo(profile, "bs"))
-
-
-def render_demo_mc(profile):
-    return _demo_info(_demo(profile, "mc"))
+        did = d["id"]
+        cards.append(
+            f'<a class="demo-card demo-teaser" href="/demos/#{esc(did)}">'
+            f'<span class="demo-cat">{esc(d["category"])}</span>'
+            f'<h4>{esc(d["title"])}</h4>'
+            f'<p data-i18n="{did}_desc">{esc(_maybe_bi(d["desc"], "fr"))}</p>'
+            f'<span class="demo-cta">Essayer la démo →</span></a>'
+        )
+    return "\n    " + "\n    ".join(cards) + "\n"
 
 
 def gen_i18n_demos(profile, lang):
@@ -512,8 +505,7 @@ HTML_SECTIONS = {
     "education": render_education,
     "journey": render_journey,
     "modals": render_modals,
-    "demo_bs": render_demo_bs,
-    "demo_mc": render_demo_mc,
+    "demos": render_demos,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
@@ -563,6 +555,12 @@ def build(profile_path=None, index_path=None, write=True):
         build_projects.build_projects(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération page projets échouée : {exc}")
+    # Génère aussi la galerie démos depuis la même source.
+    try:
+        import build_demos
+        build_demos.build_demos(profile, write=write)
+    except Exception as exc:
+        raise BuildError(f"génération page démos échouée : {exc}")
     return out
 
 
