@@ -75,6 +75,12 @@ def validate(profile: dict) -> list[str]:
         _needs_bilingual(e.get("title", {}), f"education '{e.get('id')}'.title")
         _needs_bilingual(e.get("org", {}), f"education '{e.get('id')}'.org")
 
+    for pr in profile.get("projects", []):
+        if not pr.get("name"):
+            errors.append(f"project '{pr.get('id')}': name manquant")
+        if pr.get("type") not in {"academic", "personal", "professional"}:
+            errors.append(f"project '{pr.get('id')}': type invalide '{pr.get('type')}'")
+
     # radar_scores present & non-empty.
     if not (profile.get("skills", {}) or {}).get("radar_scores"):
         errors.append("skills.radar_scores empty or missing")

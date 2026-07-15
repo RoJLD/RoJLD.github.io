@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""build_projects.py — génère projects/index.html depuis data/projects.yaml.
+"""build_projects.py — génère projects/index.html depuis profile.json (projects, project_tag_labels, projects_meta).
 
 Page statique autonome, native au design-system de robin-denis.com
 (mêmes variables CSS / fonts / thèmes que index.html). Filtrage par tag en JS,

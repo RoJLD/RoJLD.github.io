@@ -83,3 +83,12 @@ def test_real_profile_json_valid():
     profile = json.loads((REPO / "profile.json").read_text(encoding="utf-8"))
     errs = validate(profile)
     assert errs == [], f"{len(errs)} error(s): {errs}"
+
+
+def test_project_requires_type_and_name():
+    p = _valid_profile()
+    p["projects"][0].pop("name", None)
+    p["projects"][0]["type"] = "bogus"
+    errs = validate(p)
+    assert any("name" in e for e in errs)
+    assert any("type" in e for e in errs)
