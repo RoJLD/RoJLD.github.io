@@ -156,7 +156,10 @@
     {
       "id": "alten_2026",
       "company": "ALTEN",
-      "division": "Lab R&D",
+      "division": {
+        "fr": "Lab R&D",
+        "en": "Lab R&D"
+      },
       "location": "Sèvres, France",
       "title": {
         "fr": "Quantitative Researcher DeFi",
@@ -226,7 +229,10 @@
     {
       "id": "bouygues_2025",
       "company": "Bouygues Telecom",
-      "division": "Département Financier",
+      "division": {
+        "fr": "Département Financier",
+        "en": "Finance Department"
+      },
       "location": "Vélizy, France",
       "title": {
         "fr": "Trésorier & Développeur Full Stack",
@@ -775,14 +781,52 @@
   },
   "languages": [
     {
-      "lang": "Français",
-      "level": "native",
-      "code": "fr"
+      "code": "fr",
+      "flag": "🇫🇷",
+      "name": {
+        "fr": "Français",
+        "en": "French"
+      },
+      "level": {
+        "fr": "Langue maternelle",
+        "en": "Native"
+      }
     },
     {
-      "lang": "English",
-      "level": "fluent",
-      "code": "en"
+      "code": "en",
+      "flag": "🇬🇧",
+      "name": {
+        "fr": "Anglais",
+        "en": "English"
+      },
+      "level": {
+        "fr": "Courant (C1)",
+        "en": "Fluent (C1)"
+      }
+    },
+    {
+      "code": "es",
+      "flag": "🇪🇸",
+      "name": {
+        "fr": "Espagnol",
+        "en": "Spanish"
+      },
+      "level": {
+        "fr": "Intermédiaire (B1)",
+        "en": "Intermediate (B1)"
+      }
+    },
+    {
+      "code": "cn",
+      "flag": "🇨🇳",
+      "name": {
+        "fr": "Chinois",
+        "en": "Chinese"
+      },
+      "level": {
+        "fr": "Notions (A1)",
+        "en": "Beginner (A1)"
+      }
     }
   ],
   "projects": [
@@ -933,7 +977,12 @@
         "Hedging",
         "PFE",
         "EY"
-      ]
+      ],
+      "desc": {
+        "fr": "Retour d'expérience sur mon PFE avec EY : comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.",
+        "en": "Lessons from my capstone project with EY: how theoretical models face operational constraints in portfolio hedging."
+      },
+      "status": "published"
     },
     {
       "id": "onchain_analytics",
@@ -941,14 +990,18 @@
         "fr": "Analyse on-chain : détecter les signaux faibles en DeFi",
         "en": "On-Chain Analytics: Detecting Weak Signals in DeFi"
       },
-      "url": "articles/on-chain-analytics.html",
       "date": "2026-04",
       "tags": [
         "DeFi",
         "Data",
         "Python",
         "ML"
-      ]
+      ],
+      "desc": {
+        "fr": "Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.",
+        "en": "Methodology for collecting and analyzing on-chain metrics (TVL, APY, Volume) to identify patterns on emerging protocols."
+      },
+      "status": "soon"
     }
   ],
   "recommendations": [
@@ -964,8 +1017,16 @@
         "fr": "Robin figure parmi les 2% des meilleurs profils de notre communauté de 40 000 étudiants. Son engagement, ses résultats et son professionnalisme en font un candidat d'exception. Il a démontré un dynamisme remarquable et une bonne autonomie, avec des retours positifs sur sa présentation et son adaptabilité.",
         "en": "Robin ranks among the top 2% of our 40,000-student community. His commitment, results, and professionalism make him an exceptional candidate. He demonstrated remarkable drive and autonomy, with positive feedback on his presentation and adaptability."
       },
-      "pdf": "recommandations/Lettre de recommandation Robin DENIS Student Pop.pdf",
-      "date": "2025"
+      "date": "2025",
+      "docs": [
+        {
+          "path": "recommandations/Lettre de recommandation Robin DENIS Student Pop.pdf",
+          "label": {
+            "fr": "📄 Voir la lettre",
+            "en": "📄 View letter"
+          }
+        }
+      ]
     },
     {
       "id": "manco_paris",
@@ -979,11 +1040,23 @@
         "fr": "Sa vision analytique et sa capacité à travailler en autonomie comme en équipe font de lui un excellent candidat. Il allie des compétences techniques solides (VBA, SQL, Access) à une bonne compréhension des enjeux métiers. Robin s'est très vite imposé comme un collaborateur sérieux, curieux et extrêmement impliqué.",
         "en": "His analytical vision and ability to work independently or as a team make him an excellent candidate. He combines strong technical skills (VBA, SQL, Access) with a solid understanding of business challenges. Robin quickly established himself as a serious, curious and highly dedicated team member."
       },
-      "pdfs": [
-        "recommandations/Reco_Academique_Manco_signed 2025-06-10 06_50_03.pdf",
-        "recommandations/Reco_Professionnelle_Manco_signed 2025-06-10 06_48_35.pdf"
-      ],
-      "date": "2025"
+      "date": "2025",
+      "docs": [
+        {
+          "path": "recommandations/Reco_Academique_Manco_signed 2025-06-10 06_50_03.pdf",
+          "label": {
+            "fr": "📄 Reco. académique",
+            "en": "📄 Academic reference"
+          }
+        },
+        {
+          "path": "recommandations/Reco_Professionnelle_Manco_signed 2025-06-10 06_48_35.pdf",
+          "label": {
+            "fr": "📄 Reco. professionnelle",
+            "en": "📄 Professional reference"
+          }
+        }
+      ]
     }
   ],
   "ikigai": {
@@ -1066,5 +1139,35 @@
     "schema_version": "1.1.0",
     "public": true,
     "note": "Ce fichier est la source de vérité machine-readable du profil. Les champs lifestyle.freedom_number et finances personnelles sont dans profile_private.json (non commité)."
-  }
+  },
+  "interests": [
+    {
+      "fr": "♟️ Échecs",
+      "en": "♟️ Chess"
+    },
+    {
+      "fr": "📚 Finance quantitative",
+      "en": "📚 Quantitative finance"
+    },
+    {
+      "fr": "🧠 Psychologie & Discipline",
+      "en": "🧠 Psychology & Discipline"
+    },
+    {
+      "fr": "🖨️ Impression 3D",
+      "en": "🖨️ 3D Printing"
+    },
+    {
+      "fr": "💻 Open-source",
+      "en": "💻 Open-source"
+    },
+    {
+      "fr": "🏄 Planche à voile",
+      "en": "🏄 Windsurfing"
+    },
+    {
+      "fr": "🏍️ Moto & Mécanique",
+      "en": "🏍️ Motorbike & Mechanics"
+    }
+  ]
 }
