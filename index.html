@@ -151,6 +151,20 @@
         .rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}.rv.vis{opacity:1;transform:translateY(0)}
         @media(max-width:768px){.box{padding:0 18px}.nav-r a{font-size:10px;letter-spacing:.04em}.nav-r{gap:14px}.hero{padding:90px 0 40px}.avatar-ring{width:120px;height:120px}.sg{grid-template-columns:1fr}.tl{padding-left:24px}.tl-i::before{left:-28.5px}.langs{flex-direction:column}.cd{padding:18px}.demos-grid{grid-template-columns:1fr}.testi-grid{grid-template-columns:1fr}.blog-grid{grid-template-columns:1fr}.radar-section{flex-direction:column}.fab{bottom:20px;right:20px;width:48px;height:48px}.fab svg{width:20px;height:20px}}
         @media(max-width:480px){.nav-r a:not(:nth-child(-n+3)){display:none}}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-ov.open{display:flex}
+.modal-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);max-width:640px;width:100%;max-height:85vh;overflow:auto;padding:28px 30px;position:relative;box-shadow:0 20px 60px var(--shadow)}
+.modal-x{position:absolute;top:12px;right:16px;background:none;border:none;color:var(--tx-3);font-size:26px;line-height:1;cursor:pointer;transition:color .2s}
+.modal-x:hover{color:var(--tx-1)}
+.modal-body h3{font-size:20px;font-weight:600;margin-bottom:6px;padding-right:28px}
+.modal-org{color:var(--accent);font-size:14px;margin-bottom:2px}
+.modal-per{color:var(--tx-3);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.modal-sub{font-weight:600;font-size:13px;margin:14px 0 6px}
+.modal-bullets{margin:6px 0 6px 18px;color:var(--tx-2);font-size:14px;line-height:1.7}
+.modal-cap{margin-top:12px;color:var(--tx-2);font-size:14px}
+.modal-impact{color:var(--warm);font-size:13px;font-style:italic;margin:10px 0}
+.modal-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.ht-item[data-ref]:hover .ht-label{color:var(--accent)}
     </style>
 </head>
 <body>
@@ -195,14 +209,14 @@
 <!-- TIMELINE HORIZONTALE -->
 <section class="rv" id="parcours"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🗺️</div><h2 class="st" data-i18n="sec_parcours">Mon Parcours</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
     <div class="htl-wrap" id="journeyScroll"><div class="htl"><!-- BUILD:journey -->
-        <div class="ht-item edu"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j1_label">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
-        <div class="ht-item edu"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_j2_sub">Cycle Ingénieur</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_j3_year">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_j4_year">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j4_label">Trésorier &amp; Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
-        <div class="ht-item proj"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j5_label">PFE avec EY</div><div class="ht-sub" data-i18n="ht_j5_sub">Couverture dynamique</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_j6_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&amp;D</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_j7_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j7_label">ELYSIUM</div><div class="ht-sub" data-i18n="ht_j7_sub">Architecture IA (perso)</div></div>
-        <div class="ht-item edu"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j8_label">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
+        <div class="ht-item edu" data-ref="education:prepa" onclick="openModal('modal-education-prepa')" style="cursor:pointer"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j1_label">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
+        <div class="ht-item edu" data-ref="education:ece" onclick="openModal('modal-education-ece')" style="cursor:pointer"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_j2_sub">Cycle Ingénieur</div></div>
+        <div class="ht-item" data-ref="experience:manco_2024" onclick="openModal('modal-experience-manco_2024')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j3_year">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
+        <div class="ht-item" data-ref="experience:bouygues_2025" onclick="openModal('modal-experience-bouygues_2025')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j4_year">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j4_label">Trésorier &amp; Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
+        <div class="ht-item proj" data-ref="project:pfe-hedging" onclick="openModal('modal-project-pfe-hedging')" style="cursor:pointer"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j5_label">PFE avec EY</div><div class="ht-sub" data-i18n="ht_j5_sub">Couverture dynamique</div></div>
+        <div class="ht-item" data-ref="experience:alten_2026" onclick="openModal('modal-experience-alten_2026')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j6_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&amp;D</div></div>
+        <div class="ht-item" data-ref="project:elysium" onclick="openModal('modal-project-elysium')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j7_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j7_label">ELYSIUM</div><div class="ht-sub" data-i18n="ht_j7_sub">Architecture IA (perso)</div></div>
+        <div class="ht-item edu" data-ref="education:ece" onclick="openModal('modal-education-ece')" style="cursor:pointer"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j8_label">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
     <!-- /BUILD:journey --></div></div>
     <div class="htl-hint" data-i18n="journey_hint">↔ glisser pour parcourir la frise</div>
 </div></div></section>
@@ -326,6 +340,12 @@ const i18n = {
         pill_cv: "CV",
         sec_parcours: "Mon Parcours",
         journey_hint: "↔ glisser pour parcourir la frise",
+/* BUILD:i18n_modals_fr */
+        mproj_pfe_hedging_name: "Couverture dynamique en assurance/banque (PFE × EY)", mproj_pfe_hedging_summary: "Projet de fin d'études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l'art, prototype, soutenance).",
+        mproj_pfe_hedging_impact: "Projet de fin d'études, chef de projet",
+        mproj_elysium_name: "ELYSIUM — Sovereign Cognitive Architecture", mproj_elysium_summary: "Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d'audit git souveraine. ~30 mois en solo.",
+        mproj_elysium_impact: "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain : architecture solo depuis février 2026",
+/* /BUILD:i18n_modals_fr */
 /* BUILD:i18n_journey_fr */
         ht_j1_label: "Prépa MPSI",
         ht_j2_sub: "Cycle Ingénieur",
@@ -429,6 +449,12 @@ const i18n = {
         pill_cv: "Resume",
         sec_parcours: "My Journey",
         journey_hint: "↔ drag to explore the timeline",
+/* BUILD:i18n_modals_en */
+        mproj_pfe_hedging_name: "Dynamic hedging in insurance/banking (Capstone × EY)", mproj_pfe_hedging_summary: "Capstone project in partnership with EY: modeling and steering of dynamic hedging strategies on derivative portfolios, with weekly EY check-ins and deliverables (scoping note, literature review, prototype, defense).",
+        mproj_pfe_hedging_impact: "Capstone project, project lead",
+        mproj_elysium_name: "ELYSIUM — Sovereign Cognitive Architecture", mproj_elysium_summary: "Self-sovereign cognitive platform (700+ sub-projects, « SIGILs ») designed as the structured brain of a future autonomous AI: a 13K+ node KuzuDB Knowledge Graph indexing the AST of 22 languages, a custom GNN in pure NumPy, a 4-node K3s GPU cluster, a sovereign git audit chain. ~30 months solo.",
+        mproj_elysium_impact: "90+ subsystems, 5000+ node graph, sovereign GPU cluster: solo architecture since February 2026",
+/* /BUILD:i18n_modals_en */
 /* BUILD:i18n_journey_en */
         ht_j1_label: "Prep School MPSI",
         ht_j2_sub: "Engineering Cycle",
@@ -528,6 +554,10 @@ const i18n = {
 };
 
 // ═══ Apply translations ═══
+function openModal(id){var m=document.getElementById(id);if(m){m.classList.add('open');document.body.style.overflow='hidden';}}
+function closeModal(ev){if(ev&&ev.currentTarget&&ev.target!==ev.currentTarget)return;document.querySelectorAll('.modal-ov.open').forEach(function(m){m.classList.remove('open');});document.body.style.overflow='';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+
 function applyLang(lang) {
     const dict = i18n[lang];
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -637,5 +667,14 @@ el.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){el.scr
   }).catch(function(){});
 })();
 </script>
+<!-- BUILD:modals -->
+    <div class="modal-ov" id="modal-education-prepa" onclick="closeModal(event)"><div class="modal-card" onclick="event.stopPropagation()"><button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button><div class="modal-body"><h3 data-i18n="edu2_title">Classes Préparatoires MPSI – MP</h3><div class="modal-org" data-i18n="edu2_org">Mathématiques, Physique et Sciences de l'Ingénieur</div><div class="modal-per">2019 – 2021 · Bourg-en-Bresse</div></div></div></div>
+    <div class="modal-ov" id="modal-education-ece" onclick="closeModal(event)"><div class="modal-card" onclick="event.stopPropagation()"><button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button><div class="modal-body"><h3 data-i18n="edu1_title">ECE Paris, Cycle Ingénieur</h3><div class="modal-org" data-i18n="edu1_org">Majeure Ingénierie Financière et Quantitative</div><div class="modal-per">2021 – 2026</div><div class="modal-sub" data-i18n="edu1_courses_label">Cours clés</div><ul class="modal-bullets"><li data-i18n="edu1_c1">Calcul stochastique &amp; SDE</li><li data-i18n="edu1_c2">Finance de marché</li><li data-i18n="edu1_c3">Recherche opérationnelle &amp; optimisation numérique</li><li data-i18n="edu1_c4">Machine Learning appliqué</li><li data-i18n="edu1_c5">Contrôle optimal et Hamiltonien</li><li data-i18n="edu1_c6">Modèles DSGE</li></ul><p class="modal-cap"><strong data-i18n="edu1_pfe_role">Chef de projet</strong> : <span data-i18n="edu1_pfe_desc">Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque</span></p></div></div></div>
+    <div class="modal-ov" id="modal-experience-manco_2024" onclick="closeModal(event)"><div class="modal-card" onclick="event.stopPropagation()"><button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button><div class="modal-body"><h3 data-i18n="exp3_title">Risk Manager</h3><div class="modal-org" data-i18n="exp3_org">ManCo Paris</div><div class="modal-per" data-i18n="exp3_per">Juin – Décembre 2024</div><ul class="modal-bullets"><li data-i18n="exp3_b1">Suivi de plus de 250 règles d'investissement réglementaires et statutaires</li><li data-i18n="exp3_b2">Préparation des comités de risques (mensuels, trimestriels, annuels)</li><li data-i18n="exp3_b3">Analyse des risques de marché, liquidité, contrepartie et opérationnels</li><li data-i18n="exp3_b4">Calculs actuariels, amélioration d'outils et automatisation (Excel, VBA, Access)</li></ul></div></div></div>
+    <div class="modal-ov" id="modal-experience-bouygues_2025" onclick="closeModal(event)"><div class="modal-card" onclick="event.stopPropagation()"><button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button><div class="modal-body"><h3 data-i18n="exp2_title">Trésorier &amp; Développeur Full Stack</h3><div class="modal-org" data-i18n="exp2_org">Bouygues Telecom, Département Financier, Vélizy</div><div class="modal-per" data-i18n="exp2_per">Février – Août 2025</div><ul class="modal-bullets"><li data-i18n="exp2_b1">Conception d'un Treasury Management System (Python/SQL/VBA, ODBC) : gain de ~4h/jour</li><li data-i18n="exp2_b2">Automatisation des prévisions de trésorerie et intégration du pricing de swaps de taux</li><li data-i18n="exp2_b3">Orchestration d'ETL (Dataiku/BigQuery) et automatisation des contrôles qualité des données</li></ul></div></div></div>
+    <div class="modal-ov" id="modal-project-pfe-hedging" onclick="closeModal(event)"><div class="modal-card" onclick="event.stopPropagation()"><button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button><div class="modal-body"><h3 data-i18n="mproj_pfe_hedging_name">Couverture dynamique en assurance/banque (PFE × EY)</h3><div class="modal-per">2025 — 2026</div><p data-i18n="mproj_pfe_hedging_summary">Projet de fin d'études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l'art, prototype, soutenance).</p><div class="modal-impact" data-i18n="mproj_pfe_hedging_impact">Projet de fin d'études, chef de projet</div><div class="modal-chips"><span class="p-tag">Finance de marché</span><span class="p-tag">Calcul stochastique</span><span class="p-tag">Python</span></div><div class="modal-chips"><span class="p-tag">finance</span><span class="p-tag">hedging</span><span class="p-tag">derivatives</span><span class="p-tag">quant</span></div><div class="p-links"><a class="p-link" href="articles/couverture-dynamique.html" target="_blank" rel="noopener">article</a></div></div></div></div>
+    <div class="modal-ov" id="modal-experience-alten_2026" onclick="closeModal(event)"><div class="modal-card" onclick="event.stopPropagation()"><button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button><div class="modal-body"><h3 data-i18n="exp1_title">Quantitative Researcher DeFi</h3><div class="modal-org" data-i18n="exp1_org">ALTEN, Lab R&amp;D, Sèvres</div><div class="modal-per" data-i18n="exp1_per">Février – Août 2026</div><ul class="modal-bullets"><li data-i18n="exp1_b1">Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d'actifs sur protocoles émergents</li><li data-i18n="exp1_b2">Développement de modèles statistiques et ML pour l'exploration de patterns et l'analyse de corrélations</li><li data-i18n="exp1_b3">Data Engineering : automatisation de la collecte de métriques on-chain (TVL, APY, Volume) via Python</li></ul></div></div></div>
+    <div class="modal-ov" id="modal-project-elysium" onclick="closeModal(event)"><div class="modal-card" onclick="event.stopPropagation()"><button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button><div class="modal-body"><h3 data-i18n="mproj_elysium_name">ELYSIUM — Sovereign Cognitive Architecture</h3><div class="modal-per">2024 — présent</div><p data-i18n="mproj_elysium_summary">Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d'audit git souveraine. ~30 mois en solo.</p><div class="modal-impact" data-i18n="mproj_elysium_impact">90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain : architecture solo depuis février 2026</div><div class="modal-chips"><span class="p-tag">Python</span><span class="p-tag">Kubernetes / K3s</span><span class="p-tag">KuzuDB</span><span class="p-tag">LLM Orchestration</span><span class="p-tag">AMD ROCm</span><span class="p-tag">Multi-Agent</span><span class="p-tag">TDD</span></div><div class="modal-chips"><span class="p-tag">architecture</span><span class="p-tag">ai-ml</span><span class="p-tag">kubernetes</span><span class="p-tag">knowledge-graph</span><span class="p-tag">devops</span><span class="p-tag">python</span></div><div class="p-links"></div></div></div></div>
+<!-- /BUILD:modals -->
 </body>
 </html>

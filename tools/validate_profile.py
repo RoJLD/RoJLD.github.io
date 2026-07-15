@@ -75,6 +75,14 @@ def validate(profile: dict) -> list[str]:
         _needs_bilingual(e.get("title", {}), f"education '{e.get('id')}'.title")
         _needs_bilingual(e.get("org", {}), f"education '{e.get('id')}'.org")
 
+    for j in profile.get("journey", []):
+        ref = j.get("ref", "")
+        t, _, iid = ref.partition(":")
+        ok = ((t == "experience" and iid in exp_ids) or (t == "education" and iid in edu_ids)
+              or (t == "project" and iid in proj_ids))
+        if not ok:
+            errors.append(f"journey ref non résolu : {ref!r}")
+
     for pr in profile.get("projects", []):
         if not pr.get("name"):
             errors.append(f"project '{pr.get('id')}': name manquant")

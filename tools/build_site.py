@@ -324,8 +324,11 @@ def render_journey(profile):
         yi, year = _ht_field(j["year"], f"ht_j{i}_year", "fr")
         li, label = _ht_field(j["label"], f"ht_j{i}_label", "fr")
         si, sub = _ht_field(j["sub"], f"ht_j{i}_sub", "fr")
+        ref = j.get("ref", "")
+        click = (f' data-ref="{esc(ref)}" onclick="openModal({_ref_slug(ref)!r})" style="cursor:pointer"'
+                 if ref else "")
         items.append(
-            f'<div class="{cls}"><span class="ht-year"{yi}>{year}</span><div class="ht-dot"></div>'
+            f'<div class="{cls}"{click}><span class="ht-year"{yi}>{year}</span><div class="ht-dot"></div>'
             f'<div class="ht-label"{li}>{label}</div><div class="ht-sub"{si}>{sub}</div></div>'
         )
     return "\n        " + "\n        ".join(items) + "\n    "
@@ -374,6 +377,131 @@ def gen_i18n_demos(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Modals détail (SP1 frise cliquable) ──────────────────────────────────────
+def _maybe_bi(v, lang):
+    """Champ str OU {fr,en} → la langue demandée (str renvoyé tel quel)."""
+    return v[lang] if isinstance(v, dict) else ("" if v is None else v)
+
+
+def _ref_slug(ref):
+    return "modal-" + ref.replace(":", "-")
+
+
+def _projkey(pid):
+    """id projet → fragment de clé i18n valide (hyphen interdit dans une clé JS non-quotée)."""
+    return pid.replace("-", "_")
+
+
+def _exp_index(profile, eid):
+    for i, e in enumerate(profile["experiences"], start=1):
+        if e["id"] == eid:
+            return i
+    raise BuildError(f"experience {eid!r} absente")
+
+
+def _edu_index(profile, eid):
+    for i, e in enumerate(profile["education"], start=1):
+        if e["id"] == eid:
+            return i
+    raise BuildError(f"education {eid!r} absente")
+
+
+def _modal_experience(profile, eid):
+    i = _exp_index(profile, eid)
+    e = profile["experiences"][i - 1]
+    lis = "".join(f'<li data-i18n="exp{i}_b{j}">{esc(b)}</li>'
+                  for j, b in enumerate(_bi(e["bullets"], "fr"), start=1))
+    return (f'<h3 data-i18n="exp{i}_title">{esc(_bi(e["title"], "fr"))}</h3>'
+            f'<div class="modal-org" data-i18n="exp{i}_org">{esc(_org(e, "fr"))}</div>'
+            f'<div class="modal-per" data-i18n="exp{i}_per">{esc(fmt_range(e["start"], e["end"], "fr"))}</div>'
+            f'<ul class="modal-bullets">{lis}</ul>')
+
+
+def _modal_education(profile, eid):
+    i = _edu_index(profile, eid)
+    e = profile["education"][i - 1]
+    parts = [f'<h3 data-i18n="edu{i}_title">{esc(_bi(e["title"], "fr"))}</h3>',
+             f'<div class="modal-org" data-i18n="edu{i}_org">{esc(_bi(e["org"], "fr"))}</div>',
+             f'<div class="modal-per">{esc(e["period"])}</div>']
+    courses = e.get("courses") or []
+    if courses:
+        lis = "".join(f'<li data-i18n="edu{i}_c{k}">{esc(_bi(c, "fr"))}</li>'
+                      for k, c in enumerate(courses, start=1))
+        parts.append(f'<div class="modal-sub" data-i18n="edu{i}_courses_label">'
+                     f'{esc(_bi(e["courses_label"], "fr"))}</div><ul class="modal-bullets">{lis}</ul>')
+    cap = e.get("capstone")
+    if cap:
+        parts.append(f'<p class="modal-cap"><strong data-i18n="edu{i}_pfe_role">{esc(_bi(cap["role"], "fr"))}</strong> : '
+                     f'<span data-i18n="edu{i}_pfe_desc">{esc(_bi(cap["summary"], "fr"))}</span></p>')
+    return "".join(parts)
+
+
+def _modal_project(profile, pid):
+    p = next(x for x in profile["projects"] if x["id"] == pid)
+    k = _projkey(pid)
+    stack = "".join(f'<span class="p-tag">{esc(s)}</span>' for s in p.get("stack") or [])
+    tags = "".join(f'<span class="p-tag">{esc(t)}</span>' for t in p.get("tags") or [])
+    links = "".join(f'<a class="p-link" href="{esc(u)}" target="_blank" rel="noopener">{esc(key)}</a>'
+                    for key, u in (p.get("links") or {}).items())
+    imp = _maybe_bi(p.get("impact", ""), "fr")
+    imp_html = f'<div class="modal-impact" data-i18n="mproj_{k}_impact">{esc(imp)}</div>' if imp else ""
+    return (f'<h3 data-i18n="mproj_{k}_name">{esc(_maybe_bi(p["name"], "fr"))}</h3>'
+            f'<div class="modal-per">{esc(p.get("date", ""))}</div>'
+            f'<p data-i18n="mproj_{k}_summary">{esc(_maybe_bi(p["summary"], "fr"))}</p>'
+            f'{imp_html}'
+            f'<div class="modal-chips">{stack}</div>'
+            f'<div class="modal-chips">{tags}</div>'
+            f'<div class="p-links">{links}</div>')
+
+
+_MODAL_BUILDERS = {"experience": _modal_experience, "education": _modal_education, "project": _modal_project}
+
+
+def _referenced_refs(profile):
+    seen = []
+    for j in profile["journey"]:
+        r = j.get("ref")
+        if r and r not in seen:
+            seen.append(r)
+    return seen
+
+
+def render_modals(profile):
+    """Un modal caché par entité référencée par la frise. exp/edu réutilisent les clés
+    de section (exp{i}_*/edu{i}_*) ; project a des clés mproj_* bilingues."""
+    out = []
+    for ref in _referenced_refs(profile):
+        typ, _, eid = ref.partition(":")
+        builder = _MODAL_BUILDERS.get(typ)
+        if builder is None:
+            raise BuildError(f"journey ref type inconnu : {ref!r}")
+        body = builder(profile, eid)
+        out.append(
+            f'<div class="modal-ov" id="{_ref_slug(ref)}" onclick="closeModal(event)">'
+            f'<div class="modal-card" onclick="event.stopPropagation()">'
+            f'<button class="modal-x" aria-label="Fermer" onclick="closeModal()">&times;</button>'
+            f'<div class="modal-body">{body}</div></div></div>'
+        )
+    return "\n    " + "\n    ".join(out) + "\n"
+
+
+def gen_i18n_modals(profile, lang):
+    """i18n CONTENU des modals : seuls les projets (mproj_*). exp/edu réutilisent les clés section."""
+    out = []
+    for ref in _referenced_refs(profile):
+        typ, _, pid = ref.partition(":")
+        if typ != "project":
+            continue
+        p = next(x for x in profile["projects"] if x["id"] == pid)
+        k = _projkey(pid)
+        out.append(f'        mproj_{k}_name: {js_str(_maybe_bi(p["name"], lang))}, '
+                   f'mproj_{k}_summary: {js_str(_maybe_bi(p["summary"], lang))},')
+        imp = _maybe_bi(p.get("impact", ""), lang)
+        if imp:
+            out.append(f'        mproj_{k}_impact: {js_str(imp)},')
+    return "\n" + "\n".join(out) + "\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -383,6 +511,7 @@ HTML_SECTIONS = {
     "experience": render_experience,
     "education": render_education,
     "journey": render_journey,
+    "modals": render_modals,
     "demo_bs": render_demo_bs,
     "demo_mc": render_demo_mc,
 }
@@ -395,6 +524,7 @@ I18N_SECTIONS = {
     "exp": gen_i18n_exp,
     "edu": gen_i18n_edu,
     "journey": gen_i18n_journey,
+    "modals": gen_i18n_modals,
     "demos": gen_i18n_demos,
 }
 
