@@ -126,7 +126,7 @@ def _built():
 
 def test_build_fills_markers_and_content_present():
     out, p = _built()
-    for name in ["blog", "interests", "testimonials", "experience", "education"]:
+    for name in ["blog", "interests", "testimonials", "experience", "education", "journey"]:
         assert f"<!-- BUILD:{name} -->" in out and f"<!-- /BUILD:{name} -->" in out
     for r in p["recommendations"]:
         assert r["author"] in out
@@ -201,3 +201,45 @@ def test_build_education_integrated():
         assert bs.esc(bs._bi(e["title"], "fr")) in out
     assert 'sec_edu: "Formation"' in out   # label de section reste chrome
     assert "edu1_courses_label:" in out    # ancien cours_cles migré en contenu généré
+
+
+# ── Rendu #parcours (frise journey ; champs statiques OU bilingues) ───────────
+def test_journey_present_and_shaped():
+    p = bs.load_profile()
+    assert len(p["journey"]) == 8
+    for j in p["journey"]:
+        assert j["kind"] in ("edu", "proj", "exp")
+        assert set(j.keys()) >= {"year", "kind", "label", "sub"}
+
+def test_render_journey_from_profile():
+    p = bs.load_profile()
+    html = bs.render_journey(p)
+    for i, j in enumerate(p["journey"], start=1):
+        assert f'<div class="{bs._HT_CLS[j["kind"]]}">' in html
+        for name, val in (("year", j["year"]), ("label", j["label"]), ("sub", j["sub"])):
+            if isinstance(val, dict):
+                assert f'data-i18n="ht_j{i}_{name}"' in html
+                assert bs.esc(bs._bi(val, "fr")) in html
+            else:
+                assert bs.esc(val) in html
+    # champ statique = PAS de data-i18n (année, lieu)
+    assert '<span class="ht-year">2019</span>' in html
+    assert '<div class="ht-sub">Bouygues Telecom</div>' in html
+
+def test_gen_i18n_journey_only_bilingual_keys():
+    p = bs.load_profile()
+    fr, en = bs.gen_i18n_journey(p, "fr"), bs.gen_i18n_journey(p, "en")
+    # ELYSIUM (item 7) : year + label + sub tous bilingues
+    assert "ht_j7_year" in fr and "ht_j7_label" in fr and "ht_j7_sub" in fr
+    # item 1 : year statique → PAS de clé year ; label bilingue → clé label
+    assert "ht_j1_label" in fr and "ht_j1_year" not in fr
+    assert p["journey"][3]["label"]["en"] in en  # "Treasurer & Dev"
+
+def test_build_journey_integrated():
+    p = bs.load_profile()
+    html = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    out = bs.build_html(html, p)
+    assert "<!-- BUILD:journey -->" in out and "<!-- /BUILD:journey -->" in out
+    assert "sec_parcours:" in out    # titre de section reste chrome
+    assert "journey_hint:" in out    # hint reste chrome
+    assert 'data-i18n="ht_j1_label"' in out

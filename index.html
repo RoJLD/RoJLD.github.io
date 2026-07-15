@@ -194,16 +194,16 @@
 
 <!-- TIMELINE HORIZONTALE -->
 <section class="rv" id="parcours"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🗺️</div><h2 class="st" data-i18n="sec_parcours">Mon Parcours</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
-    <div class="htl-wrap" id="journeyScroll"><div class="htl">
-        <div class="ht-item edu"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_prepa">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
-        <div class="ht-item edu"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_ece_sub">Cycle Ingénieur</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_jun24">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_feb25">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_bt">Trésorier & Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
-        <div class="ht-item proj"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_pfe">PFE avec EY</div><div class="ht-sub" data-i18n="ht_pfe_sub">Couverture dynamique</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_feb26">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&D</div></div>
-        <div class="ht-item"><span class="ht-year" data-i18n="ht_feb26">Fév 2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_elysium">ELYSIUM</div><div class="ht-sub" data-i18n="ht_elysium_sub">Architecture IA (perso)</div></div>
-        <div class="ht-item edu"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_diplome">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
-    </div></div>
+    <div class="htl-wrap" id="journeyScroll"><div class="htl"><!-- BUILD:journey -->
+        <div class="ht-item edu"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j1_label">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
+        <div class="ht-item edu"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_j2_sub">Cycle Ingénieur</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_j3_year">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_j4_year">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j4_label">Trésorier &amp; Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
+        <div class="ht-item proj"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j5_label">PFE avec EY</div><div class="ht-sub" data-i18n="ht_j5_sub">Couverture dynamique</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_j6_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&amp;D</div></div>
+        <div class="ht-item"><span class="ht-year" data-i18n="ht_j7_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j7_label">ELYSIUM</div><div class="ht-sub" data-i18n="ht_j7_sub">Architecture IA (perso)</div></div>
+        <div class="ht-item edu"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j8_label">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
+    <!-- /BUILD:journey --></div></div>
     <div class="htl-hint" data-i18n="journey_hint">↔ glisser pour parcourir la frise</div>
 </div></div></section>
 
@@ -326,10 +326,16 @@ const i18n = {
         pill_cv: "CV",
         sec_parcours: "Mon Parcours",
         journey_hint: "↔ glisser pour parcourir la frise",
-        ht_prepa: "Prépa MPSI", ht_ece_sub: "Cycle Ingénieur", ht_jun24: "Juin 2024", ht_feb25: "Fév 2025",
-        ht_bt: "Trésorier & Dev", ht_pfe: "PFE avec EY", ht_pfe_sub: "Couverture dynamique",
-        ht_elysium: "ELYSIUM", ht_elysium_sub: "Architecture IA (perso)",
-        ht_feb26: "Fév 2026", ht_diplome: "Diplôme Ingénieur",
+/* BUILD:i18n_journey_fr */
+        ht_j1_label: "Prépa MPSI",
+        ht_j2_sub: "Cycle Ingénieur",
+        ht_j3_year: "Juin 2024",
+        ht_j4_year: "Fév 2025", ht_j4_label: "Trésorier & Dev",
+        ht_j5_label: "PFE avec EY", ht_j5_sub: "Couverture dynamique",
+        ht_j6_year: "Fév 2026",
+        ht_j7_year: "Fév 2026", ht_j7_label: "ELYSIUM", ht_j7_sub: "Architecture IA (perso)",
+        ht_j8_label: "Diplôme Ingénieur",
+/* /BUILD:i18n_journey_fr */
         sec_exp: "Expérience Professionnelle",
 /* BUILD:i18n_exp_fr */
         exp1_title: "Quantitative Researcher DeFi",
@@ -421,10 +427,16 @@ const i18n = {
         pill_cv: "Resume",
         sec_parcours: "My Journey",
         journey_hint: "↔ drag to explore the timeline",
-        ht_prepa: "Prep School MPSI", ht_ece_sub: "Engineering Cycle", ht_jun24: "Jun 2024", ht_feb25: "Feb 2025",
-        ht_bt: "Treasurer & Dev", ht_pfe: "Capstone with EY", ht_pfe_sub: "Dynamic hedging",
-        ht_elysium: "ELYSIUM", ht_elysium_sub: "AI architecture (personal)",
-        ht_feb26: "Feb 2026", ht_diplome: "Engineering Degree",
+/* BUILD:i18n_journey_en */
+        ht_j1_label: "Prep School MPSI",
+        ht_j2_sub: "Engineering Cycle",
+        ht_j3_year: "Jun 2024",
+        ht_j4_year: "Feb 2025", ht_j4_label: "Treasurer & Dev",
+        ht_j5_label: "Capstone with EY", ht_j5_sub: "Dynamic hedging",
+        ht_j6_year: "Feb 2026",
+        ht_j7_year: "Feb 2026", ht_j7_label: "ELYSIUM", ht_j7_sub: "AI architecture (personal)",
+        ht_j8_label: "Engineering Degree",
+/* /BUILD:i18n_journey_en */
         sec_exp: "Professional Experience",
 /* BUILD:i18n_exp_en */
         exp1_title: "DeFi Quantitative Researcher",

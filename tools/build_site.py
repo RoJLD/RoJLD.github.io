@@ -300,6 +300,49 @@ def gen_i18n_edu(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Section #parcours (frise / journey) ───────────────────────────────────────
+_HT_CLS = {"edu": "ht-item edu", "proj": "ht-item proj", "exp": "ht-item"}
+
+
+def _ht_field(val, key, lang):
+    """Champ frise : (attr data-i18n, texte échappé). Bilingue {fr,en} → traduit + clé ;
+    str → langue-neutre, sans data-i18n (fidèle à l'existant : années/lieux/noms propres)."""
+    if isinstance(val, dict):
+        return f' data-i18n="{key}"', esc(_bi(val, lang))
+    return "", esc(val)
+
+
+def render_journey(profile):
+    """.htl (N jalons) depuis profile.journey[] — frise éditoriale curée (mêle exp/edu/proj ;
+    ELYSIUM n'est pas une expérience → journey est sa propre donnée, pas une projection).
+    Chaque champ year/label/sub est statique (langue-neutre) OU bilingue (traduit)."""
+    items = []
+    for i, j in enumerate(profile["journey"], start=1):
+        cls = _HT_CLS.get(j["kind"])
+        if cls is None:
+            raise BuildError(f"journey[{i}] kind inconnu : {j['kind']!r}")
+        yi, year = _ht_field(j["year"], f"ht_j{i}_year", "fr")
+        li, label = _ht_field(j["label"], f"ht_j{i}_label", "fr")
+        si, sub = _ht_field(j["sub"], f"ht_j{i}_sub", "fr")
+        items.append(
+            f'<div class="{cls}"><span class="ht-year"{yi}>{year}</span><div class="ht-dot"></div>'
+            f'<div class="ht-label"{li}>{label}</div><div class="ht-sub"{si}>{sub}</div></div>'
+        )
+    return "\n        " + "\n        ".join(items) + "\n    "
+
+
+def gen_i18n_journey(profile, lang):
+    """Entrées CONTENU du dict i18n pour #parcours (seuls les champs bilingues émettent une clé)."""
+    out = []
+    for i, j in enumerate(profile["journey"], start=1):
+        parts = [f'ht_j{i}_{name}: {js_str(_bi(val, lang))}'
+                 for name, val in (("year", j["year"]), ("label", j["label"]), ("sub", j["sub"]))
+                 if isinstance(val, dict)]
+        if parts:
+            out.append("        " + ", ".join(parts) + ",")
+    return "\n" + "\n".join(out) + "\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -308,6 +351,7 @@ HTML_SECTIONS = {
     "testimonials": render_testimonials,
     "experience": render_experience,
     "education": render_education,
+    "journey": render_journey,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
@@ -317,6 +361,7 @@ I18N_SECTIONS = {
     "testi": gen_i18n_testi,
     "exp": gen_i18n_exp,
     "edu": gen_i18n_edu,
+    "journey": gen_i18n_journey,
 }
 
 

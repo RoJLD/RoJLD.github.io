@@ -1231,5 +1231,91 @@
       "fr": "🏍️ Moto & Mécanique",
       "en": "🏍️ Motorbike & Mechanics"
     }
+  ],
+  "journey": [
+    {
+      "year": "2019",
+      "kind": "edu",
+      "label": {
+        "fr": "Prépa MPSI",
+        "en": "Prep School MPSI"
+      },
+      "sub": "Bourg-en-Bresse"
+    },
+    {
+      "year": "2021",
+      "kind": "edu",
+      "label": "ECE Paris",
+      "sub": {
+        "fr": "Cycle Ingénieur",
+        "en": "Engineering Cycle"
+      }
+    },
+    {
+      "year": {
+        "fr": "Juin 2024",
+        "en": "Jun 2024"
+      },
+      "kind": "exp",
+      "label": "Risk Manager",
+      "sub": "ManCo Paris"
+    },
+    {
+      "year": {
+        "fr": "Fév 2025",
+        "en": "Feb 2025"
+      },
+      "kind": "exp",
+      "label": {
+        "fr": "Trésorier & Dev",
+        "en": "Treasurer & Dev"
+      },
+      "sub": "Bouygues Telecom"
+    },
+    {
+      "year": "2025",
+      "kind": "proj",
+      "label": {
+        "fr": "PFE avec EY",
+        "en": "Capstone with EY"
+      },
+      "sub": {
+        "fr": "Couverture dynamique",
+        "en": "Dynamic hedging"
+      }
+    },
+    {
+      "year": {
+        "fr": "Fév 2026",
+        "en": "Feb 2026"
+      },
+      "kind": "exp",
+      "label": "Quant Researcher",
+      "sub": "ALTEN Lab R&D"
+    },
+    {
+      "year": {
+        "fr": "Fév 2026",
+        "en": "Feb 2026"
+      },
+      "kind": "exp",
+      "label": {
+        "fr": "ELYSIUM",
+        "en": "ELYSIUM"
+      },
+      "sub": {
+        "fr": "Architecture IA (perso)",
+        "en": "AI architecture (personal)"
+      }
+    },
+    {
+      "year": "2026",
+      "kind": "edu",
+      "label": {
+        "fr": "Diplôme Ingénieur",
+        "en": "Engineering Degree"
+      },
+      "sub": "ECE Paris"
+    }
   ]
 }
