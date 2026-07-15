@@ -1,5 +1,5 @@
 # tools/sync_github_projects.py
-"""sync_github_projects.py — rapport de derive entre data/projects.yaml et le
+"""sync_github_projects.py — rapport de derive entre profile.json (projects[].links.github) et le
 GitHub public de RoJLD. Read-only : n'ecrit jamais le catalogue.
 
 Meme patron que build_projects.py : fonctions pures + main() fin. L'acces reseau
@@ -108,7 +108,7 @@ def _ascii(s) -> str:
 def render_report(diff: dict) -> str:
     dead = diff.get("dead_links", [])
     missing = diff.get("missing", [])
-    lines = ["=== Sync GitHub <-> projects.yaml ==="]
+    lines = ["=== Sync GitHub <-> profile.json ==="]
     if dead:
         lines.append("")
         lines.append("[!] Liens morts (%d) - repo public introuvable :" % len(dead))
@@ -155,29 +155,24 @@ def main(argv: Optional[list] = None, fetch_fn: Optional[Callable[[str], list]] 
     import json
     import pathlib
 
-    try:
-        import yaml
-    except ImportError:
-        raise SystemExit("PyYAML requis : pip install pyyaml")
-
-    ap = argparse.ArgumentParser(description="Rapport de derive projects.yaml <-> GitHub public.")
+    ap = argparse.ArgumentParser(description="Rapport de derive profile.json <-> GitHub public.")
     ap.add_argument("--user", default="RoJLD")
     ap.add_argument("--site-repo", default="RoJLD.github.io")
     ap.add_argument("--include-forks", action="store_true")
     ap.add_argument("--json", action="store_true", dest="as_json")
-    ap.add_argument("--catalog", default=None, help="chemin projects.yaml (defaut: data/projects.yaml du repo)")
+    ap.add_argument("--catalog", default=None, help="chemin profile.json (defaut: profile.json du repo)")
     args = ap.parse_args(argv)
 
     root = pathlib.Path(__file__).resolve().parents[1]
-    catalog_path = pathlib.Path(args.catalog) if args.catalog else root / "data" / "projects.yaml"
+    catalog_path = pathlib.Path(args.catalog) if args.catalog else root / "profile.json"
     if not catalog_path.exists():
-        raise SystemExit("Catalogue introuvable : %s" % catalog_path)
+        raise SystemExit("Source introuvable : %s" % catalog_path)
     try:
-        catalog = yaml.safe_load(catalog_path.read_text(encoding="utf-8")) or {}
-    except yaml.YAMLError as exc:
-        raise SystemExit("YAML invalide (%s) : %s" % (catalog_path, exc))
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8")) or {}
+    except json.JSONDecodeError as exc:
+        raise SystemExit("JSON invalide (%s) : %s" % (catalog_path, exc))
     if not isinstance(catalog, dict):
-        raise SystemExit("Le catalogue doit etre un mapping YAML (cle 'projects').")
+        raise SystemExit("La source doit etre un mapping JSON (cle 'projects').")
 
     fetch = fetch_fn or fetch_repos_gh
     repos = fetch(args.user)

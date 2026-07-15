@@ -151,9 +151,8 @@ import json
 
 
 def _write_catalog(tmp_path, *github_urls):
-    import yaml
-    p = tmp_path / "projects.yaml"
-    p.write_text(yaml.safe_dump(_catalog(*github_urls)), encoding="utf-8")
+    p = tmp_path / "profile.json"
+    p.write_text(json.dumps(_catalog(*github_urls)), encoding="utf-8")
     return p
 
 
@@ -236,3 +235,7 @@ def test_main_json_output_is_ascii(tmp_path, capsys):
     out = capsys.readouterr().out
     assert out.isascii()
     json.loads(out)  # toujours du JSON valide
+
+
+def test_report_header_mentions_profile_json():
+    assert "profile.json" in s.render_report({"dead_links": [], "missing": []})
