@@ -894,11 +894,17 @@
   "projects": [
     {
       "id": "elysium",
-      "name": "ELYSIUM — Sovereign Cognitive Architecture",
+      "name": {
+        "fr": "ELYSIUM — Sovereign Cognitive Architecture",
+        "en": "ELYSIUM — Sovereign Cognitive Architecture"
+      },
       "type": "personal",
       "date": "2024 — présent",
       "context": "personal",
-      "summary": "Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d'audit git souveraine. ~30 mois en solo.",
+      "summary": {
+        "fr": "Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d'audit git souveraine. ~30 mois en solo.",
+        "en": "Self-sovereign cognitive platform (700+ sub-projects, « SIGILs ») designed as the structured brain of a future autonomous AI: a 13K+ node KuzuDB Knowledge Graph indexing the AST of 22 languages, a custom GNN in pure NumPy, a 4-node K3s GPU cluster, a sovereign git audit chain. ~30 months solo."
+      },
       "tags": [
         "architecture",
         "ai-ml",
@@ -916,7 +922,10 @@
         "dev"
       ],
       "featured": true,
-      "impact": "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain : architecture solo depuis février 2026",
+      "impact": {
+        "fr": "90+ sous-systèmes, graphe 5000+ nœuds, cluster GPU souverain : architecture solo depuis février 2026",
+        "en": "90+ subsystems, 5000+ node graph, sovereign GPU cluster: solo architecture since February 2026"
+      },
       "stack": [
         "Python",
         "Kubernetes / K3s",
@@ -936,11 +945,17 @@
     },
     {
       "id": "pfe-hedging",
-      "name": "Couverture dynamique en assurance/banque (PFE × EY)",
+      "name": {
+        "fr": "Couverture dynamique en assurance/banque (PFE × EY)",
+        "en": "Dynamic hedging in insurance/banking (Capstone × EY)"
+      },
       "type": "academic",
       "date": "2025 — 2026",
       "context": "ece",
-      "summary": "Projet de fin d'études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l'art, prototype, soutenance).",
+      "summary": {
+        "fr": "Projet de fin d'études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l'art, prototype, soutenance).",
+        "en": "Capstone project in partnership with EY: modeling and steering of dynamic hedging strategies on derivative portfolios, with weekly EY check-ins and deliverables (scoping note, literature review, prototype, defense)."
+      },
       "tags": [
         "finance",
         "hedging",
@@ -954,7 +969,10 @@
         "research"
       ],
       "featured": true,
-      "impact": "Projet de fin d'études, chef de projet",
+      "impact": {
+        "fr": "Projet de fin d'études, chef de projet",
+        "en": "Capstone project, project lead"
+      },
       "stack": [
         "Finance de marché",
         "Calcul stochastique",
@@ -1498,7 +1516,8 @@
         "fr": "Prépa MPSI",
         "en": "Prep School MPSI"
       },
-      "sub": "Bourg-en-Bresse"
+      "sub": "Bourg-en-Bresse",
+      "ref": "education:prepa"
     },
     {
       "year": "2021",
@@ -1507,7 +1526,8 @@
       "sub": {
         "fr": "Cycle Ingénieur",
         "en": "Engineering Cycle"
-      }
+      },
+      "ref": "education:ece"
     },
     {
       "year": {
@@ -1516,7 +1536,8 @@
       },
       "kind": "exp",
       "label": "Risk Manager",
-      "sub": "ManCo Paris"
+      "sub": "ManCo Paris",
+      "ref": "experience:manco_2024"
     },
     {
       "year": {
@@ -1528,7 +1549,8 @@
         "fr": "Trésorier & Dev",
         "en": "Treasurer & Dev"
       },
-      "sub": "Bouygues Telecom"
+      "sub": "Bouygues Telecom",
+      "ref": "experience:bouygues_2025"
     },
     {
       "year": "2025",
@@ -1540,7 +1562,8 @@
       "sub": {
         "fr": "Couverture dynamique",
         "en": "Dynamic hedging"
-      }
+      },
+      "ref": "project:pfe-hedging"
     },
     {
       "year": {
@@ -1549,7 +1572,8 @@
       },
       "kind": "exp",
       "label": "Quant Researcher",
-      "sub": "ALTEN Lab R&D"
+      "sub": "ALTEN Lab R&D",
+      "ref": "experience:alten_2026"
     },
     {
       "year": {
@@ -1564,7 +1588,8 @@
       "sub": {
         "fr": "Architecture IA (perso)",
         "en": "AI architecture (personal)"
-      }
+      },
+      "ref": "project:elysium"
     },
     {
       "year": "2026",
@@ -1573,7 +1598,8 @@
         "fr": "Diplôme Ingénieur",
         "en": "Engineering Degree"
       },
-      "sub": "ECE Paris"
+      "sub": "ECE Paris",
+      "ref": "education:ece"
     }
   ],
   "demos": [
