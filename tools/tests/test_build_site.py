@@ -323,3 +323,11 @@ def test_build_injects_modals_and_ui():
     assert "function openModal" in out and "function closeModal" in out
     assert ".modal-ov{" in out
     assert "mproj_pfe_hedging_summary:" in out
+
+def test_saved_en_reapplies_lang_after_dom_ready():
+    # régression SP1 : modals (fin de body) traduits au chargement EN initial
+    p = bs.load_profile()
+    html = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    out = bs.build_html(html, p)
+    assert "DOMContentLoaded" in out
+    assert out.count("applyLang('en')") >= 2  # immédiat + re-apply DCL

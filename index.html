@@ -595,7 +595,7 @@ function toggleTheme(){
     const s=localStorage.getItem('theme');
     if(s==='light'){document.documentElement.setAttribute('data-theme','light');document.getElementById('themeBtn').textContent='☀️'}
     const l=localStorage.getItem('lang');
-    if(l==='en') applyLang('en');
+    if(l==='en'){applyLang('en');document.addEventListener('DOMContentLoaded',function(){applyLang('en');});}
 })();
 
 // ═══ Nav scroll ═══
