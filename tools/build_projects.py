@@ -31,6 +31,11 @@ def e(s) -> str:
     return html.escape(str(s if s is not None else ""), quote=True)
 
 
+def _fr(v):
+    """Champ str OU {fr,en} -> version fr (page projets FR-only)."""
+    return v["fr"] if isinstance(v, dict) else (v or "")
+
+
 def one_line(s: str) -> str:
     return " ".join(str(s or "").split())
 
@@ -89,8 +94,8 @@ def render_card(p: dict, labels: dict) -> str:
     <span class="p-type tg {TYPE_CLASS.get(ptype, 'b')}">{e(TYPE_LABEL.get(ptype, ptype))}</span>
     <span class="p-date">{e(p.get('date', ''))}</span>
   </div>
-  <h3 class="p-title">{e(p.get('name', ''))}</h3>
-  <p class="p-summary">{e(one_line(p.get('summary', '')))}</p>
+  <h3 class="p-title">{e(_fr(p.get('name', '')))}</h3>
+  <p class="p-summary">{e(one_line(_fr(p.get('summary', ''))))}</p>
   <div class="p-tags">{tag_html}</div>
   {render_snippet(p)}
   <div class="p-links">{render_links(p)}</div>

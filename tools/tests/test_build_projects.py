@@ -19,7 +19,7 @@ def test_page_has_all_cards():
     page = bp.render_projects_page(p)
     for pr in p["projects"]:
         assert f'id="{pr["id"]}"' in page, pr["id"]
-        assert bp.e(pr["name"]) in page, pr["id"]
+        assert bp.e(bp._fr(pr["name"])) in page, pr["id"]
 
 
 def test_anchors_present():
@@ -65,3 +65,11 @@ def test_name_used_not_title():
     pr = next(x for x in p["projects"] if x["id"] == "tms-bouygues")
     page = bp.render_projects_page(p)
     assert bp.e(pr["name"]) in page
+
+
+def test_bilingual_project_renders_fr():
+    p = _profile()
+    page = bp.render_projects_page(p)
+    pfe = next(x for x in p["projects"] if x["id"] == "pfe-hedging")
+    assert bp.e(bp._fr(pfe["name"])) in page          # rend .fr
+    assert pfe["name"]["fr"] in page and pfe["name"]["en"] not in page
