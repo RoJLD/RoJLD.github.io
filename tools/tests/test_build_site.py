@@ -215,7 +215,7 @@ def test_render_journey_from_profile():
     p = bs.load_profile()
     html = bs.render_journey(p)
     for i, j in enumerate(p["journey"], start=1):
-        assert f'<div class="{bs._HT_CLS[j["kind"]]}">' in html
+        assert f'<div class="{bs._HT_CLS[j["kind"]]}"' in html
         for name, val in (("year", j["year"]), ("label", j["label"]), ("sub", j["sub"])):
             if isinstance(val, dict):
                 assert f'data-i18n="ht_j{i}_{name}"' in html
@@ -286,3 +286,40 @@ def test_build_also_generates_projects_page():
     assert 'id="derivatives-pricer"' in out and 'id="monte-carlo-gbm"' in out
     import build_site, inspect
     assert "build_projects" in inspect.getsource(build_site.build)
+
+
+# ── SP1 modals + frise cliquable ──────────────────────────────────────────────
+def test_modals_generated_for_each_ref():
+    p = bs.load_profile()
+    html = bs.render_modals(p)
+    refs = {j["ref"] for j in p["journey"]}
+    for r in refs:
+        assert f'id="{bs._ref_slug(r)}"' in html, r
+    assert html.count('class="modal-ov"') == len(refs)  # 7 uniques
+    assert html.count("modal-x") == len(refs)
+
+def test_experience_and_education_modals_reuse_section_keys():
+    html = bs.render_modals(bs.load_profile())
+    assert 'data-i18n="exp3_title"' in html   # manco = experiences[2] -> exp3
+    assert 'data-i18n="edu1_title"' in html    # ece = education[0] -> edu1
+
+def test_project_modal_bilingual_keys():
+    p = bs.load_profile()
+    fr, en = bs.gen_i18n_modals(p, "fr"), bs.gen_i18n_modals(p, "en")
+    assert "mproj_pfe_hedging_summary" in fr and "mproj_pfe_hedging_summary" in en
+    assert "mproj_elysium_name" in fr
+
+def test_journey_items_clickable():
+    html = bs.render_journey(bs.load_profile())
+    assert html.count('onclick="openModal(') == 8
+    assert 'data-ref="experience:manco_2024"' in html
+
+def test_build_injects_modals_and_ui():
+    p = bs.load_profile()
+    html = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    out = bs.build_html(html, p)
+    assert "<!-- BUILD:modals -->" in out and "<!-- /BUILD:modals -->" in out
+    assert 'id="modal-experience-manco_2024"' in out
+    assert "function openModal" in out and "function closeModal" in out
+    assert ".modal-ov{" in out
+    assert "mproj_pfe_hedging_summary:" in out
