@@ -343,6 +343,37 @@ def gen_i18n_journey(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Section #demos (méta : titre/desc/lien ; widgets JS-bound préservés) ──────
+def _demo(profile, did):
+    for d in profile["demos"]:
+        if d["id"] == did:
+            return d
+    raise BuildError(f"demo '{did}' absent de profile.demos")
+
+
+def _demo_info(d):
+    """Bloc .demo-info : titre statique + desc bilingue + lien code source. Le widget
+    interactif .demo-preview (sliders/canvas JS-bound) reste HORS marqueur, intouché."""
+    return (f'<div class="demo-info"><h4>{esc(d["title"])}</h4>'
+            f'<p data-i18n="{d["id"]}_desc">{esc(_bi(d["desc"], "fr"))}</p>'
+            f'<div class="demo-links"><a href="{esc(d["link"])}" data-i18n="code_src">💻 Code source</a></div></div>')
+
+
+def render_demo_bs(profile):
+    return _demo_info(_demo(profile, "bs"))
+
+
+def render_demo_mc(profile):
+    return _demo_info(_demo(profile, "mc"))
+
+
+def gen_i18n_demos(profile, lang):
+    """Entrées CONTENU du dict i18n pour #demos : {id}_desc (bilingue). Titres/liens
+    sont statiques (dans le markup) ; labels widget (bs_vol/bs_mat) restent chrome."""
+    out = [f'        {d["id"]}_desc: {js_str(_bi(d["desc"], lang))},' for d in profile["demos"]]
+    return "\n" + "\n".join(out) + "\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -352,6 +383,8 @@ HTML_SECTIONS = {
     "experience": render_experience,
     "education": render_education,
     "journey": render_journey,
+    "demo_bs": render_demo_bs,
+    "demo_mc": render_demo_mc,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
@@ -362,6 +395,7 @@ I18N_SECTIONS = {
     "exp": gen_i18n_exp,
     "edu": gen_i18n_edu,
     "journey": gen_i18n_journey,
+    "demos": gen_i18n_demos,
 }
 
 

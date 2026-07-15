@@ -1317,5 +1317,25 @@
       },
       "sub": "ECE Paris"
     }
+  ],
+  "demos": [
+    {
+      "id": "bs",
+      "title": "Black-Scholes Pricer",
+      "desc": {
+        "fr": "Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.",
+        "en": "Real-time European option pricing with delta display. Adjust parameters to see the impact on price."
+      },
+      "link": "/projects/#derivatives-pricer"
+    },
+    {
+      "id": "mc",
+      "title": "Simulation Monte Carlo (GBM)",
+      "desc": {
+        "fr": "Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.",
+        "en": "Geometric Brownian Motion paths for option pricing via Monte Carlo simulation."
+      },
+      "link": "/projects/#monte-carlo-gbm"
+    }
   ]
 }

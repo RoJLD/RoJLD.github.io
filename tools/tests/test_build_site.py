@@ -126,7 +126,7 @@ def _built():
 
 def test_build_fills_markers_and_content_present():
     out, p = _built()
-    for name in ["blog", "interests", "testimonials", "experience", "education", "journey"]:
+    for name in ["blog", "interests", "testimonials", "experience", "education", "journey", "demo_bs", "demo_mc"]:
         assert f"<!-- BUILD:{name} -->" in out and f"<!-- /BUILD:{name} -->" in out
     for r in p["recommendations"]:
         assert r["author"] in out
@@ -243,3 +243,37 @@ def test_build_journey_integrated():
     assert "sec_parcours:" in out    # titre de section reste chrome
     assert "journey_hint:" in out    # hint reste chrome
     assert 'data-i18n="ht_j1_label"' in out
+
+
+# ── Rendu #demos (méta data-driven ; widgets JS-bound préservés) ──────────────
+def test_demos_present():
+    p = bs.load_profile()
+    assert [d["id"] for d in p["demos"]] == ["bs", "mc"]
+
+def test_render_demo_info():
+    p = bs.load_profile()
+    for did, render in (("bs", bs.render_demo_bs), ("mc", bs.render_demo_mc)):
+        d = next(x for x in p["demos"] if x["id"] == did)
+        html = render(p)
+        assert f'<h4>{bs.esc(d["title"])}</h4>' in html
+        assert f'data-i18n="{did}_desc"' in html
+        assert bs.esc(bs._bi(d["desc"], "fr")) in html
+        assert f'href="{bs.esc(d["link"])}"' in html
+        assert 'data-i18n="code_src"' in html  # label lien reste chrome
+
+def test_gen_i18n_demos_bilingual():
+    p = bs.load_profile()
+    fr, en = bs.gen_i18n_demos(p, "fr"), bs.gen_i18n_demos(p, "en")
+    assert p["demos"][0]["desc"]["fr"] in fr and p["demos"][0]["desc"]["en"] in en
+    assert "bs_desc" in fr and "mc_desc" in en
+
+def test_build_demos_preserves_widgets():
+    p = bs.load_profile()
+    html = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    out = bs.build_html(html, p)
+    assert "<!-- BUILD:demo_bs -->" in out and "<!-- BUILD:demo_mc -->" in out
+    # widgets JS-bound INTOUCHÉS (hors marqueurs)
+    for wid in ('id="slS"', 'id="mcCanvas"', 'oninput="bsCalc()"', 'onclick="mcRun(50)"', 'id="callP"'):
+        assert wid in out
+    # méta data-driven présente
+    assert "Black-Scholes Pricer" in out and "Simulation Monte Carlo (GBM)" in out

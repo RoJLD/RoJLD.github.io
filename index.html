@@ -259,8 +259,8 @@
         <label data-i18n="bs_vol">Volatilité (σ)</label> <span id="bsV">20%</span><input type="range" min="5" max="80" value="20" id="slV" oninput="bsCalc()">
         <label data-i18n="bs_mat">Maturité (T)</label> <span id="bsT">1.0</span><input type="range" min="1" max="36" value="12" id="slT" oninput="bsCalc()">
         <div class="bs-result"><div class="bs-val"><div class="num" id="callP">–</div><div class="lbl">Call</div></div><div class="bs-val"><div class="num" id="putP">–</div><div class="lbl">Put</div></div><div class="bs-val"><div class="num" id="deltaV">–</div><div class="lbl">Δ Call</div></div></div>
-    </div></div><div class="demo-info"><h4>Black-Scholes Pricer</h4><p data-i18n="bs_desc">Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.</p><div class="demo-links"><a href="/projects/#derivatives-pricer" data-i18n="code_src">💻 Code source</a></div></div></div>
-    <div class="demo-card"><div class="demo-preview"><div class="mc-mini"><canvas id="mcCanvas"></canvas><div class="mc-controls"><button class="mc-btn active" onclick="mcRun(50)" id="mc50">50 paths</button><button class="mc-btn" onclick="mcRun(200)" id="mc200">200 paths</button><button class="mc-btn" onclick="mcRun(1000)" id="mc1000">1000 paths</button></div></div></div><div class="demo-info"><h4>Simulation Monte Carlo (GBM)</h4><p data-i18n="mc_desc">Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.</p><div class="demo-links"><a href="/projects/#monte-carlo-gbm" data-i18n="code_src">💻 Code source</a></div></div></div>
+    </div></div><!-- BUILD:demo_bs --><div class="demo-info"><h4>Black-Scholes Pricer</h4><p data-i18n="bs_desc">Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.</p><div class="demo-links"><a href="/projects/#derivatives-pricer" data-i18n="code_src">💻 Code source</a></div></div><!-- /BUILD:demo_bs --></div>
+    <div class="demo-card"><div class="demo-preview"><div class="mc-mini"><canvas id="mcCanvas"></canvas><div class="mc-controls"><button class="mc-btn active" onclick="mcRun(50)" id="mc50">50 paths</button><button class="mc-btn" onclick="mcRun(200)" id="mc200">200 paths</button><button class="mc-btn" onclick="mcRun(1000)" id="mc1000">1000 paths</button></div></div></div><!-- BUILD:demo_mc --><div class="demo-info"><h4>Simulation Monte Carlo (GBM)</h4><p data-i18n="mc_desc">Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.</p><div class="demo-links"><a href="/projects/#monte-carlo-gbm" data-i18n="code_src">💻 Code source</a></div></div><!-- /BUILD:demo_mc --></div>
 </div></div></div></section>
 
 <!-- TÉMOIGNAGES -->
@@ -376,8 +376,10 @@ const i18n = {
         lbl_certs: "Certifications",
         sec_demos: "Démos Interactives",
         bs_vol: "Volatilité (σ)", bs_mat: "Maturité (T)",
+/* BUILD:i18n_demos_fr */
         bs_desc: "Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.",
         mc_desc: "Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.",
+/* /BUILD:i18n_demos_fr */
         code_src: "💻 Code source",
         sec_testi: "Recommandations",
 /* BUILD:i18n_testi_fr */
@@ -477,8 +479,10 @@ const i18n = {
         lbl_certs: "Certifications",
         sec_demos: "Interactive Demos",
         bs_vol: "Volatility (σ)", bs_mat: "Maturity (T)",
+/* BUILD:i18n_demos_en */
         bs_desc: "Real-time European option pricing with delta display. Adjust parameters to see the impact on price.",
         mc_desc: "Geometric Brownian Motion paths for option pricing via Monte Carlo simulation.",
+/* /BUILD:i18n_demos_en */
         code_src: "💻 Source code",
         sec_testi: "Recommendations",
 /* BUILD:i18n_testi_en */
