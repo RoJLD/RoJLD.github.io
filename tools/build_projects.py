@@ -11,17 +11,15 @@ Usage (depuis la racine du repo site) :
 from __future__ import annotations
 
 import html
+import json
 import pathlib
-import sys
-
-try:
-    import yaml
-except ImportError:
-    sys.exit("PyYAML requis : pip install pyyaml")
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-DATA = ROOT / "data" / "projects.yaml"
 OUT = ROOT / "projects" / "index.html"
+
+
+class BuildError(Exception):
+    pass
 
 TYPE_LABEL = {"academic": "Académique", "personal": "Personnel", "professional": "Professionnel"}
 TYPE_CLASS = {"academic": "v", "personal": "b", "professional": "g"}
@@ -66,7 +64,10 @@ def render_snippet(p: dict) -> str:
         return ""
     lang = e(sn.get("lang", "text"))
     label = e(sn.get("label", "Code"))
-    code = html.escape(sn.get("code", ""), quote=False)  # <pre> preserves; escape < & >
+    fpath = ROOT / sn.get("file", "")
+    if not fpath.is_file():
+        raise BuildError(f"snippet introuvable : {sn.get('file')!r} (projet {p.get('id')})")
+    code = html.escape(fpath.read_text(encoding="utf-8"), quote=False)
     note = sn.get("note")
     note_html = f'<p class="snip-note">{e(one_line(note))}</p>' if note else ""
     return (
@@ -88,7 +89,7 @@ def render_card(p: dict, labels: dict) -> str:
     <span class="p-type tg {TYPE_CLASS.get(ptype, 'b')}">{e(TYPE_LABEL.get(ptype, ptype))}</span>
     <span class="p-date">{e(p.get('date', ''))}</span>
   </div>
-  <h3 class="p-title">{e(p.get('title', ''))}</h3>
+  <h3 class="p-title">{e(p.get('name', ''))}</h3>
   <p class="p-summary">{e(one_line(p.get('summary', '')))}</p>
   <div class="p-tags">{tag_html}</div>
   {render_snippet(p)}
@@ -105,10 +106,10 @@ def collect_tags(projects: list[dict]) -> list[str]:
     return seen
 
 
-def render_page(data: dict) -> str:
-    projects = data.get("projects", [])
-    labels = data.get("tag_labels", {})
-    updated = data.get("meta", {}).get("updated", "")
+def render_projects_page(profile: dict) -> str:
+    projects = profile.get("projects", [])
+    labels = profile.get("project_tag_labels", {})
+    updated = profile.get("projects_meta", {}).get("updated", "")
     all_tags = collect_tags(projects)
 
     filter_btns = '<button class="f-btn active" data-filter="all">Tous</button>' + "".join(
@@ -242,14 +243,19 @@ footer{{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border
 """
 
 
+def build_projects(profile: dict | None = None, write: bool = True) -> str:
+    if profile is None:
+        profile = json.loads((ROOT / "profile.json").read_text(encoding="utf-8"))
+    out = render_projects_page(profile)
+    if write:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(out, encoding="utf-8")
+    return out
+
+
 def main() -> int:
-    if not DATA.exists():
-        sys.exit(f"Introuvable : {DATA}")
-    data = yaml.safe_load(DATA.read_text(encoding="utf-8"))
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(render_page(data), encoding="utf-8")
-    n = len(data.get("projects", []))
-    print(f"[build_projects] OK - {n} projets -> {OUT.name}")
+    out = build_projects()
+    print(f"[build_projects] OK - {out.count('class=\"p-card')} projets -> {OUT.name}")
     return 0
 
 
