@@ -277,3 +277,12 @@ def test_build_demos_preserves_widgets():
         assert wid in out
     # méta data-driven présente
     assert "Black-Scholes Pricer" in out and "Simulation Monte Carlo (GBM)" in out
+
+
+def test_build_also_generates_projects_page():
+    import build_projects as bp
+    p = bs.load_profile()
+    out = bp.build_projects(p, write=False)
+    assert 'id="derivatives-pricer"' in out and 'id="monte-carlo-gbm"' in out
+    import build_site, inspect
+    assert "build_projects" in inspect.getsource(build_site.build)

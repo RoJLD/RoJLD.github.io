@@ -427,6 +427,12 @@ def build(profile_path=None, index_path=None, write=True):
     out = build_html(html, profile)
     if write:
         idx_path.write_text(out, encoding="utf-8")
+    # Génère aussi la page projets depuis la même source (profile.json).
+    try:
+        import build_projects
+        build_projects.build_projects(profile, write=write)
+    except Exception as exc:
+        raise BuildError(f"génération page projets échouée : {exc}")
     return out
 
 
