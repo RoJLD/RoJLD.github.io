@@ -95,3 +95,54 @@ def test_aggregate_sorted_desc_demos_first():
     keys = [e["sort"] for e in ents]
     assert keys == sorted(keys, reverse=True)
     assert ents[0]["type"] == "demo"  # pin 9999-99
+
+
+# ── rendu carte ──
+def test_render_card_attrs_and_bilingual():
+    p = _p()
+    en = bb._norm_experience(p["experiences"][0])
+    card = bb.render_card(en)
+    assert 'class="e-card"' in card and 'data-type="experience"' in card
+    assert f'href="{bb.e(en["href"])}"' in card
+    assert 'data-fr="' in card and 'data-en="' in card
+    s = card.split('data-search="')[1].split('"')[0]
+    assert en["title"][0].split()[0].lower() in s
+    assert "voir →" in card.lower() and "view →" in card.lower()
+
+
+def test_render_card_soon_pill():
+    soon = next(a for a in _p()["articles"] if a.get("status") == "soon")
+    card = bb.render_card(bb._norm_article(soon))
+    assert 'e-soon' in card and 'à venir' in card
+
+
+def test_render_card_no_date_for_demo():
+    card = bb.render_card(bb._norm_demo(_p()["demos"][0]))
+    assert 'class="e-date"' not in card  # démo sans date
+
+
+# ── page ──
+def test_page_controls_and_toggles():
+    out = bb.render_browse_page(_p())
+    assert out.count('class="f-btn') == 7            # Tous + 6 types
+    assert 'id="q"' in out and 'id="count"' in out and 'id="empty"' in out
+    assert 'onclick="toggleLang()"' in out and 'onclick="tgTheme()"' in out
+    assert out.count('class="e-card"') == 28
+    assert '/explorer/' in out and 'class="on"' in out  # nav Explorer actif
+
+
+def test_chips_bilingual():
+    chips = bb._chips()
+    assert 'data-filter="all"' in chips and 'data-fr="Tous"' in chips
+    for t in bb.TYPE_ORDER:
+        assert f'data-filter="{t}"' in chips
+
+
+def test_build_browse_returns_html():
+    out = bb.build_browse(_p(), write=False)
+    assert '<title>' in out and 'Explorer' in out
+
+
+def test_page_idempotent():
+    p = _p()
+    assert bb.render_browse_page(p) == bb.render_browse_page(p)
