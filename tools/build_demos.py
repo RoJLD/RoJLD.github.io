@@ -55,6 +55,9 @@ def render_card(d: dict) -> str:
     widget = _read(f"demos/widgets/{did}.html")
     proj = d["project"]
     code = html.escape(_read(f"snippets/{proj}.py"), quote=False)
+    gist = d.get("gist")
+    gist_link = (f'<a class="p-link" href="{e(gist)}" target="_blank" rel="noopener">Gist ↗</a>'
+                 if gist else "")
     return f"""<article id="{e(did)}" class="d-card" data-cat="{e(d['category'])}">
   <div class="d-head"><span class="d-cat">{e(d['category'])}</span></div>
   <h3 class="d-title">{e(d['title'])}</h3>
@@ -62,7 +65,7 @@ def render_card(d: dict) -> str:
   <div class="d-live">{widget}</div>
   <details class="snip"><summary><span class="snip-ic">&lt;/&gt;</span> Code source</summary>
   <pre class="snip-pre"><code class="language-python">{code}</code></pre></details>
-  <div class="d-links"><a class="p-link" href="/projects/#{e(proj)}">Projet complet →</a></div>
+  <div class="d-links"><a class="p-link" href="/projects/#{e(proj)}">Projet complet →</a>{gist_link}</div>
 </article>"""
 
 

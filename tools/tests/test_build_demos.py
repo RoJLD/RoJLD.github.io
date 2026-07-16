@@ -43,3 +43,12 @@ def test_category_filter():
 def test_idempotent():
     p = _p()
     assert bd.render_demos_page(p) == bd.render_demos_page(p)
+
+
+def test_gist_link_conditional():
+    p = _p()
+    demo = next(d for d in p["demos"] if d["id"] == "bs")
+    assert "Gist" not in bd.render_card(demo)  # pas de gist -> pas de lien
+    withg = dict(demo); withg["gist"] = "https://gist.github.com/RoJLD/abc123"
+    card = bd.render_card(withg)
+    assert 'href="https://gist.github.com/RoJLD/abc123"' in card and "Gist" in card
