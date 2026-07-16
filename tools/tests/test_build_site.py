@@ -338,3 +338,11 @@ def test_build_also_generates_explorer_page():
     assert out.count('class="e-card"') == 28 and '<title>Explorer' in out
     import build_site, inspect
     assert "build_browse" in inspect.getsource(build_site.build)
+
+
+def test_nav_explorer_link_everywhere():
+    import build_projects as bp, build_demos as bd
+    p = bs.load_profile()
+    assert 'href="/explorer/"' in bp.build_projects(p, write=False)
+    assert 'href="/explorer/"' in bd.build_demos(p, write=False)
+    assert 'href="/explorer/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
