@@ -108,6 +108,16 @@ def _norm_demo(d):
                   [cat] if cat else [], f'/demos/#{d.get("id", "")}')
 
 
+def _abs_url(u):
+    """URL de profile.json -> absolue (résout depuis n'importe quelle page, ex. /explorer/).
+    Ancre (#...), chemin absolu (/...) et externe (http) préservés tels quels."""
+    if not u:
+        return ""
+    if u.startswith(("http://", "https://", "/", "#")):
+        return u
+    return "/" + u
+
+
 def _norm_article(a):
     tfr, ten = _pair(a.get("title", ""))
     dfr, den = _pair(a.get("desc", ""))
@@ -115,7 +125,7 @@ def _norm_article(a):
                   (one_line(dfr), one_line(den)),
                   (a.get("date", ""), a.get("date", "")),
                   _sortkey(a.get("date", "")), a.get("tags", []),
-                  a.get("url") or "/#blog", soon=(a.get("status") == "soon"))
+                  _abs_url(a.get("url")) or "/#blog", soon=(a.get("status") == "soon"))
 
 
 def _norm_experience(x):

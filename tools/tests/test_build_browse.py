@@ -61,7 +61,7 @@ def test_norm_article_soon_and_href():
     assert en["soon"] is True
     assert en["href"] == "/#blog"  # pas d'url -> ancre blog
     published = next(a for a in arts if a.get("url"))
-    assert bb._norm_article(published)["href"] == published["url"]
+    assert bb._norm_article(published)["href"] == bb._abs_url(published["url"])
 
 
 def test_norm_experience_composed_title():
@@ -146,3 +146,14 @@ def test_build_browse_returns_html():
 def test_page_idempotent():
     p = _p()
     assert bb.render_browse_page(p) == bb.render_browse_page(p)
+
+
+def test_abs_url_article_href_resolves_from_subdir():
+    assert bb._abs_url("articles/x.html") == "/articles/x.html"
+    assert bb._abs_url("https://x.com") == "https://x.com"
+    assert bb._abs_url("/y") == "/y"
+    assert bb._abs_url("#z") == "#z"
+    assert bb._abs_url("") == ""
+    pub = next(a for a in _p()["articles"] if a.get("url"))
+    href = bb._norm_article(pub)["href"]
+    assert href.startswith("/") and not href.startswith("/explorer")
