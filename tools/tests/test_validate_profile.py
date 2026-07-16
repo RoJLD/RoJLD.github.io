@@ -92,3 +92,11 @@ def test_project_requires_type_and_name():
     errs = validate(p)
     assert any("name" in e for e in errs)
     assert any("type" in e for e in errs)
+
+
+def test_article_domains_must_be_valid_ids():
+    real = json.loads((REPO / "profile.json").read_text(encoding="utf-8"))
+    assert validate(real) == []  # profil réel : articles portent des domaines valides
+    bad = json.loads((REPO / "profile.json").read_text(encoding="utf-8"))
+    bad["articles"][0]["domains"] = ["not_a_domain"]
+    assert any("unknown domain" in e and "article" in e for e in validate(bad))

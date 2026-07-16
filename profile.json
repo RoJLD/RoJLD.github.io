@@ -1304,6 +1304,7 @@
   "articles": [
     {
       "id": "couverture_dynamique",
+      "domains": ["quant", "risk", "finance"],
       "title": {
         "fr": "Couverture dynamique : théorie vs pratique en assurance",
         "en": "Dynamic Hedging: Theory vs Practice in Insurance"
@@ -1324,6 +1325,7 @@
     },
     {
       "id": "onchain_analytics",
+      "domains": ["defi", "data"],
       "title": {
         "fr": "Analyse on-chain : détecter les signaux faibles en DeFi",
         "en": "On-Chain Analytics: Detecting Weak Signals in DeFi"

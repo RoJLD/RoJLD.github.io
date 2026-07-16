@@ -48,6 +48,12 @@ def validate(profile: dict) -> list[str]:
                 if d not in domain_ids:
                     errors.append(f"{kind} '{iid}': unknown domain '{d}'")
 
+    # Articles carry an optional domains[] (used by /highlights/) — valid ids only.
+    for a in profile.get("articles", []):
+        for d in a.get("domains") or []:
+            if d not in domain_ids:
+                errors.append(f"article '{a.get('id','?')}': unknown domain '{d}'")
+
     # Skill used_in references must resolve to a real experience/project/education id.
     for cat, s in _skill_iter(profile):
         for uid in s.get("used_in", []):
