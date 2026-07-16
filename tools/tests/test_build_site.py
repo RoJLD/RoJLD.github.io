@@ -355,3 +355,12 @@ def test_build_also_generates_highlights_page():
     assert '<title>Highlights' in out and out.count('class="h-card"') > 0
     import build_site, inspect
     assert "build_highlights" in inspect.getsource(build_site.build)
+
+
+def test_nav_highlights_link_everywhere():
+    import build_projects as bp, build_demos as bd, build_browse as bb
+    p = bs.load_profile()
+    assert 'href="/highlights/"' in bp.build_projects(p, write=False)
+    assert 'href="/highlights/"' in bd.build_demos(p, write=False)
+    assert 'href="/highlights/"' in bb.render_browse_page(p)
+    assert 'href="/highlights/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
