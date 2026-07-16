@@ -63,3 +63,36 @@ def test_lens_attrs_only_included():
     attrs = bh.lens_attrs(p, bh.lens_domains(p), ely, bh.score_project)
     assert 'data-lens-ai="5"' in attrs
     assert "data-lens-quant" not in attrs
+
+
+# ── rendu / page (T3) ──
+def test_render_project_card_attrs():
+    p = _p()
+    ely = next(pr for pr in p["projects"] if pr["id"] == "elysium")
+    card = bh.render_project(p, bh.lens_domains(p), ely, 0)
+    assert 'class="h-card"' in card and 'data-idx="0"' in card
+    assert 'data-gen=' in card and 'data-lens-ai="5"' in card
+    assert 'href="/projects/#elysium"' in card
+    assert 'data-fr="' in card and 'data-en="' in card
+
+
+def test_page_structure():
+    out = bh.render_highlights_page(_p())
+    assert out.count('<button class="h-chip') == 10    # Général + 9 lentilles (hors div conteneur h-chips)
+    assert 'data-lens="quant"' in out and 'data-lens=""' in out
+    assert 'id="copy"' in out and 'id="banner"' in out
+    assert 'onclick="toggleLang()"' in out and 'onclick="tgTheme()"' in out
+    for sec in ("skills", "experiences", "projects", "demos", "articles"):
+        assert f'data-sec="{sec}"' in out
+    assert 'LENS_LABELS' in out and 'LENS_IDS' in out
+    assert 'class="on"' in out and '/highlights/' in out
+
+
+def test_build_highlights_returns_html():
+    out = bh.build_highlights(_p(), write=False)
+    assert '<title>' in out and 'Highlights' in out
+
+
+def test_page_idempotent():
+    p = _p()
+    assert bh.render_highlights_page(p) == bh.render_highlights_page(p)
