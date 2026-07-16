@@ -329,3 +329,12 @@ def test_saved_en_reapplies_lang_after_dom_ready():
     out = bs.build_html(html, p)
     assert "DOMContentLoaded" in out
     assert out.count("applyLang('en')") >= 2  # immédiat + re-apply DCL
+
+
+def test_build_also_generates_explorer_page():
+    import build_browse as bbr
+    p = bs.load_profile()
+    out = bbr.build_browse(p, write=False)
+    assert out.count('class="e-card"') == 28 and '<title>Explorer' in out
+    import build_site, inspect
+    assert "build_browse" in inspect.getsource(build_site.build)
