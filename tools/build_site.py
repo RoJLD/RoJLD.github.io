@@ -567,6 +567,12 @@ def build(profile_path=None, index_path=None, write=True):
         build_browse.build_browse(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération page explorer échouée : {exc}")
+    # Génère aussi la page Highlights (pitch pondéré) depuis la même source.
+    try:
+        import build_highlights
+        build_highlights.build_highlights(profile, write=write)
+    except Exception as exc:
+        raise BuildError(f"génération page highlights échouée : {exc}")
     return out
 
 

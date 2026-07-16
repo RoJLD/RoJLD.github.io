@@ -346,3 +346,12 @@ def test_nav_explorer_link_everywhere():
     assert 'href="/explorer/"' in bp.build_projects(p, write=False)
     assert 'href="/explorer/"' in bd.build_demos(p, write=False)
     assert 'href="/explorer/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
+
+
+def test_build_also_generates_highlights_page():
+    import build_highlights as bhl
+    p = bs.load_profile()
+    out = bhl.build_highlights(p, write=False)
+    assert '<title>Highlights' in out and out.count('class="h-card"') > 0
+    import build_site, inspect
+    assert "build_highlights" in inspect.getsource(build_site.build)
