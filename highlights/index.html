@@ -149,7 +149,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
   let curLens = '';
 
   function curLang(){ return root.getAttribute('data-lang') || 'fr'; }
-  function camel(id){ return 'lens' + id.charAt(0).toUpperCase() + id.slice(1); }
+  function camel(id){ return 'lens' + id.replace(/(^|-)([a-z])/g, function(m, p1, c){ return c.toUpperCase(); }); }
 
   function applyLens(lens){
     curLens = lens;
