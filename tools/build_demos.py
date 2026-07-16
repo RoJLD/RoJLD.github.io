@@ -137,6 +137,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
     <a href="/#experience">Expérience</a>
     <a class="on" href="/demos/">Démos</a>
     <a href="/projects/">Projets</a>
+    <a href="/explorer/">Explorer</a>
     <a href="/#contact">Contact</a>
     <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
   </div>

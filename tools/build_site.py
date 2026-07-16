@@ -561,6 +561,12 @@ def build(profile_path=None, index_path=None, write=True):
         build_demos.build_demos(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération page démos échouée : {exc}")
+    # Génère aussi la page Explorer (browse unifié) depuis la même source.
+    try:
+        import build_browse
+        build_browse.build_browse(profile, write=write)
+    except Exception as exc:
+        raise BuildError(f"génération page explorer échouée : {exc}")
     return out
 
 
