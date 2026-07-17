@@ -70,3 +70,22 @@ def test_render_topic_has_link_flash_quiz():
     assert f'href="{t["link"]}"' in h
     assert 'class="fc"' in h and 'class="q-card"' in h
     assert f'data-topic="{t["id"]}"' in h
+
+
+def test_page_structure():
+    out = ba.render_academy_page(ba.load_academy())
+    assert out.count('class="topic"') == 4
+    assert 'onclick="toggleLang()"' in out and 'onclick="tgTheme()"' in out
+    assert 'function scoreQuiz' in out and "localStorage" in out
+    assert 'academy-progress' in out
+    assert 'class="on"' in out and '/academy/' in out
+
+
+def test_build_academy_returns_html():
+    out = ba.build_academy(ba.load_academy(), write=False)
+    assert '<title>Academy' in out
+
+
+def test_page_idempotent():
+    d = ba.load_academy()
+    assert ba.render_academy_page(d) == ba.render_academy_page(d)
