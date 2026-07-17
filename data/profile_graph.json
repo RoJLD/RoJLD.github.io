@@ -1,0 +1,1096 @@
+{
+  "nodes": [
+    {
+      "id": "identity:self",
+      "type": "identity",
+      "label": "Robin Denis"
+    },
+    {
+      "id": "domain:quant",
+      "type": "domain",
+      "label": "Finance quantitative"
+    },
+    {
+      "id": "domain:risk",
+      "type": "domain",
+      "label": "Gestion des risques"
+    },
+    {
+      "id": "domain:finance",
+      "type": "domain",
+      "label": "Finance d'entreprise / Trésorerie"
+    },
+    {
+      "id": "domain:data",
+      "type": "domain",
+      "label": "Data Engineering / ML"
+    },
+    {
+      "id": "domain:defi",
+      "type": "domain",
+      "label": "DeFi / Blockchain"
+    },
+    {
+      "id": "domain:dev",
+      "type": "domain",
+      "label": "Développement logiciel"
+    },
+    {
+      "id": "domain:ai",
+      "type": "domain",
+      "label": "IA / LLM"
+    },
+    {
+      "id": "domain:architecture",
+      "type": "domain",
+      "label": "Architecture logicielle"
+    },
+    {
+      "id": "domain:infra",
+      "type": "domain",
+      "label": "DevOps / Kubernetes"
+    },
+    {
+      "id": "domain:knowledge-graph",
+      "type": "domain",
+      "label": "Graphes de connaissance"
+    },
+    {
+      "id": "domain:research",
+      "type": "domain",
+      "label": "Recherche / R&D"
+    },
+    {
+      "id": "domain:product",
+      "type": "domain",
+      "label": "Produit / SaaS"
+    },
+    {
+      "id": "experience:alten_2026",
+      "type": "experience",
+      "label": "Quantitative Researcher DeFi"
+    },
+    {
+      "id": "experience:bouygues_2025",
+      "type": "experience",
+      "label": "Trésorier & Développeur Full Stack"
+    },
+    {
+      "id": "experience:manco_2024",
+      "type": "experience",
+      "label": "Risk Manager"
+    },
+    {
+      "id": "education:ece",
+      "type": "education",
+      "label": "ECE Paris, Cycle Ingénieur"
+    },
+    {
+      "id": "education:prepa",
+      "type": "education",
+      "label": "Classes Préparatoires MPSI – MP"
+    },
+    {
+      "id": "project:elysium",
+      "type": "project",
+      "label": "ELYSIUM — Sovereign Cognitive Architecture"
+    },
+    {
+      "id": "project:pfe-hedging",
+      "type": "project",
+      "label": "Couverture dynamique en assurance/banque (PFE × EY)"
+    },
+    {
+      "id": "project:anthropos",
+      "type": "project",
+      "label": "Anthropos — Career OS & Life Architect"
+    },
+    {
+      "id": "project:hmm-studio",
+      "type": "project",
+      "label": "hmm-studio — Modèles de Markov cachés contraints"
+    },
+    {
+      "id": "project:derivatives-pricer",
+      "type": "project",
+      "label": "Pricer d'options européennes (Black-Scholes)"
+    },
+    {
+      "id": "project:monte-carlo-gbm",
+      "type": "project",
+      "label": "Simulation Monte-Carlo — Mouvement Brownien Géométrique"
+    },
+    {
+      "id": "project:sudoku-cnn",
+      "type": "project",
+      "label": "Résolution de Sudoku par réseau de neurones convolutif"
+    },
+    {
+      "id": "project:trading-algo-csharp",
+      "type": "project",
+      "label": "Algorithme de trading crypto / forex (C#)"
+    },
+    {
+      "id": "project:vba-index-tool",
+      "type": "project",
+      "label": "Outil VBA d'analyse & visualisation d'indices boursiers"
+    },
+    {
+      "id": "project:vhdl-calculator",
+      "type": "project",
+      "label": "Calculatrice 4 opérations en VHDL (FPGA)"
+    },
+    {
+      "id": "project:atc-simulation",
+      "type": "project",
+      "label": "Simulation de tour de contrôle aérienne"
+    },
+    {
+      "id": "project:gripper-robot",
+      "type": "project",
+      "label": "Robot pince — modélisation 3D, impression & assemblage"
+    },
+    {
+      "id": "project:octoprint-bed-leveller",
+      "type": "project",
+      "label": "Plugin Octoprint — Bed Leveller & Visualizer"
+    },
+    {
+      "id": "project:tms-bouygues",
+      "type": "project",
+      "label": "Treasury Management System (Bouygues Telecom)"
+    },
+    {
+      "id": "project:crypto-exploration",
+      "type": "project",
+      "label": "CryptoExploration — recherche quant DeFi (ALTEN)"
+    },
+    {
+      "id": "project:ppe-politique-monetaire",
+      "type": "project",
+      "label": "Recherche & fixation de la politique monétaire (PPE)"
+    },
+    {
+      "id": "project:portfolio-site",
+      "type": "project",
+      "label": "robin-denis.com — site portfolio & pipeline candidature"
+    },
+    {
+      "id": "article:couverture_dynamique",
+      "type": "article",
+      "label": "Couverture dynamique : théorie vs pratique en assurance"
+    },
+    {
+      "id": "article:onchain_analytics",
+      "type": "article",
+      "label": "Analyse on-chain : détecter les signaux faibles en DeFi"
+    },
+    {
+      "id": "demo:bs",
+      "type": "demo",
+      "label": "Black-Scholes Pricer"
+    },
+    {
+      "id": "demo:mc",
+      "type": "demo",
+      "label": "Simulation Monte Carlo (GBM)"
+    },
+    {
+      "id": "journey:0",
+      "type": "journey",
+      "label": "Prépa MPSI"
+    },
+    {
+      "id": "journey:1",
+      "type": "journey",
+      "label": "ECE Paris"
+    },
+    {
+      "id": "journey:2",
+      "type": "journey",
+      "label": "Risk Manager"
+    },
+    {
+      "id": "journey:3",
+      "type": "journey",
+      "label": "Trésorier & Dev"
+    },
+    {
+      "id": "journey:4",
+      "type": "journey",
+      "label": "PFE avec EY"
+    },
+    {
+      "id": "journey:5",
+      "type": "journey",
+      "label": "Quant Researcher"
+    },
+    {
+      "id": "journey:6",
+      "type": "journey",
+      "label": "ELYSIUM"
+    },
+    {
+      "id": "journey:7",
+      "type": "journey",
+      "label": "Diplôme Ingénieur"
+    },
+    {
+      "id": "skill:Python",
+      "type": "skill",
+      "label": "Python"
+    },
+    {
+      "id": "skill:SQL",
+      "type": "skill",
+      "label": "SQL"
+    },
+    {
+      "id": "skill:VBA",
+      "type": "skill",
+      "label": "VBA"
+    },
+    {
+      "id": "skill:Java",
+      "type": "skill",
+      "label": "Java"
+    },
+    {
+      "id": "skill:C/C++",
+      "type": "skill",
+      "label": "C/C++"
+    },
+    {
+      "id": "skill:C#",
+      "type": "skill",
+      "label": "C#"
+    },
+    {
+      "id": "skill:Finance Quantitative",
+      "type": "skill",
+      "label": "Finance Quantitative"
+    },
+    {
+      "id": "skill:Calcul Stochastique",
+      "type": "skill",
+      "label": "Calcul Stochastique"
+    },
+    {
+      "id": "skill:Pricing Dérivés",
+      "type": "skill",
+      "label": "Pricing Dérivés"
+    },
+    {
+      "id": "skill:Risk Management",
+      "type": "skill",
+      "label": "Risk Management"
+    },
+    {
+      "id": "skill:Trésorerie d'entreprise",
+      "type": "skill",
+      "label": "Trésorerie d'entreprise"
+    },
+    {
+      "id": "skill:Couverture dynamique",
+      "type": "skill",
+      "label": "Couverture dynamique"
+    },
+    {
+      "id": "skill:Machine Learning",
+      "type": "skill",
+      "label": "Machine Learning"
+    },
+    {
+      "id": "skill:Statistics",
+      "type": "skill",
+      "label": "Statistics"
+    },
+    {
+      "id": "skill:ETL / Data Pipelines",
+      "type": "skill",
+      "label": "ETL / Data Pipelines"
+    },
+    {
+      "id": "skill:BigQuery",
+      "type": "skill",
+      "label": "BigQuery"
+    },
+    {
+      "id": "skill:Dataiku",
+      "type": "skill",
+      "label": "Dataiku"
+    },
+    {
+      "id": "skill:DeFi / Blockchain",
+      "type": "skill",
+      "label": "DeFi / Blockchain"
+    },
+    {
+      "id": "skill:Compliance",
+      "type": "skill",
+      "label": "Compliance"
+    },
+    {
+      "id": "skill:Actuariat",
+      "type": "skill",
+      "label": "Actuariat"
+    },
+    {
+      "id": "skill:Kubernetes / K3s",
+      "type": "skill",
+      "label": "Kubernetes / K3s"
+    },
+    {
+      "id": "skill:LLM Orchestration",
+      "type": "skill",
+      "label": "LLM Orchestration"
+    },
+    {
+      "id": "skill:Knowledge Graphs",
+      "type": "skill",
+      "label": "Knowledge Graphs"
+    },
+    {
+      "id": "skill:Multi-Agent Systems",
+      "type": "skill",
+      "label": "Multi-Agent Systems"
+    },
+    {
+      "id": "skill:DevOps / GitOps",
+      "type": "skill",
+      "label": "DevOps / GitOps"
+    },
+    {
+      "id": "skill:TDD / Testing",
+      "type": "skill",
+      "label": "TDD / Testing"
+    }
+  ],
+  "edges": [
+    {
+      "source": "experience:alten_2026",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:alten_2026",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:alten_2026",
+      "target": "domain:defi",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:alten_2026",
+      "target": "domain:ai",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:bouygues_2025",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:bouygues_2025",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:bouygues_2025",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:manco_2024",
+      "target": "domain:risk",
+      "rel": "has_domain"
+    },
+    {
+      "source": "experience:manco_2024",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:elysium",
+      "target": "domain:ai",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:elysium",
+      "target": "domain:architecture",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:elysium",
+      "target": "domain:infra",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:elysium",
+      "target": "domain:knowledge-graph",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:elysium",
+      "target": "domain:research",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:elysium",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:pfe-hedging",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:pfe-hedging",
+      "target": "domain:risk",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:pfe-hedging",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:pfe-hedging",
+      "target": "domain:research",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:pfe-hedging",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:anthropos",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:anthropos",
+      "target": "domain:product",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:anthropos",
+      "target": "domain:ai",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:hmm-studio",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:hmm-studio",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:hmm-studio",
+      "target": "domain:research",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:derivatives-pricer",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:derivatives-pricer",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:derivatives-pricer",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:monte-carlo-gbm",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:monte-carlo-gbm",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:monte-carlo-gbm",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:sudoku-cnn",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:sudoku-cnn",
+      "target": "domain:ai",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:sudoku-cnn",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:trading-algo-csharp",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:trading-algo-csharp",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:trading-algo-csharp",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:vba-index-tool",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:vba-index-tool",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:vba-index-tool",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:vhdl-calculator",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:vhdl-calculator",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:atc-simulation",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:atc-simulation",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:gripper-robot",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:gripper-robot",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:octoprint-bed-leveller",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:tms-bouygues",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:tms-bouygues",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:tms-bouygues",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:tms-bouygues",
+      "target": "experience:bouygues_2025",
+      "rel": "context"
+    },
+    {
+      "source": "project:crypto-exploration",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:crypto-exploration",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:crypto-exploration",
+      "target": "domain:defi",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:crypto-exploration",
+      "target": "domain:ai",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:crypto-exploration",
+      "target": "experience:alten_2026",
+      "rel": "context"
+    },
+    {
+      "source": "project:ppe-politique-monetaire",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:ppe-politique-monetaire",
+      "target": "domain:research",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:ppe-politique-monetaire",
+      "target": "education:ece",
+      "rel": "context"
+    },
+    {
+      "source": "project:portfolio-site",
+      "target": "domain:dev",
+      "rel": "has_domain"
+    },
+    {
+      "source": "project:portfolio-site",
+      "target": "domain:product",
+      "rel": "has_domain"
+    },
+    {
+      "source": "article:couverture_dynamique",
+      "target": "domain:quant",
+      "rel": "has_domain"
+    },
+    {
+      "source": "article:couverture_dynamique",
+      "target": "domain:risk",
+      "rel": "has_domain"
+    },
+    {
+      "source": "article:couverture_dynamique",
+      "target": "domain:finance",
+      "rel": "has_domain"
+    },
+    {
+      "source": "article:onchain_analytics",
+      "target": "domain:defi",
+      "rel": "has_domain"
+    },
+    {
+      "source": "article:onchain_analytics",
+      "target": "domain:data",
+      "rel": "has_domain"
+    },
+    {
+      "source": "skill:Python",
+      "target": "experience:alten_2026",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Python",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Python",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Python",
+      "target": "domain:data",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Python",
+      "target": "domain:dev",
+      "rel": "context"
+    },
+    {
+      "source": "skill:SQL",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:SQL",
+      "target": "experience:manco_2024",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:SQL",
+      "target": "domain:data",
+      "rel": "context"
+    },
+    {
+      "source": "skill:SQL",
+      "target": "domain:dev",
+      "rel": "context"
+    },
+    {
+      "source": "skill:VBA",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:VBA",
+      "target": "experience:manco_2024",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:VBA",
+      "target": "domain:finance",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Java",
+      "target": "domain:dev",
+      "rel": "context"
+    },
+    {
+      "source": "skill:C/C++",
+      "target": "domain:dev",
+      "rel": "context"
+    },
+    {
+      "source": "skill:C/C++",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:C#",
+      "target": "domain:dev",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Finance Quantitative",
+      "target": "experience:alten_2026",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Finance Quantitative",
+      "target": "education:ece",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Finance Quantitative",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Calcul Stochastique",
+      "target": "education:ece",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Calcul Stochastique",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Pricing Dérivés",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Pricing Dérivés",
+      "target": "education:ece",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Pricing Dérivés",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Risk Management",
+      "target": "experience:manco_2024",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Risk Management",
+      "target": "education:ece",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Risk Management",
+      "target": "domain:risk",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Trésorerie d'entreprise",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Trésorerie d'entreprise",
+      "target": "domain:finance",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Couverture dynamique",
+      "target": "education:ece",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Couverture dynamique",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Couverture dynamique",
+      "target": "domain:risk",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Machine Learning",
+      "target": "experience:alten_2026",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Machine Learning",
+      "target": "education:ece",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Machine Learning",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Machine Learning",
+      "target": "domain:data",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Statistics",
+      "target": "experience:alten_2026",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Statistics",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Statistics",
+      "target": "domain:data",
+      "rel": "context"
+    },
+    {
+      "source": "skill:ETL / Data Pipelines",
+      "target": "experience:alten_2026",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:ETL / Data Pipelines",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:ETL / Data Pipelines",
+      "target": "domain:data",
+      "rel": "context"
+    },
+    {
+      "source": "skill:BigQuery",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:BigQuery",
+      "target": "domain:data",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Dataiku",
+      "target": "experience:bouygues_2025",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Dataiku",
+      "target": "domain:data",
+      "rel": "context"
+    },
+    {
+      "source": "skill:DeFi / Blockchain",
+      "target": "experience:alten_2026",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:DeFi / Blockchain",
+      "target": "domain:quant",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Compliance",
+      "target": "experience:manco_2024",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Compliance",
+      "target": "domain:risk",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Actuariat",
+      "target": "experience:manco_2024",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Actuariat",
+      "target": "domain:risk",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Kubernetes / K3s",
+      "target": "project:elysium",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Kubernetes / K3s",
+      "target": "domain:infra",
+      "rel": "context"
+    },
+    {
+      "source": "skill:LLM Orchestration",
+      "target": "project:elysium",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:LLM Orchestration",
+      "target": "domain:ai",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Knowledge Graphs",
+      "target": "project:elysium",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Knowledge Graphs",
+      "target": "domain:ai",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Knowledge Graphs",
+      "target": "domain:architecture",
+      "rel": "context"
+    },
+    {
+      "source": "skill:Multi-Agent Systems",
+      "target": "project:elysium",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:Multi-Agent Systems",
+      "target": "domain:ai",
+      "rel": "context"
+    },
+    {
+      "source": "skill:DevOps / GitOps",
+      "target": "project:elysium",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:DevOps / GitOps",
+      "target": "domain:infra",
+      "rel": "context"
+    },
+    {
+      "source": "skill:TDD / Testing",
+      "target": "project:elysium",
+      "rel": "used_in"
+    },
+    {
+      "source": "skill:TDD / Testing",
+      "target": "domain:dev",
+      "rel": "context"
+    },
+    {
+      "source": "demo:bs",
+      "target": "project:derivatives-pricer",
+      "rel": "demo_of"
+    },
+    {
+      "source": "demo:mc",
+      "target": "project:monte-carlo-gbm",
+      "rel": "demo_of"
+    },
+    {
+      "source": "journey:0",
+      "target": "education:prepa",
+      "rel": "refs"
+    },
+    {
+      "source": "journey:1",
+      "target": "education:ece",
+      "rel": "refs"
+    },
+    {
+      "source": "journey:2",
+      "target": "experience:manco_2024",
+      "rel": "refs"
+    },
+    {
+      "source": "journey:3",
+      "target": "experience:bouygues_2025",
+      "rel": "refs"
+    },
+    {
+      "source": "journey:4",
+      "target": "project:pfe-hedging",
+      "rel": "refs"
+    },
+    {
+      "source": "journey:5",
+      "target": "experience:alten_2026",
+      "rel": "refs"
+    },
+    {
+      "source": "journey:6",
+      "target": "project:elysium",
+      "rel": "refs"
+    },
+    {
+      "source": "journey:7",
+      "target": "education:ece",
+      "rel": "refs"
+    }
+  ],
+  "summary": {
+    "nodes": 73,
+    "edges": 142,
+    "by_type": {
+      "identity": 1,
+      "domain": 12,
+      "experience": 3,
+      "education": 2,
+      "project": 17,
+      "article": 2,
+      "demo": 2,
+      "journey": 8,
+      "skill": 26
+    }
+  }
+}
