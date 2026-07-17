@@ -396,6 +396,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
     document.querySelectorAll('.fc').forEach(function(fc){
       const flipped = fc.classList.contains('flipped');
       fc.querySelector('.fc-face').textContent = flipped ? fc.dataset['back'+(lang==='fr'?'Fr':'En')] : fc.dataset['front'+(lang==='fr'?'Fr':'En')];
+      fc.querySelector('.fc-hint').textContent = flipped ? (lang==='fr'?'Réponse · cliquer pour retourner':'Answer · click to flip back') : (lang==='fr'?'Cliquer pour révéler':'Click to reveal');
     });
     root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
     document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
