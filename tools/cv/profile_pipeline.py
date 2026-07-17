@@ -154,3 +154,92 @@ def write_profile_graph(graph, graph_path):
     graph_path = pathlib.Path(graph_path)
     graph_path.parent.mkdir(parents=True, exist_ok=True)
     graph_path.write_text(json.dumps(graph, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# ══════════════════ Revue LLM + orchestration ══════════════════
+
+def _sovereign_complete(prompt):
+    """Réutilise le résolveur LLM souverain de cv_target (ELYSIUM sibling)."""
+    import cv_target  # type: ignore
+    return cv_target._sovereign_complete(prompt)
+
+
+def _review_prompt(new, changed_keys):
+    sections = {k: new.get(k) for k in changed_keys}
+    body = json.dumps(sections, ensure_ascii=False)[:6000]
+    return ("Tu es un relecteur qualité d'un profil professionnel bilingue (fr/en). "
+            "Relève UNIQUEMENT des problèmes concrets dans ces sections modifiées : "
+            "champ bilingue incomplet (fr sans en, ou l'inverse), incohérence factuelle, "
+            "faute de frappe. Une ligne par problème, ou 'RAS' si tout va bien.\n\n" + body)
+
+
+def review_edit(old, new, complete_fn=None):
+    """Revue LLM consultative (non bloquante). Gracieux si LLM indisponible."""
+    changed = sorted(k for k in set(old) | set(new) if old.get(k) != new.get(k))
+    if not changed:
+        return {"available": True, "changed_keys": [], "notes": []}
+    fn = complete_fn or _sovereign_complete
+    try:
+        raw = fn(_review_prompt(new, changed)).strip()
+    except Exception as exc:
+        return {"available": False, "changed_keys": changed, "notes": [], "error": str(exc)}
+    if not raw or raw.upper().startswith("RAS"):
+        notes = []
+    else:
+        notes = [ln.strip("-•* ").strip() for ln in raw.splitlines()
+                 if ln.strip() and ln.strip().upper() != "RAS"]
+    return {"available": True, "changed_keys": changed, "notes": notes}
+
+
+def _read_json(path):
+    path = pathlib.Path(path)
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _rebuild():
+    if str(_TOOLS) not in sys.path:
+        sys.path.insert(0, str(_TOOLS))
+    import build_site  # type: ignore
+    build_site.build(write=True)
+
+
+def govern_save(raw_json, profile_path, history_dir, graph_path, ts_str,
+                complete_fn=None, do_rebuild=True, validate_fn=None):
+    """Pipeline gouverné -> rapport {ok, errors, stages}. Reject-loud sans effet de bord."""
+    parsed, errors = parse_and_validate(raw_json, validate_fn)
+    if errors:
+        return {"ok": False, "errors": errors, "stages": {}}
+    old = _read_json(profile_path)
+    stages = {"review": review_edit(old, parsed, complete_fn=complete_fn)}
+    snap = snapshot_profile(profile_path, history_dir, ts_str)
+    stages["history"] = {"snapshot": (pathlib.Path(snap).name if snap else None)}
+    atomic_write_profile(parsed, profile_path)
+    stages["write"] = {"ok": True}
+    graph = build_profile_graph(parsed)
+    write_profile_graph(graph, graph_path)
+    stages["graph"] = graph["summary"]
+    if do_rebuild:
+        _rebuild()
+        stages["rebuild"] = {"ok": True}
+    else:
+        stages["rebuild"] = {"skipped": True}
+    return {"ok": True, "errors": [], "stages": stages}
+
+
+def main():
+    """Régénère le graphe depuis profile.json (standalone)."""
+    profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
+    graph = build_profile_graph(profile)
+    write_profile_graph(graph, GRAPH_PATH)
+    s = graph["summary"]
+    print(f"[profile_pipeline] graphe: {s['nodes']} noeuds, {s['edges']} aretes -> {GRAPH_PATH.name}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

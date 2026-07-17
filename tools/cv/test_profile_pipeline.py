@@ -73,3 +73,44 @@ def test_write_profile_graph(tmp_path):
     out = tmp_path / "data" / "profile_graph.json"
     pp.write_profile_graph(g, out)
     assert json.loads(out.read_text(encoding="utf-8"))["summary"]["nodes"] == g["summary"]["nodes"]
+
+
+def test_review_no_change():
+    r = pp.review_edit(_profile(), _profile(), complete_fn=lambda p: "RAS")
+    assert r == {"available": True, "changed_keys": [], "notes": []}
+
+
+def test_review_with_fake_llm():
+    old = _profile(); new = _profile(); new["identity"]["first_name"] = "Bob"
+    r = pp.review_edit(old, new, complete_fn=lambda p: "- souci A\n- souci B")
+    assert r["available"] and "identity" in r["changed_keys"]
+    assert r["notes"] == ["souci A", "souci B"]
+
+
+def test_review_graceful_when_llm_raises():
+    old = _profile(); new = _profile(); new["identity"]["first_name"] = "Bob"
+    def boom(p): raise RuntimeError("no backend")
+    r = pp.review_edit(old, new, complete_fn=boom)
+    assert r["available"] is False and r["notes"] == []
+
+
+def test_govern_save_full(tmp_path):
+    prof = tmp_path / "profile.json"; prof.write_text(json.dumps(_profile()), encoding="utf-8")
+    hist = tmp_path / "data" / "hist"; graph = tmp_path / "data" / "graph.json"
+    new = _profile(); new["identity"]["first_name"] = "Bob"
+    rep = pp.govern_save(json.dumps(new), prof, hist, graph, "20260717T120000",
+                         complete_fn=lambda p: "RAS", do_rebuild=False, validate_fn=lambda p: [])
+    assert rep["ok"] is True
+    assert rep["stages"]["review"]["available"] and rep["stages"]["graph"]["nodes"] > 0
+    assert rep["stages"]["history"]["snapshot"] and rep["stages"]["rebuild"] == {"skipped": True}
+    assert json.loads(prof.read_text(encoding="utf-8"))["identity"]["first_name"] == "Bob"
+    assert graph.exists() and list(hist.glob("profile-*.json"))
+
+
+def test_govern_save_rejects_invalid_no_side_effects(tmp_path):
+    prof = tmp_path / "profile.json"; prof.write_text(json.dumps(_profile()), encoding="utf-8")
+    hist = tmp_path / "data" / "hist"; graph = tmp_path / "data" / "graph.json"
+    rep = pp.govern_save("{bad", prof, hist, graph, "ts", do_rebuild=False, validate_fn=lambda p: [])
+    assert rep["ok"] is False and rep["stages"] == {}
+    assert not hist.exists() and not graph.exists()
+    assert json.loads(prof.read_text(encoding="utf-8"))["identity"]["first_name"] == "Robin"
