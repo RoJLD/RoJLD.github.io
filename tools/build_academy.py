@@ -88,3 +88,69 @@ def e(s) -> str:
 
 def one_line(s) -> str:
     return " ".join(str(s or "").split())
+
+
+# ══════════════════ Rendu ══════════════════
+
+def _pill(level):
+    return f'<span class="lv lv-{e(level.lower())}">{e(level)}</span>'
+
+
+def render_flashcard(fc):
+    ffr, fen = fc["front"]["fr"], fc["front"]["en"]
+    bfr, ben = fc["back"]["fr"], fc["back"]["en"]
+    return (
+        f'<button type="button" class="fc" data-level="{e(fc["level"])}" '
+        f'data-front-fr="{e(ffr)}" data-front-en="{e(fen)}" '
+        f'data-back-fr="{e(bfr)}" data-back-en="{e(ben)}">'
+        f'{_pill(fc["level"])}'
+        f'<span class="fc-face" data-fr="{e(ffr)}" data-en="{e(fen)}">{e(ffr)}</span>'
+        f'<span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span>'
+        f'</button>'
+    )
+
+
+def render_question(q, idx):
+    pfr, pen = q["prompt"]["fr"], q["prompt"]["en"]
+    cfr, cen = q["concept"]["fr"], q["concept"]["en"]
+    xfr, xen = q["explanation"]["fr"], q["explanation"]["en"]
+    opts = "".join(
+        f'<button type="button" class="q-opt" data-oi="{oi}" '
+        f'data-fr="{e(o["fr"])}" data-en="{e(o["en"])}">{e(o["fr"])}</button>'
+        for oi, o in enumerate(q["options"])
+    )
+    return (
+        f'<div class="q-card" data-qi="{idx}" data-correct="{q["correct"]}" data-level="{e(q["level"])}" '
+        f'data-concept-fr="{e(cfr)}" data-concept-en="{e(cen)}">'
+        f'<p class="q-prompt"><span class="q-num">{idx + 1}.</span> '
+        f'<span data-fr="{e(pfr)}" data-en="{e(pen)}">{e(pfr)}</span></p>'
+        f'<div class="q-opts">{opts}</div>'
+        f'<p class="q-expl" hidden data-fr="{e(xfr)}" data-en="{e(xen)}">{e(xfr)}</p>'
+        f'</div>'
+    )
+
+
+def render_topic(t):
+    tid = t["id"]
+    tfr, ten = t["title"]["fr"], t["title"]["en"]
+    sfr, sen = t["subtitle"]["fr"], t["subtitle"]["en"]
+    lfr, len_ = t["link_label"]["fr"], t["link_label"]["en"]
+    flash = "\n".join(render_flashcard(fc) for fc in t["flashcards"])
+    ques = "\n".join(render_question(q, i) for i, q in enumerate(t["questions"]))
+    return (
+        f'<section class="topic" data-topic="{e(tid)}">'
+        f'<button type="button" class="topic-h" aria-expanded="false">'
+        f'<span class="topic-tt"><span class="topic-title" data-fr="{e(tfr)}" data-en="{e(ten)}">{e(tfr)}</span>'
+        f'<span class="topic-sub" data-fr="{e(sfr)}" data-en="{e(sen)}">{e(sfr)}</span></span>'
+        f'<span class="topic-badge" data-topic-badge="{e(tid)}"></span>'
+        f'<span class="topic-caret">▾</span></button>'
+        f'<div class="topic-body">'
+        f'<a class="topic-link" href="{e(t["link"])}" data-fr="{e(lfr)}" data-en="{e(len_)}">{e(lfr)}</a>'
+        f'<h3 class="blk" data-fr="Flashcards" data-en="Flashcards">Flashcards</h3>'
+        f'<div class="fc-grid">{flash}</div>'
+        f'<h3 class="blk" data-fr="Quiz" data-en="Quiz">Quiz</h3>'
+        f'<div class="quiz" data-topic="{e(tid)}">{ques}'
+        f'<button type="button" class="q-submit" disabled data-fr="Valider le quiz" data-en="Submit quiz">Valider le quiz</button>'
+        f'<div class="q-result" hidden></div></div>'
+        f'</div></section>'
+    )

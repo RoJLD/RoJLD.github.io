@@ -43,3 +43,30 @@ def test_real_content_shape():
     assert ids == ["bs-pricing", "monte-carlo", "hedging", "defi-onchain"]
     for t in data["topics"]:
         assert len(t["flashcards"]) >= 3 and len(t["questions"]) >= 3
+
+
+def test_render_flashcard_bilingual():
+    fc = {"level": "Recall", "front": {"fr": "AvantFR", "en": "FrontEN"}, "back": {"fr": "ArriereFR", "en": "BackEN"}}
+    h = ba.render_flashcard(fc)
+    assert 'data-level="Recall"' in h
+    assert 'data-front-fr="AvantFR"' in h and 'data-front-en="FrontEN"' in h
+    assert 'data-back-fr="ArriereFR"' in h and 'data-back-en="BackEN"' in h
+
+
+def test_render_question_attrs():
+    q = {"level": "Apply", "correct": 1, "prompt": {"fr": "PromptFR", "en": "PromptEN"},
+         "options": [{"fr": "o0", "en": "o0"}, {"fr": "o1", "en": "o1"}],
+         "concept": {"fr": "conceptFR", "en": "conceptEN"}, "explanation": {"fr": "explFR", "en": "explEN"}}
+    h = ba.render_question(q, 2)
+    assert 'data-correct="1"' in h and 'data-level="Apply"' in h
+    assert 'data-concept-fr="conceptFR"' in h and 'data-concept-en="conceptEN"' in h
+    assert h.count('class="q-opt"') == 2
+    assert 'data-fr="PromptFR"' in h and 'data-fr="explFR"' in h
+
+
+def test_render_topic_has_link_flash_quiz():
+    t = ba.load_academy()["topics"][0]
+    h = ba.render_topic(t)
+    assert f'href="{t["link"]}"' in h
+    assert 'class="fc"' in h and 'class="q-card"' in h
+    assert f'data-topic="{t["id"]}"' in h
