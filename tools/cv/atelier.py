@@ -50,20 +50,11 @@ def save_profile_edit(raw_json: str, profile_path: pathlib.Path,
     Retourne {ok, errors}. Reject-loud : JSON invalide ou règles validate_profile
     violées → ok=False + messages, le fichier reste intact.
     """
-    if validate_fn is None:
-        validate_fn = _load_validate()
-    try:
-        parsed = json.loads(raw_json)
-    except json.JSONDecodeError as e:
-        return {"ok": False, "errors": [f"JSON invalide : {e}"]}
-    if not isinstance(parsed, dict):
-        return {"ok": False, "errors": ["Le profil doit être un objet JSON."]}
-    errors = list(validate_fn(parsed))
+    import profile_pipeline
+    parsed, errors = profile_pipeline.parse_and_validate(raw_json, validate_fn)
     if errors:
         return {"ok": False, "errors": errors}
-    tmp = profile_path.parent / (profile_path.name + ".tmp")
-    tmp.write_text(json.dumps(parsed, ensure_ascii=False, indent=2), encoding="utf-8")
-    tmp.replace(profile_path)  # remplacement atomique
+    profile_pipeline.atomic_write_profile(parsed, profile_path)
     return {"ok": True, "errors": []}
 
 
@@ -136,6 +127,7 @@ button{background:#4361ee;color:#fff;border:none;border-radius:8px;padding:10px 
   <button id="go" onclick="save()">Valider &amp; Enregistrer</button>
   <label class="cb"><input type="checkbox" id="regen"> Régénérer la banque préfab</label>
   <label class="cb"><input type="checkbox" id="commit"> Committer localement</label>
+  <label class="cb"><input type="checkbox" id="govern"> Pipeline gouverné (historise · revue · graphe · rebuild)</label>
   <span id="status"></span>
 </div>
 <div id="errs"></div>
@@ -149,9 +141,19 @@ async function save(){
     var r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({json:document.getElementById('p').value,
         regen:document.getElementById('regen').checked,
-        commit:document.getElementById('commit').checked})});
+        commit:document.getElementById('commit').checked,
+        govern:document.getElementById('govern').checked})});
     var res=await r.json();
-    if(res.ok){st.textContent='Enregistré. '+((res.actions||[]).join(', '));st.className='ok';}
+    if(res.stages){
+      var s=res.stages, parts=[];
+      if(s.history)parts.push('snapshot '+(s.history.snapshot||'—'));
+      if(s.review)parts.push(s.review.available?('revue '+(s.review.notes.length?s.review.notes.length+' note(s)':'RAS')):'revue LLM indispo');
+      if(s.graph)parts.push('graphe '+s.graph.nodes+'n/'+s.graph.edges+'a');
+      if(s.rebuild)parts.push(s.rebuild.ok?'rebuild ok':'rebuild sauté');
+      st.textContent=res.ok?('Gouverné \u2713 — '+parts.join(' · ')):'Refusé';st.className=res.ok?'ok':'';
+      if(!res.ok)er.textContent=(res.errors||[]).join(String.fromCharCode(10));
+      else if(s.review&&s.review.notes&&s.review.notes.length)er.textContent='Revue LLM:'+String.fromCharCode(10)+'- '+s.review.notes.join(String.fromCharCode(10)+'- ');
+    } else if(res.ok){st.textContent='Enregistré. '+((res.actions||[]).join(', '));st.className='ok';}
     else{st.textContent='Refusé ('+res.errors.length+' erreur(s))';er.textContent=res.errors.join('\\n');}
   }catch(e){st.textContent='Erreur: '+e.message;}
   btn.disabled=false;
@@ -210,6 +212,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _handle_save(self, data):
         try:
+            if data.get("govern"):
+                import profile_pipeline
+                from datetime import datetime
+                ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+                report = profile_pipeline.govern_save(
+                    str(data.get("json", "")), _PROFILE,
+                    _ROOT / "data" / "profile_history", _ROOT / "data" / "profile_graph.json",
+                    ts, do_rebuild=bool(data.get("rebuild", True)))
+                return self._send(200, "application/json; charset=utf-8",
+                                  json.dumps(report, ensure_ascii=False).encode("utf-8"))
             res = save_profile_edit(str(data.get("json", "")), _PROFILE)
             if res["ok"]:
                 actions = []
