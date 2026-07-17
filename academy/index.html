@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark" data-lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academy — Robin Denis</title>
+<meta name="description" content="Academy interactive de Robin Denis — flashcards et quiz auto-évalués sur le pricing, la couverture et l'analyse on-chain.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px;--radius-sm:10px;--ease:cubic-bezier(.4,0,.2,1)}
+[data-theme="dark"]{--bg-0:#060a12;--bg-1:#0a1020;--bg-2:#111a2e;--bg-3:#162244;--border:#1a2847;--border-hi:#253a68;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--accent-g:rgba(59,130,246,.12);--warm:#f59e42;--warm-g:rgba(245,158,66,.10);--green:#22c55e;--green-g:rgba(34,197,94,.10);--violet:#a78bfa;--glass:rgba(10,16,32,.75);--shadow:rgba(0,0,0,.3)}
+[data-theme="light"]{--bg-0:#f5f7fa;--bg-1:#edf0f5;--bg-2:#ffffff;--bg-3:#f0f3f8;--border:#d8dfe9;--border-hi:#c2cbda;--tx-1:#1a2035;--tx-2:#546178;--tx-3:#8594ad;--accent:#2563eb;--accent-g:rgba(37,99,235,.08);--warm:#d97706;--warm-g:rgba(217,119,6,.08);--green:#16a34a;--green-g:rgba(22,163,74,.08);--violet:#7c3aed;--glass:rgba(245,247,250,.8);--shadow:rgba(0,0,0,.06)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
+.blob{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}.b1{width:700px;height:700px;top:-300px;right:-200px;background:var(--accent);opacity:.04}.b2{width:500px;height:500px;bottom:-200px;left:-150px;background:var(--warm);opacity:.03}
+nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
+.nav-i{max-width:1000px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em;text-decoration:none}.nav-brand b{color:var(--accent)}
+.nav-r{display:flex;align-items:center;gap:18px}
+.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease)}
+.nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
+.ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
+.ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
+.ctrl-btn.lang-btn{font-size:12px;font-weight:700;font-family:var(--mono)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+header.hd{padding:130px 0 10px;text-align:center}
+header.hd h1{font-family:var(--serif);font-size:clamp(38px,6vw,56px);font-weight:400;letter-spacing:-.03em;margin-bottom:10px}
+header.hd p{color:var(--tx-2);font-size:16px;font-weight:300;max-width:580px;margin:0 auto}
+.topics{padding:24px 0 40px}
+.topic{border:1px solid var(--border);border-radius:var(--radius);margin:14px 0;overflow:hidden;background:var(--bg-2)}
+.topic-h{width:100%;display:flex;align-items:center;gap:12px;padding:18px 20px;background:none;border:0;cursor:pointer;text-align:left;color:inherit;font-family:var(--sans)}
+.topic-tt{flex:1;display:flex;flex-direction:column;gap:2px}
+.topic-title{font-size:17px;font-weight:600;color:var(--tx-1)}
+.topic-sub{font-size:12.5px;color:var(--tx-3)}
+.topic-badge{font-size:12px;font-weight:600;color:var(--green)}
+.topic-caret{color:var(--tx-3);transition:transform .3s var(--ease)}
+.topic.open .topic-caret{transform:rotate(180deg)}
+.topic-body{display:none;padding:0 20px 20px}
+.topic.open .topic-body{display:block}
+.topic-link{display:inline-block;margin:4px 0 8px;font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none}
+.blk{font-family:var(--serif);font-size:19px;font-weight:400;margin:16px 0 10px;color:var(--tx-1)}
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.fc{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-1);padding:16px;min-height:130px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;color:inherit;font-family:var(--sans);transition:border-color .25s var(--ease)}
+.fc:hover{border-color:var(--border-hi)}
+.fc-face{color:var(--tx-1);font-size:14px;line-height:1.5;flex:1}
+.fc-hint{font-size:11px;color:var(--tx-3);margin-top:auto}
+.lv{align-self:flex-start;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.04em}
+.lv-recall{background:var(--green-g);color:var(--green)}
+.lv-apply{background:var(--warm-g);color:var(--warm)}
+.lv-analyze{background:rgba(167,139,250,.14);color:var(--violet)}
+.quiz{margin-top:6px}
+.q-card{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-1);padding:14px;margin-bottom:10px}
+.q-prompt{font-size:14px;font-weight:500;color:var(--tx-1);margin-bottom:10px}
+.q-num{color:var(--accent);font-weight:700}
+.q-opts{display:flex;flex-direction:column;gap:6px}
+.q-opt{text-align:left;font-size:13.5px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-1);cursor:pointer;font-family:var(--sans);transition:all .2s var(--ease)}
+.q-opt:hover:not(:disabled){border-color:var(--accent)}
+.q-opt.sel{border-color:var(--accent);background:var(--accent-g)}
+.q-opt.ok{border-color:var(--green);background:var(--green-g)}
+.q-opt.ko{border-color:#ef4444;background:rgba(239,68,68,.10)}
+.q-opt:disabled{cursor:default}
+.q-expl{font-size:12px;color:var(--tx-3);margin-top:8px;font-style:italic}
+.q-submit{margin-top:6px;padding:9px 18px;border-radius:100px;border:0;background:var(--accent);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sans)}
+.q-submit:disabled{background:var(--bg-3);color:var(--tx-3);cursor:not-allowed}
+.q-result{margin:12px 0;padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-3)}
+.q-score{font-size:16px;font-weight:600;color:var(--tx-1)}
+.q-levels{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.q-gap{font-size:13px;color:var(--tx-2);margin-top:6px}
+.q-retry{margin-top:10px;padding:7px 15px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-1);font-weight:600;font-size:12.5px;cursor:pointer;font-family:var(--sans)}
+footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-top:1px solid var(--border);margin-top:20px}
+@media(max-width:640px){.wrap{padding:0 18px}.fc-grid{grid-template-columns:1fr}.nav-r a:not(.on){display:none}header.hd{padding:110px 0 6px}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div>
+<nav><div class="nav-i">
+  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
+  <div class="nav-r">
+    <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
+    <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
+    <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
+    <a href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
+    <a class="on" href="/academy/" data-fr="Academy" data-en="Academy">Academy</a>
+    <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Langue">FR</button>
+    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
+  </div>
+</div></nav>
+
+<div class="wrap">
+<header class="hd">
+  <h1>Academy</h1>
+  <p data-fr="Réviser puis s'auto-évaluer : flashcards et quiz sur mes sujets de prédilection. Choisissez un thème, révisez, testez-vous."
+     data-en="Revise, then self-assess: flashcards and quizzes on my core topics. Pick a theme, review, test yourself.">Réviser puis s'auto-évaluer : flashcards et quiz sur mes sujets de prédilection. Choisissez un thème, révisez, testez-vous.</p>
+</header>
+
+<div class="topics" id="topics">
+<section class="topic" data-topic="bs-pricing"><button type="button" class="topic-h" aria-expanded="false"><span class="topic-tt"><span class="topic-title" data-fr="Pricing Black-Scholes" data-en="Black-Scholes Pricing">Pricing Black-Scholes</span><span class="topic-sub" data-fr="Prix et sensibilités d&#x27;une option européenne" data-en="Price and sensitivities of a European option">Prix et sensibilités d&#x27;une option européenne</span></span><span class="topic-badge" data-topic-badge="bs-pricing"></span><span class="topic-caret">▾</span></button><div class="topic-body"><a class="topic-link" href="/demos/#bs" data-fr="Voir la démo" data-en="See the demo">Voir la démo</a><h3 class="blk" data-fr="Flashcards" data-en="Flashcards">Flashcards</h3><div class="fc-grid"><button type="button" class="fc" data-level="Recall" data-front-fr="Que calcule la formule de Black-Scholes ?" data-front-en="What does the Black-Scholes formula compute?" data-back-fr="Le prix théorique d&#x27;une option européenne à partir de S, K, T, r et σ (version de base sans dividende)." data-back-en="The theoretical price of a European option from S, K, T, r and σ (basic version, no dividend)."><span class="lv lv-recall">Recall</span><span class="fc-face" data-fr="Que calcule la formule de Black-Scholes ?" data-en="What does the Black-Scholes formula compute?">Que calcule la formule de Black-Scholes ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Apply" data-front-fr="Le delta d&#x27;un call vaut N(d1). Que représente-t-il ?" data-front-en="A call&#x27;s delta equals N(d1). What does it represent?" data-back-fr="La sensibilité du prix de l&#x27;option au sous-jacent, et la quantité de sous-jacent à détenir pour couvrir l&#x27;option." data-back-en="The option price&#x27;s sensitivity to the underlying — and how much underlying to hold to hedge the option."><span class="lv lv-apply">Apply</span><span class="fc-face" data-fr="Le delta d&#x27;un call vaut N(d1). Que représente-t-il ?" data-en="A call&#x27;s delta equals N(d1). What does it represent?">Le delta d&#x27;un call vaut N(d1). Que représente-t-il ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Analyze" data-front-fr="Pourquoi la volatilité implicite varie-t-elle selon le strike (le smile) ?" data-front-en="Why does implied volatility vary across strikes (the smile)?" data-back-fr="Black-Scholes suppose σ constante ; le marché price des queues de distribution plus épaisses, d&#x27;où une σ implicite plus élevée hors de la monnaie." data-back-en="Black-Scholes assumes constant σ; the market prices fatter tails, so implied σ rises away from the money."><span class="lv lv-analyze">Analyze</span><span class="fc-face" data-fr="Pourquoi la volatilité implicite varie-t-elle selon le strike (le smile) ?" data-en="Why does implied volatility vary across strikes (the smile)?">Pourquoi la volatilité implicite varie-t-elle selon le strike (le smile) ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button></div><h3 class="blk" data-fr="Quiz" data-en="Quiz">Quiz</h3><div class="quiz" data-topic="bs-pricing"><div class="q-card" data-qi="0" data-correct="1" data-level="Recall" data-concept-fr="pricing risque-neutre" data-concept-en="risk-neutral pricing"><p class="q-prompt"><span class="q-num">1.</span> <span data-fr="Dans le modèle de Black-Scholes de base, quel paramètre n&#x27;entre PAS dans le prix ?" data-en="In the basic Black-Scholes model, which parameter does NOT enter the price?">Dans le modèle de Black-Scholes de base, quel paramètre n&#x27;entre PAS dans le prix ?</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="La volatilité σ" data-en="Volatility σ">La volatilité σ</button><button type="button" class="q-opt" data-oi="1" data-fr="Le rendement espéré du sous-jacent μ" data-en="The underlying&#x27;s expected return μ">Le rendement espéré du sous-jacent μ</button><button type="button" class="q-opt" data-oi="2" data-fr="Le taux sans risque r" data-en="The risk-free rate r">Le taux sans risque r</button><button type="button" class="q-opt" data-oi="3" data-fr="Le strike K" data-en="The strike K">Le strike K</button></div><p class="q-expl" hidden data-fr="Le pricing est risque-neutre : le drift réel μ disparaît, remplacé par r." data-en="Pricing is risk-neutral: the real drift μ drops out, replaced by r.">Le pricing est risque-neutre : le drift réel μ disparaît, remplacé par r.</p></div>
+<div class="q-card" data-qi="1" data-correct="0" data-level="Apply" data-concept-fr="delta-hedging" data-concept-en="delta-hedging"><p class="q-prompt"><span class="q-num">2.</span> <span data-fr="Un call at-the-money a un delta d&#x27;environ 0,5. Pour delta-hedger une position vendeuse de 100 calls, vous devez…" data-en="An at-the-money call has a delta near 0.5. To delta-hedge a short position of 100 calls, you must…">Un call at-the-money a un delta d&#x27;environ 0,5. Pour delta-hedger une position vendeuse de 100 calls, vous devez…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="acheter ~50 unités du sous-jacent" data-en="buy ~50 units of the underlying">acheter ~50 unités du sous-jacent</button><button type="button" class="q-opt" data-oi="1" data-fr="vendre ~50 unités" data-en="sell ~50 units">vendre ~50 unités</button><button type="button" class="q-opt" data-oi="2" data-fr="ne rien faire" data-en="do nothing">ne rien faire</button><button type="button" class="q-opt" data-oi="3" data-fr="acheter 100 unités" data-en="buy 100 units">acheter 100 unités</button></div><p class="q-expl" hidden data-fr="Vendre 100 calls donne un delta d&#x27;environ −50 ; on achète ~50 sous-jacents pour le neutraliser." data-en="Shorting 100 calls gives a delta near −50; buy ~50 underlyings to neutralize it.">Vendre 100 calls donne un delta d&#x27;environ −50 ; on achète ~50 sous-jacents pour le neutraliser.</p></div>
+<div class="q-card" data-qi="2" data-correct="1" data-level="Analyze" data-concept-fr="parité call-put" data-concept-en="put-call parity"><p class="q-prompt"><span class="q-num">3.</span> <span data-fr="La parité call-put relie C et P. Une violation sur le marché crée…" data-en="Put-call parity links C and P. A violation in the market creates…">La parité call-put relie C et P. Une violation sur le marché crée…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="rien d&#x27;exploitable" data-en="nothing exploitable">rien d&#x27;exploitable</button><button type="button" class="q-opt" data-oi="1" data-fr="une opportunité d&#x27;arbitrage" data-en="an arbitrage opportunity">une opportunité d&#x27;arbitrage</button><button type="button" class="q-opt" data-oi="2" data-fr="une hausse de la volatilité" data-en="a rise in volatility">une hausse de la volatilité</button><button type="button" class="q-opt" data-oi="3" data-fr="un dividende" data-en="a dividend">un dividende</button></div><p class="q-expl" hidden data-fr="Une violation de C − P = S − K·e^(−rT) permet un arbitrage sans risque." data-en="Violating C − P = S − K·e^(−rT) enables a risk-free arbitrage.">Une violation de C − P = S − K·e^(−rT) permet un arbitrage sans risque.</p></div><button type="button" class="q-submit" disabled data-fr="Valider le quiz" data-en="Submit quiz">Valider le quiz</button><div class="q-result" hidden></div></div></div></section>
+<section class="topic" data-topic="monte-carlo"><button type="button" class="topic-h" aria-expanded="false"><span class="topic-tt"><span class="topic-title" data-fr="Simulation Monte-Carlo (GBM)" data-en="Monte-Carlo Simulation (GBM)">Simulation Monte-Carlo (GBM)</span><span class="topic-sub" data-fr="Pricing par simulation de trajectoires" data-en="Pricing by simulating price paths">Pricing par simulation de trajectoires</span></span><span class="topic-badge" data-topic-badge="monte-carlo"></span><span class="topic-caret">▾</span></button><div class="topic-body"><a class="topic-link" href="/demos/#mc" data-fr="Voir la démo" data-en="See the demo">Voir la démo</a><h3 class="blk" data-fr="Flashcards" data-en="Flashcards">Flashcards</h3><div class="fc-grid"><button type="button" class="fc" data-level="Recall" data-front-fr="Qu&#x27;est-ce qu&#x27;un mouvement brownien géométrique (GBM) ?" data-front-en="What is a geometric Brownian motion (GBM)?" data-back-fr="Un processus dS = μS dt + σS dW où le prix reste positif et le log-rendement suit une marche aléatoire avec drift." data-back-en="A process dS = μS dt + σS dW where the price stays positive and the log-return is a random walk with drift."><span class="lv lv-recall">Recall</span><span class="fc-face" data-fr="Qu&#x27;est-ce qu&#x27;un mouvement brownien géométrique (GBM) ?" data-en="What is a geometric Brownian motion (GBM)?">Qu&#x27;est-ce qu&#x27;un mouvement brownien géométrique (GBM) ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Apply" data-front-fr="Comment price-t-on une option par Monte-Carlo ?" data-front-en="How do you price an option by Monte-Carlo?" data-back-fr="On simule N trajectoires, on calcule le payoff à maturité pour chacune, on moyenne, puis on actualise au taux r." data-back-en="Simulate N paths, compute each path&#x27;s payoff at maturity, average them, then discount at rate r."><span class="lv lv-apply">Apply</span><span class="fc-face" data-fr="Comment price-t-on une option par Monte-Carlo ?" data-en="How do you price an option by Monte-Carlo?">Comment price-t-on une option par Monte-Carlo ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Analyze" data-front-fr="Comment l&#x27;erreur de Monte-Carlo décroît-elle avec N ?" data-front-en="How does Monte-Carlo error shrink with N?" data-back-fr="En 1/√N : diviser l&#x27;erreur par 2 demande 4× plus de simulations." data-back-en="As 1/√N: halving the error needs 4× more simulations."><span class="lv lv-analyze">Analyze</span><span class="fc-face" data-fr="Comment l&#x27;erreur de Monte-Carlo décroît-elle avec N ?" data-en="How does Monte-Carlo error shrink with N?">Comment l&#x27;erreur de Monte-Carlo décroît-elle avec N ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button></div><h3 class="blk" data-fr="Quiz" data-en="Quiz">Quiz</h3><div class="quiz" data-topic="monte-carlo"><div class="q-card" data-qi="0" data-correct="1" data-level="Recall" data-concept-fr="log-normalité" data-concept-en="log-normality"><p class="q-prompt"><span class="q-num">1.</span> <span data-fr="Dans un GBM, quelle quantité suit une loi normale ?" data-en="In a GBM, which quantity is normally distributed?">Dans un GBM, quelle quantité suit une loi normale ?</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="Le prix S" data-en="The price S">Le prix S</button><button type="button" class="q-opt" data-oi="1" data-fr="Le log-rendement ln(S_t/S_0)" data-en="The log-return ln(S_t/S_0)">Le log-rendement ln(S_t/S_0)</button><button type="button" class="q-opt" data-oi="2" data-fr="Le payoff" data-en="The payoff">Le payoff</button><button type="button" class="q-opt" data-oi="3" data-fr="Le delta" data-en="The delta">Le delta</button></div><p class="q-expl" hidden data-fr="Le GBM rend le prix log-normal : c&#x27;est ln(S) qui est gaussien." data-en="GBM makes the price log-normal: it is ln(S) that is Gaussian.">Le GBM rend le prix log-normal : c&#x27;est ln(S) qui est gaussien.</p></div>
+<div class="q-card" data-qi="1" data-correct="1" data-level="Apply" data-concept-fr="convergence en 1/√N" data-concept-en="1/√N convergence"><p class="q-prompt"><span class="q-num">2.</span> <span data-fr="Vous doublez le nombre de trajectoires. L&#x27;erreur d&#x27;estimation est multipliée par environ…" data-en="You double the number of paths. The estimation error is multiplied by about…">Vous doublez le nombre de trajectoires. L&#x27;erreur d&#x27;estimation est multipliée par environ…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="1/2" data-en="1/2">1/2</button><button type="button" class="q-opt" data-oi="1" data-fr="1/√2 ≈ 0,71" data-en="1/√2 ≈ 0.71">1/√2 ≈ 0,71</button><button type="button" class="q-opt" data-oi="2" data-fr="1/4" data-en="1/4">1/4</button><button type="button" class="q-opt" data-oi="3" data-fr="2" data-en="2">2</button></div><p class="q-expl" hidden data-fr="L&#x27;erreur est proportionnelle à 1/√N ; doubler N la multiplie par 1/√2." data-en="Error scales as 1/√N; doubling N multiplies it by 1/√2.">L&#x27;erreur est proportionnelle à 1/√N ; doubler N la multiplie par 1/√2.</p></div>
+<div class="q-card" data-qi="2" data-correct="1" data-level="Analyze" data-concept-fr="fermé vs simulation" data-concept-en="closed-form vs simulation"><p class="q-prompt"><span class="q-num">3.</span> <span data-fr="Pour une option européenne vanille, pourquoi préférer Black-Scholes à Monte-Carlo quand c&#x27;est possible ?" data-en="For a vanilla European option, why prefer Black-Scholes to Monte-Carlo when possible?">Pour une option européenne vanille, pourquoi préférer Black-Scholes à Monte-Carlo quand c&#x27;est possible ?</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="Monte-Carlo est faux" data-en="Monte-Carlo is wrong">Monte-Carlo est faux</button><button type="button" class="q-opt" data-oi="1" data-fr="La formule fermée est exacte et instantanée, sans bruit de simulation" data-en="The closed form is exact and instant, with no simulation noise">La formule fermée est exacte et instantanée, sans bruit de simulation</button><button type="button" class="q-opt" data-oi="2" data-fr="Black-Scholes gère mieux les exotiques" data-en="Black-Scholes handles exotics better">Black-Scholes gère mieux les exotiques</button><button type="button" class="q-opt" data-oi="3" data-fr="Monte-Carlo ignore la volatilité" data-en="Monte-Carlo ignores volatility">Monte-Carlo ignore la volatilité</button></div><p class="q-expl" hidden data-fr="La solution fermée évite le bruit et le coût ; Monte-Carlo brille surtout sur les payoffs sans formule (exotiques, path-dependent)." data-en="The closed form avoids noise and cost; Monte-Carlo shines mainly on payoffs with no formula (exotic, path-dependent).">La solution fermée évite le bruit et le coût ; Monte-Carlo brille surtout sur les payoffs sans formule (exotiques, path-dependent).</p></div><button type="button" class="q-submit" disabled data-fr="Valider le quiz" data-en="Submit quiz">Valider le quiz</button><div class="q-result" hidden></div></div></div></section>
+<section class="topic" data-topic="hedging"><button type="button" class="topic-h" aria-expanded="false"><span class="topic-tt"><span class="topic-title" data-fr="Couverture dynamique" data-en="Dynamic Hedging">Couverture dynamique</span><span class="topic-sub" data-fr="Delta-hedging et rebalancement (contexte PFE × EY)" data-en="Delta-hedging and rebalancing (capstone with EY)">Delta-hedging et rebalancement (contexte PFE × EY)</span></span><span class="topic-badge" data-topic-badge="hedging"></span><span class="topic-caret">▾</span></button><div class="topic-body"><a class="topic-link" href="/#blog" data-fr="Lire l&#x27;article" data-en="Read the article">Lire l&#x27;article</a><h3 class="blk" data-fr="Flashcards" data-en="Flashcards">Flashcards</h3><div class="fc-grid"><button type="button" class="fc" data-level="Recall" data-front-fr="Qu&#x27;est-ce que le delta-hedging ?" data-front-en="What is delta-hedging?" data-back-fr="Neutraliser l&#x27;exposition d&#x27;une option au sous-jacent en détenant −delta unités du sous-jacent, rebalancé dans le temps." data-back-en="Neutralizing an option&#x27;s exposure to the underlying by holding −delta units of it, rebalanced over time."><span class="lv lv-recall">Recall</span><span class="fc-face" data-fr="Qu&#x27;est-ce que le delta-hedging ?" data-en="What is delta-hedging?">Qu&#x27;est-ce que le delta-hedging ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Apply" data-front-fr="Pourquoi doit-on rebalancer une couverture delta ?" data-front-en="Why must a delta hedge be rebalanced?" data-back-fr="Le delta change quand le sous-jacent et le temps bougent (gamma) : une couverture statique dérive." data-back-en="Delta changes as the underlying and time move (gamma): a static hedge drifts."><span class="lv lv-apply">Apply</span><span class="fc-face" data-fr="Pourquoi doit-on rebalancer une couverture delta ?" data-en="Why must a delta hedge be rebalanced?">Pourquoi doit-on rebalancer une couverture delta ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Analyze" data-front-fr="Quel est le compromis central de la couverture dynamique en pratique ?" data-front-en="What is the core trade-off of dynamic hedging in practice?" data-back-fr="Rebalancer souvent réduit le risque de couverture mais augmente les coûts de transaction ; il faut arbitrer les deux." data-back-en="Rebalancing often lowers hedging risk but raises transaction costs; the two must be traded off."><span class="lv lv-analyze">Analyze</span><span class="fc-face" data-fr="Quel est le compromis central de la couverture dynamique en pratique ?" data-en="What is the core trade-off of dynamic hedging in practice?">Quel est le compromis central de la couverture dynamique en pratique ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button></div><h3 class="blk" data-fr="Quiz" data-en="Quiz">Quiz</h3><div class="quiz" data-topic="hedging"><div class="q-card" data-qi="0" data-correct="1" data-level="Recall" data-concept-fr="gamma" data-concept-en="gamma"><p class="q-prompt"><span class="q-num">1.</span> <span data-fr="Le gamma d&#x27;une option mesure…" data-en="An option&#x27;s gamma measures…">Le gamma d&#x27;une option mesure…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="le prix" data-en="the price">le prix</button><button type="button" class="q-opt" data-oi="1" data-fr="la sensibilité du delta au sous-jacent" data-en="the delta&#x27;s sensitivity to the underlying">la sensibilité du delta au sous-jacent</button><button type="button" class="q-opt" data-oi="2" data-fr="la valeur temps" data-en="the time value">la valeur temps</button><button type="button" class="q-opt" data-oi="3" data-fr="le taux" data-en="the rate">le taux</button></div><p class="q-expl" hidden data-fr="Gamma = dérivée du delta ; il dicte la fréquence de rebalancement." data-en="Gamma = derivative of delta; it drives how often you must rebalance.">Gamma = dérivée du delta ; il dicte la fréquence de rebalancement.</p></div>
+<div class="q-card" data-qi="1" data-correct="1" data-level="Apply" data-concept-fr="long gamma" data-concept-en="long gamma"><p class="q-prompt"><span class="q-num">2.</span> <span data-fr="Un portefeuille long gamma, sur de grands mouvements du sous-jacent, tend à…" data-en="A long-gamma portfolio, on large underlying moves, tends to…">Un portefeuille long gamma, sur de grands mouvements du sous-jacent, tend à…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="perdre à chaque mouvement" data-en="lose on every move">perdre à chaque mouvement</button><button type="button" class="q-opt" data-oi="1" data-fr="gagner sur les grands mouvements, mais payer du theta" data-en="gain on large moves, but pay theta">gagner sur les grands mouvements, mais payer du theta</button><button type="button" class="q-opt" data-oi="2" data-fr="rester insensible" data-en="stay insensitive">rester insensible</button><button type="button" class="q-opt" data-oi="3" data-fr="doubler le delta" data-en="double the delta">doubler le delta</button></div><p class="q-expl" hidden data-fr="Long gamma profite de la volatilité réalisée mais coûte de la valeur temps (theta) chaque jour." data-en="Long gamma profits from realized volatility but costs time value (theta) each day.">Long gamma profite de la volatilité réalisée mais coûte de la valeur temps (theta) chaque jour.</p></div>
+<div class="q-card" data-qi="2" data-correct="1" data-level="Analyze" data-concept-fr="coûts de friction" data-concept-en="friction costs"><p class="q-prompt"><span class="q-num">3.</span> <span data-fr="Avec des coûts de transaction, rebalancer en continu est…" data-en="With transaction costs, rebalancing continuously is…">Avec des coûts de transaction, rebalancer en continu est…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="optimal" data-en="optimal">optimal</button><button type="button" class="q-opt" data-oi="1" data-fr="sous-optimal — les coûts explosent, on rebalance par bandes/seuils" data-en="sub-optimal — costs blow up, so you rebalance within bands/thresholds">sous-optimal — les coûts explosent, on rebalance par bandes/seuils</button><button type="button" class="q-opt" data-oi="2" data-fr="impossible" data-en="impossible">impossible</button><button type="button" class="q-opt" data-oi="3" data-fr="sans effet" data-en="irrelevant">sans effet</button></div><p class="q-expl" hidden data-fr="Le rebalancement continu génère des coûts théoriquement infinis ; en pratique on tolère une bande de delta." data-en="Continuous rebalancing generates theoretically infinite costs; in practice you tolerate a delta band.">Le rebalancement continu génère des coûts théoriquement infinis ; en pratique on tolère une bande de delta.</p></div><button type="button" class="q-submit" disabled data-fr="Valider le quiz" data-en="Submit quiz">Valider le quiz</button><div class="q-result" hidden></div></div></div></section>
+<section class="topic" data-topic="defi-onchain"><button type="button" class="topic-h" aria-expanded="false"><span class="topic-tt"><span class="topic-title" data-fr="Analyse on-chain DeFi" data-en="DeFi On-Chain Analytics">Analyse on-chain DeFi</span><span class="topic-sub" data-fr="Lire les signaux d&#x27;une blockchain (contexte ALTEN)" data-en="Reading a blockchain&#x27;s signals (ALTEN context)">Lire les signaux d&#x27;une blockchain (contexte ALTEN)</span></span><span class="topic-badge" data-topic-badge="defi-onchain"></span><span class="topic-caret">▾</span></button><div class="topic-body"><a class="topic-link" href="/#blog" data-fr="Lire l&#x27;article" data-en="Read the article">Lire l&#x27;article</a><h3 class="blk" data-fr="Flashcards" data-en="Flashcards">Flashcards</h3><div class="fc-grid"><button type="button" class="fc" data-level="Recall" data-front-fr="Que mesure la TVL (Total Value Locked) d&#x27;un protocole DeFi ?" data-front-en="What does a DeFi protocol&#x27;s TVL (Total Value Locked) measure?" data-back-fr="La valeur totale des actifs déposés dans les contrats du protocole — un proxy de son adoption et de sa liquidité." data-back-en="The total value of assets deposited in the protocol&#x27;s contracts — a proxy for adoption and liquidity."><span class="lv lv-recall">Recall</span><span class="fc-face" data-fr="Que mesure la TVL (Total Value Locked) d&#x27;un protocole DeFi ?" data-en="What does a DeFi protocol&#x27;s TVL (Total Value Locked) measure?">Que mesure la TVL (Total Value Locked) d&#x27;un protocole DeFi ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Apply" data-front-fr="Pourquoi un APY très élevé sur un protocole émergent doit-il alerter ?" data-front-en="Why should a very high APY on an emerging protocol raise a flag?" data-back-fr="Des rendements insoutenables signalent souvent une émission de tokens inflationniste ou un risque élevé (exploit, rug)." data-back-en="Unsustainable yields often signal inflationary token emissions or high risk (exploit, rug)."><span class="lv lv-apply">Apply</span><span class="fc-face" data-fr="Pourquoi un APY très élevé sur un protocole émergent doit-il alerter ?" data-en="Why should a very high APY on an emerging protocol raise a flag?">Pourquoi un APY très élevé sur un protocole émergent doit-il alerter ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button>
+<button type="button" class="fc" data-level="Analyze" data-front-fr="Qu&#x27;est-ce qu&#x27;un « signal faible » on-chain ?" data-front-en="What is an on-chain &#x27;weak signal&#x27;?" data-back-fr="Un motif discret dans les données de la blockchain (flux, concentration, nouveaux contrats) précédant un mouvement, noyé dans le bruit." data-back-en="A faint pattern in blockchain data (flows, concentration, new contracts) preceding a move, buried in noise."><span class="lv lv-analyze">Analyze</span><span class="fc-face" data-fr="Qu&#x27;est-ce qu&#x27;un « signal faible » on-chain ?" data-en="What is an on-chain &#x27;weak signal&#x27;?">Qu&#x27;est-ce qu&#x27;un « signal faible » on-chain ?</span><span class="fc-hint" data-fr="Cliquer pour révéler" data-en="Click to reveal">Cliquer pour révéler</span></button></div><h3 class="blk" data-fr="Quiz" data-en="Quiz">Quiz</h3><div class="quiz" data-topic="defi-onchain"><div class="q-card" data-qi="0" data-correct="1" data-level="Recall" data-concept-fr="données on-chain" data-concept-en="on-chain data"><p class="q-prompt"><span class="q-num">1.</span> <span data-fr="La donnée on-chain provient…" data-en="On-chain data comes…">La donnée on-chain provient…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="d&#x27;un sondage" data-en="from a survey">d&#x27;un sondage</button><button type="button" class="q-opt" data-oi="1" data-fr="directement des transactions publiques de la blockchain" data-en="directly from the blockchain&#x27;s public transactions">directement des transactions publiques de la blockchain</button><button type="button" class="q-opt" data-oi="2" data-fr="de l&#x27;API du protocole seulement" data-en="from the protocol&#x27;s API only">de l&#x27;API du protocole seulement</button><button type="button" class="q-opt" data-oi="3" data-fr="d&#x27;estimations" data-en="from estimates">d&#x27;estimations</button></div><p class="q-expl" hidden data-fr="Tout est public et vérifiable dans les blocs — pas besoin de faire confiance à un tiers." data-en="Everything is public and verifiable in the blocks — no need to trust a third party.">Tout est public et vérifiable dans les blocs — pas besoin de faire confiance à un tiers.</p></div>
+<div class="q-card" data-qi="1" data-correct="1" data-level="Apply" data-concept-fr="TVL vs prix du token" data-concept-en="TVL vs token price"><p class="q-prompt"><span class="q-num">2.</span> <span data-fr="La TVL d&#x27;un protocole grimpe mais son token s&#x27;effondre. Cela peut indiquer…" data-en="A protocol&#x27;s TVL climbs but its token collapses. This can indicate…">La TVL d&#x27;un protocole grimpe mais son token s&#x27;effondre. Cela peut indiquer…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="rien" data-en="nothing">rien</button><button type="button" class="q-opt" data-oi="1" data-fr="des dépôts attirés par des récompenses en tokens qui diluent les détenteurs" data-en="deposits lured by token rewards that dilute holders">des dépôts attirés par des récompenses en tokens qui diluent les détenteurs</button><button type="button" class="q-opt" data-oi="2" data-fr="une baisse du taux r" data-en="a fall in rate r">une baisse du taux r</button><button type="button" class="q-opt" data-oi="3" data-fr="un hard fork" data-en="a hard fork">un hard fork</button></div><p class="q-expl" hidden data-fr="Une TVL dopée par des émissions inflationnistes n&#x27;implique pas de valeur pour le token." data-en="A TVL inflated by inflationary emissions does not imply value for the token.">Une TVL dopée par des émissions inflationnistes n&#x27;implique pas de valeur pour le token.</p></div>
+<div class="q-card" data-qi="2" data-correct="1" data-level="Analyze" data-concept-fr="dépendance non linéaire" data-concept-en="nonlinear dependence"><p class="q-prompt"><span class="q-num">3.</span> <span data-fr="Pour détecter des signaux faibles, on préfère l&#x27;information mutuelle à la corrélation linéaire car elle…" data-en="To detect weak signals, mutual information is preferred to linear correlation because it…">Pour détecter des signaux faibles, on préfère l&#x27;information mutuelle à la corrélation linéaire car elle…</span></p><div class="q-opts"><button type="button" class="q-opt" data-oi="0" data-fr="est plus rapide" data-en="is faster">est plus rapide</button><button type="button" class="q-opt" data-oi="1" data-fr="capture les dépendances non linéaires" data-en="captures nonlinear dependence">capture les dépendances non linéaires</button><button type="button" class="q-opt" data-oi="2" data-fr="ignore le bruit" data-en="ignores noise">ignore le bruit</button><button type="button" class="q-opt" data-oi="3" data-fr="n&#x27;a pas besoin de données" data-en="needs no data">n&#x27;a pas besoin de données</button></div><p class="q-expl" hidden data-fr="Les relations on-chain sont souvent non linéaires ; la corrélation de Pearson ne voit que le linéaire." data-en="On-chain relationships are often nonlinear; Pearson correlation only sees the linear part.">Les relations on-chain sont souvent non linéaires ; la corrélation de Pearson ne voit que le linéaire.</p></div><button type="button" class="q-submit" disabled data-fr="Valider le quiz" data-en="Submit quiz">Valider le quiz</button><div class="q-result" hidden></div></div></div></section>
+</div>
+
+<footer>Robin Denis ·  · <a href="/" style="color:var(--accent);text-decoration:none" data-fr="Retour à l'accueil" data-en="Back home">Retour à l'accueil</a></footer>
+</div>
+
+<script>
+  const LEVELS = ["Recall", "Apply", "Analyze"];
+  const root = document.documentElement;
+  const PROGRESS_KEY = "academy-progress";
+
+  function curLang(){ return root.getAttribute('data-lang') || 'fr'; }
+  function progress(){ try { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {}; } catch(e){ return {}; } }
+
+  // ── moteur pur (miroir de build_academy.score_quiz) ──
+  function scoreQuiz(cards, answers){
+    const by = { Recall:{correct:0,total:0}, Apply:{correct:0,total:0}, Analyze:{correct:0,total:0} };
+    const missed = []; let correct = 0;
+    cards.forEach(function(c, i){
+      const lv = c.dataset.level; by[lv].total += 1;
+      const a = answers[i];
+      if (a !== null && a === parseInt(c.dataset.correct)) { correct += 1; by[lv].correct += 1; }
+      else missed.push(i);
+    });
+    return { total: cards.length, correct: correct, byLevel: by, missedIndices: missed };
+  }
+
+  // ── accordéon ──
+  document.querySelectorAll('.topic-h').forEach(function(h){
+    h.addEventListener('click', function(){
+      const sec = h.closest('.topic');
+      const wasOpen = sec.classList.contains('open');
+      document.querySelectorAll('.topic').forEach(function(s){ s.classList.remove('open'); s.querySelector('.topic-h').setAttribute('aria-expanded','false'); });
+      if (!wasOpen){ sec.classList.add('open'); h.setAttribute('aria-expanded','true'); }
+    });
+  });
+
+  // ── flashcards flip ──
+  document.querySelectorAll('.fc').forEach(function(fc){
+    fc.addEventListener('click', function(){
+      const flipped = fc.classList.toggle('flipped');
+      const lang = curLang();
+      fc.querySelector('.fc-face').textContent = flipped ? fc.dataset['back'+(lang==='fr'?'Fr':'En')] : fc.dataset['front'+(lang==='fr'?'Fr':'En')];
+      fc.querySelector('.fc-hint').textContent = flipped ? (lang==='fr'?'Réponse · cliquer pour retourner':'Answer · click to flip back')
+                                 : (lang==='fr'?'Cliquer pour révéler':'Click to reveal');
+    });
+  });
+
+  // ── quiz ──
+  document.querySelectorAll('.quiz').forEach(function(quiz){
+    const cards = Array.prototype.slice.call(quiz.querySelectorAll('.q-card'));
+    const answers = cards.map(function(){ return null; });
+    const submit = quiz.querySelector('.q-submit');
+    let graded = false;
+
+    cards.forEach(function(card, qi){
+      card.querySelectorAll('.q-opt').forEach(function(opt){
+        opt.addEventListener('click', function(){
+          if (graded) return;
+          card.querySelectorAll('.q-opt').forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          answers[qi] = parseInt(opt.dataset.oi);
+          submit.disabled = answers.indexOf(null) !== -1;
+        });
+      });
+    });
+
+    function grade(){
+      graded = true;
+      const r = scoreQuiz(cards, answers);
+      cards.forEach(function(card){
+        const cor = parseInt(card.dataset.correct);
+        card.querySelectorAll('.q-opt').forEach(function(o){
+          const oi = parseInt(o.dataset.oi);
+          o.disabled = true;
+          if (oi === cor) o.classList.add('ok');
+          else if (o.classList.contains('sel')) o.classList.add('ko');
+        });
+        const ex = card.querySelector('.q-expl'); if (ex) ex.hidden = false;
+      });
+      quiz.__result = r; quiz.__cards = cards;
+      renderResult(quiz, r, cards);
+      submit.style.display = 'none';
+      saveProgress(quiz.dataset.topic, r);
+    }
+    submit.addEventListener('click', grade);
+  });
+
+  function renderResult(quiz, r, cards){
+    const fr = curLang() === 'fr';
+    const box = quiz.querySelector('.q-result');
+    const pills = LEVELS.filter(function(lv){ return r.byLevel[lv].total > 0; }).map(function(lv){
+      const b = r.byLevel[lv];
+      return '<span class="lv lv-' + lv.toLowerCase() + '">' + lv + ' ' + b.correct + '/' + b.total + '</span>';
+    }).join('');
+    let gap;
+    if (r.missedIndices.length === 0){
+      gap = '<p class="q-gap">' + (fr ? 'Parfait — aucune lacune 🎉' : 'Perfect — no gaps 🎉') + '</p>';
+    } else {
+      const seen = [];
+      r.missedIndices.forEach(function(i){
+        const c = cards[i].dataset['concept' + (fr ? 'Fr' : 'En')];
+        if (seen.indexOf(c) === -1) seen.push(c);
+      });
+      gap = '<p class="q-gap">' + (fr ? 'Concepts à revoir : ' : 'Gaps to revisit: ') + '<b>' + seen.join(', ') + '</b>.</p>';
+    }
+    box.innerHTML = '<p class="q-score">' + (fr ? 'Score : ' : 'Score: ') + r.correct + ' / ' + r.total + '</p>' +
+      '<div class="q-levels">' + pills + '</div>' + gap +
+      '<button type="button" class="q-retry">' + (fr ? 'Recommencer' : 'Retry') + '</button>';
+    box.hidden = false;
+    box.querySelector('.q-retry').addEventListener('click', function(){ location.reload(); });
+  }
+
+  function saveProgress(topic, r){
+    const p = progress();
+    const prev = p[topic];
+    if (!prev || r.correct > prev.bestCorrect){
+      p[topic] = { bestCorrect: r.correct, total: r.total, at: new Date().toISOString() };
+      try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch(e){}
+    }
+    paintBadges();
+  }
+
+  function paintBadges(){
+    const p = progress(); const fr = curLang() === 'fr';
+    document.querySelectorAll('[data-topic-badge]').forEach(function(b){
+      const rec = p[b.dataset.topicBadge];
+      b.textContent = rec ? ((fr ? 'Meilleur : ' : 'Best: ') + rec.bestCorrect + '/' + rec.total + ' ✓') : '';
+    });
+  }
+
+  // ── langue / thème (partagés) ──
+  function applyBrowseLang(lang){
+    document.querySelectorAll('[data-fr][data-en]').forEach(function(el){
+      el.textContent = lang === 'fr' ? el.dataset.fr : el.dataset.en;
+    });
+    document.querySelectorAll('.fc').forEach(function(fc){
+      const flipped = fc.classList.contains('flipped');
+      fc.querySelector('.fc-face').textContent = flipped ? fc.dataset['back'+(lang==='fr'?'Fr':'En')] : fc.dataset['front'+(lang==='fr'?'Fr':'En')];
+      fc.querySelector('.fc-hint').textContent = flipped ? (lang==='fr'?'Réponse · cliquer pour retourner':'Answer · click to flip back') : (lang==='fr'?'Cliquer pour révéler':'Click to reveal');
+    });
+    root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
+    document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
+    document.querySelectorAll('.quiz').forEach(function(quiz){ if (quiz.__result) renderResult(quiz, quiz.__result, quiz.__cards); });
+    paintBadges();
+  }
+  function toggleLang(){ const n = curLang()==='fr'?'en':'fr'; localStorage.setItem('lang', n); applyBrowseLang(n); }
+  function tgTheme(){
+    const n = root.getAttribute('data-theme')==='light'?'dark':'light';
+    root.setAttribute('data-theme', n); localStorage.setItem('theme', n);
+    document.getElementById('themeBtn').textContent = n==='light'?'☀️':'🌙';
+  }
+
+  (function(){
+    const st = localStorage.getItem('theme');
+    if (st){ root.setAttribute('data-theme', st); document.getElementById('themeBtn').textContent = st==='light'?'☀️':'🌙'; }
+    const sl = localStorage.getItem('lang') || 'fr';
+    if (sl !== 'fr') applyBrowseLang(sl);
+    paintBadges();
+  })();
+</script>
+</body>
+</html>
