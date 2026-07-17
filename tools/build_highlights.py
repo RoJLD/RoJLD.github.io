@@ -229,6 +229,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
     <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
     <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
     <a class="on" href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
+    <a href="/academy/" data-fr="Academy" data-en="Academy">Academy</a>
     <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Langue">FR</button>
     <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
   </div>

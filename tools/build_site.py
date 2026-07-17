@@ -573,6 +573,12 @@ def build(profile_path=None, index_path=None, write=True):
         build_highlights.build_highlights(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération page highlights échouée : {exc}")
+    # Génère aussi la page Academy (quiz + flashcards) depuis academy.json.
+    try:
+        import build_academy
+        build_academy.build_academy(write=write)
+    except Exception as exc:
+        raise BuildError(f"génération page academy échouée : {exc}")
     return out
 
 

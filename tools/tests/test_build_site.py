@@ -364,3 +364,21 @@ def test_nav_highlights_link_everywhere():
     assert 'href="/highlights/"' in bd.build_demos(p, write=False)
     assert 'href="/highlights/"' in bb.render_browse_page(p)
     assert 'href="/highlights/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
+
+
+def test_build_also_generates_academy_page():
+    import build_academy as bac
+    out = bac.build_academy(bac.load_academy(), write=False)
+    assert '<title>Academy' in out and out.count('class="topic"') == 4
+    import build_site, inspect
+    assert "build_academy" in inspect.getsource(build_site.build)
+
+
+def test_nav_academy_link_everywhere():
+    import build_projects as bp, build_demos as bd, build_browse as bb, build_highlights as bh
+    p = bs.load_profile()
+    assert 'href="/academy/"' in bp.build_projects(p, write=False)
+    assert 'href="/academy/"' in bd.build_demos(p, write=False)
+    assert 'href="/academy/"' in bb.render_browse_page(p)
+    assert 'href="/academy/"' in bh.render_highlights_page(p)
+    assert 'href="/academy/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
