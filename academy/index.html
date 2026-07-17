@@ -197,6 +197,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
         });
         const ex = card.querySelector('.q-expl'); if (ex) ex.hidden = false;
       });
+      quiz.__result = r; quiz.__cards = cards;
       renderResult(quiz, r, cards);
       submit.style.display = 'none';
       saveProgress(quiz.dataset.topic, r);
@@ -259,6 +260,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
     });
     root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
     document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
+    document.querySelectorAll('.quiz').forEach(function(quiz){ if (quiz.__result) renderResult(quiz, quiz.__result, quiz.__cards); });
     paintBadges();
   }
   function toggleLang(){ const n = curLang()==='fr'?'en':'fr'; localStorage.setItem('lang', n); applyBrowseLang(n); }
