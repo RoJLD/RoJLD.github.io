@@ -114,3 +114,18 @@ def test_govern_save_rejects_invalid_no_side_effects(tmp_path):
     assert rep["ok"] is False and rep["stages"] == {}
     assert not hist.exists() and not graph.exists()
     assert json.loads(prof.read_text(encoding="utf-8"))["identity"]["first_name"] == "Robin"
+
+
+def test_save_profile_edit_still_works(tmp_path):
+    import atelier
+    prof = tmp_path / "profile.json"
+    ok = atelier.save_profile_edit(json.dumps(_profile()), prof, validate_fn=lambda p: [])
+    assert ok["ok"] is True and json.loads(prof.read_text(encoding="utf-8"))["identity"]["last_name"] == "Denis"
+    bad = atelier.save_profile_edit("{nope", prof, validate_fn=lambda p: [])
+    assert bad["ok"] is False and bad["errors"]
+
+
+def test_atelier_handle_save_has_govern_branch():
+    import atelier
+    import inspect
+    assert "govern_save" in inspect.getsource(atelier.Handler._handle_save)
