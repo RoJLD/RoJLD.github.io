@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark" data-lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Highlights — Robin Denis</title>
+<meta name="description" content="Le profil de Robin Denis, orientable par domaine — quant, data, dev, IA… Un lien taillé pour votre angle.">
+<meta property="og:title" content="Robin Denis — Highlights">
+<meta property="og:description" content="Profil orientable par domaine : quant, data, dev, IA, DeFi…">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px;--ease:cubic-bezier(.4,0,.2,1)}
+[data-theme="dark"]{--bg-0:#060a12;--bg-1:#0a1020;--bg-2:#111a2e;--bg-3:#162244;--border:#1a2847;--border-hi:#253a68;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--accent-g:rgba(59,130,246,.12);--warm:#f59e42;--warm-g:rgba(245,158,66,.10);--green:#22c55e;--green-g:rgba(34,197,94,.10);--violet:#a78bfa;--glass:rgba(10,16,32,.75);--shadow:rgba(0,0,0,.3)}
+[data-theme="light"]{--bg-0:#f5f7fa;--bg-1:#edf0f5;--bg-2:#ffffff;--bg-3:#f0f3f8;--border:#d8dfe9;--border-hi:#c2cbda;--tx-1:#1a2035;--tx-2:#546178;--tx-3:#8594ad;--accent:#2563eb;--accent-g:rgba(37,99,235,.08);--warm:#d97706;--warm-g:rgba(217,119,6,.08);--green:#16a34a;--green-g:rgba(22,163,74,.08);--violet:#7c3aed;--glass:rgba(245,247,250,.8);--shadow:rgba(0,0,0,.06)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
+.blob{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}.b1{width:700px;height:700px;top:-300px;right:-200px;background:var(--accent);opacity:.04}.b2{width:500px;height:500px;bottom:-200px;left:-150px;background:var(--warm);opacity:.03}
+nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
+.nav-i{max-width:1000px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em;text-decoration:none}.nav-brand b{color:var(--accent)}
+.nav-r{display:flex;align-items:center;gap:18px}
+.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease)}
+.nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
+.ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
+.ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
+.ctrl-btn.lang-btn{font-size:12px;font-weight:700;font-family:var(--mono)}
+.wrap{max-width:1000px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+header.hd{padding:130px 0 6px;text-align:center}
+header.hd h1{font-family:var(--serif);font-size:clamp(38px,6vw,56px);font-weight:400;letter-spacing:-.03em;margin-bottom:10px}
+header.hd p{color:var(--tx-2);font-size:16px;font-weight:300;max-width:580px;margin:0 auto}
+.h-banner{text-align:center;margin:14px auto 0;max-width:640px;color:var(--accent);font-weight:600;font-size:14px}
+.h-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:26px 0 8px;position:sticky;top:60px;z-index:50;padding:12px 0;background:linear-gradient(var(--bg-0) 80%,transparent)}
+.h-chip{padding:7px 15px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-2);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .25s var(--ease);font-family:var(--sans)}
+.h-chip:hover{border-color:var(--border-hi);color:var(--tx-1)}
+.h-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.h-copy{margin-left:auto;padding:7px 15px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .25s var(--ease)}
+.h-copy:hover{border-color:var(--accent);color:var(--tx-1)}
+.h-sec{margin:26px 0}
+.h-st{font-family:var(--serif);font-size:24px;font-weight:400;margin-bottom:14px;color:var(--tx-1)}
+.h-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.h-sec[data-sec="skills"] .h-list{display:flex;flex-wrap:wrap;gap:8px}
+.h-skill{padding:7px 14px;border-radius:100px;background:var(--bg-3);color:var(--tx-1);font-size:13px;font-weight:600;font-family:var(--mono)}
+.h-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-decoration:none;color:inherit;transition:all .3s var(--ease);display:block}
+.h-card:hover{border-color:var(--border-hi);transform:translateY(-3px);box-shadow:0 12px 32px var(--shadow)}
+.h-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.h-card h3{font-size:15.5px;font-weight:600;line-height:1.35;margin-bottom:6px}
+.h-date{font-size:11px;color:var(--tx-3);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.h-card p{font-size:13px;color:var(--tx-2);line-height:1.55}
+footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-top:1px solid var(--border);margin-top:20px}
+@media(max-width:640px){.wrap{padding:0 18px}.h-list{grid-template-columns:1fr}.nav-r a:not(.on){display:none}header.hd{padding:110px 0 6px}.h-copy{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div>
+<nav><div class="nav-i">
+  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
+  <div class="nav-r">
+    <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
+    <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
+    <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
+    <a class="on" href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
+    <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Langue">FR</button>
+    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
+  </div>
+</div></nav>
+
+<div class="wrap">
+<header class="hd">
+  <h1>Highlights</h1>
+  <p data-fr="Mon profil, orientable par domaine. Choisissez une lentille — le contenu se réordonne pour la mettre en avant."
+     data-en="My profile, focusable by domain. Pick a lens — the content reorders to foreground it.">Mon profil, orientable par domaine. Choisissez une lentille — le contenu se réordonne pour la mettre en avant.</p>
+  <div class="h-banner" id="banner" hidden></div>
+</header>
+
+<div class="h-controls">
+  <div class="h-chips" id="lenses" style="display:flex;flex-wrap:wrap;gap:8px"><button class="h-chip active" data-lens="" data-fr="Général" data-en="General">Général</button><button class="h-chip" data-lens="quant" data-fr="Finance quantitative" data-en="Quantitative Finance">Finance quantitative</button><button class="h-chip" data-lens="risk" data-fr="Gestion des risques" data-en="Risk Management">Gestion des risques</button><button class="h-chip" data-lens="finance" data-fr="Finance d&#x27;entreprise / Trésorerie" data-en="Corporate Finance / Treasury">Finance d&#x27;entreprise / Trésorerie</button><button class="h-chip" data-lens="data" data-fr="Data Engineering / ML" data-en="Data Engineering / ML">Data Engineering / ML</button><button class="h-chip" data-lens="defi" data-fr="DeFi / Blockchain" data-en="DeFi / Blockchain">DeFi / Blockchain</button><button class="h-chip" data-lens="dev" data-fr="Développement logiciel" data-en="Software Development">Développement logiciel</button><button class="h-chip" data-lens="ai" data-fr="IA / LLM" data-en="AI / LLM Engineering">IA / LLM</button><button class="h-chip" data-lens="research" data-fr="Recherche / R&amp;D" data-en="Research / R&amp;D">Recherche / R&amp;D</button><button class="h-chip" data-lens="product" data-fr="Produit / SaaS" data-en="Product / SaaS">Produit / SaaS</button></div>
+  <button class="h-copy" id="copy" data-fr="Copier le lien" data-en="Copy link">Copier le lien</button>
+</div>
+
+<section class="h-sec" data-sec="skills"><h2 class="h-st" data-fr="Compétences clés" data-en="Key skills">Compétences clés</h2><div class="h-list">
+<span class="h-skill" data-idx="0" data-gen="0.95" data-lens-quant="0.95" data-lens-data="0.95" data-lens-dev="0.95">Python</span>
+<span class="h-skill" data-idx="1" data-gen="0.92" data-lens-quant="0.92">Finance Quantitative</span>
+<span class="h-skill" data-idx="2" data-gen="0.88" data-lens-data="0.88" data-lens-dev="0.88">SQL</span>
+<span class="h-skill" data-idx="3" data-gen="0.88" data-lens-risk="0.88">Risk Management</span>
+<span class="h-skill" data-idx="4" data-gen="0.85" data-lens-quant="0.85">Calcul Stochastique</span>
+<span class="h-skill" data-idx="5" data-gen="0.85" data-lens-quant="0.85" data-lens-data="0.85">Statistics</span>
+<span class="h-skill" data-idx="6" data-gen="0.82" data-lens-finance="0.82">VBA</span>
+<span class="h-skill" data-idx="7" data-gen="0.82" data-lens-quant="0.82">Pricing Dérivés</span>
+<span class="h-skill" data-idx="8" data-gen="0.8" data-lens-quant="0.8" data-lens-data="0.8">Machine Learning</span>
+<span class="h-skill" data-idx="9" data-gen="0.78" data-lens-finance="0.78">Trésorerie d&#x27;entreprise</span>
+<span class="h-skill" data-idx="10" data-gen="0.78" data-lens-data="0.78">ETL / Data Pipelines</span>
+<span class="h-skill" data-idx="11" data-gen="0.75" data-lens-quant="0.75" data-lens-risk="0.75">Couverture dynamique</span>
+<span class="h-skill" data-idx="12" data-gen="0.75" data-lens-quant="0.75">DeFi / Blockchain</span>
+<span class="h-skill" data-idx="13" data-gen="0.75" data-lens-ai="0.75">LLM Orchestration</span>
+<span class="h-skill" data-idx="14" data-gen="0.72">Kubernetes / K3s</span>
+<span class="h-skill" data-idx="15" data-gen="0.72" data-lens-dev="0.72">TDD / Testing</span>
+<span class="h-skill" data-idx="16" data-gen="0.7" data-lens-risk="0.7">Compliance</span>
+<span class="h-skill" data-idx="17" data-gen="0.7" data-lens-ai="0.7">Knowledge Graphs</span>
+<span class="h-skill" data-idx="18" data-gen="0.68" data-lens-ai="0.68">Multi-Agent Systems</span>
+<span class="h-skill" data-idx="19" data-gen="0.66">DevOps / GitOps</span>
+<span class="h-skill" data-idx="20" data-gen="0.65" data-lens-data="0.65">BigQuery</span>
+<span class="h-skill" data-idx="21" data-gen="0.6" data-lens-data="0.6">Dataiku</span>
+<span class="h-skill" data-idx="22" data-gen="0.6" data-lens-risk="0.6">Actuariat</span>
+<span class="h-skill" data-idx="23" data-gen="0.45" data-lens-dev="0.45">Java</span>
+<span class="h-skill" data-idx="24" data-gen="0.4" data-lens-quant="0.4" data-lens-dev="0.4">C/C++</span>
+<span class="h-skill" data-idx="25" data-gen="0.35" data-lens-dev="0.35">C#</span>
+</div></section><section class="h-sec" data-sec="experiences"><h2 class="h-st" data-fr="Expériences" data-en="Experience">Expériences</h2><div class="h-list">
+<a class="h-card" href="/#experience" data-idx="0" data-gen="0.8" data-lens-quant="1.15" data-lens-risk="1" data-lens-finance="3.4" data-lens-data="3.4" data-lens-dev="4.25"><div class="h-h"><h3 data-fr="Trésorier &amp; Développeur Full Stack · Bouygues Telecom" data-en="Treasury Manager &amp; Full Stack Developer · Bouygues Telecom">Trésorier &amp; Développeur Full Stack · Bouygues Telecom</h3><span class="h-date" data-fr="2025 – 2025" data-en="2025 – 2025">2025 – 2025</span></div><p data-fr="Conception d&#x27;un Treasury Management System (Python/SQL/VBA, ODBC) : gain de ~4h/jour" data-en="Built a Treasury Management System (Python/SQL/VBA, ODBC): saving ~4h/day">Conception d&#x27;un Treasury Management System (Python/SQL/VBA, ODBC) : gain de ~4h/jour</p></a>
+<a class="h-card" href="/#experience" data-idx="1" data-gen="0.75" data-lens-quant="0.925" data-lens-risk="4.325" data-lens-finance="3.375" data-lens-dev="0.775"><div class="h-h"><h3 data-fr="Risk Manager · ManCo Paris" data-en="Risk Manager · ManCo Paris">Risk Manager · ManCo Paris</h3><span class="h-date" data-fr="2024 – 2024" data-en="2024 – 2024">2024 – 2024</span></div><p data-fr="Suivi de plus de 250 règles d&#x27;investissement réglementaires et statutaires" data-en="Monitored over 250 regulatory and statutory investment rules">Suivi de plus de 250 règles d&#x27;investissement réglementaires et statutaires</p></a>
+<a class="h-card" href="/#experience" data-idx="2" data-gen="0.65" data-lens-quant="4.275" data-lens-risk="0.825" data-lens-data="3.325" data-lens-defi="3.325" data-lens-dev="1.025" data-lens-ai="3.325"><div class="h-h"><h3 data-fr="Quantitative Researcher DeFi · ALTEN" data-en="DeFi Quantitative Researcher · ALTEN">Quantitative Researcher DeFi · ALTEN</h3><span class="h-date" data-fr="2026 – présent" data-en="2026 – present">2026 – présent</span></div><p data-fr="Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d&#x27;actifs sur protocoles émergents" data-en="Led the &#x27;CryptoExploration&#x27; project: detection and evaluation of asset fluctuations on emerging protocols">Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d&#x27;actifs sur protocoles émergents</p></a>
+</div></section><section class="h-sec" data-sec="projects"><h2 class="h-st" data-fr="Projets" data-en="Projects">Projets</h2><div class="h-list">
+<a class="h-card" href="/projects/#elysium" data-idx="0" data-gen="3" data-lens-dev="5" data-lens-ai="5" data-lens-research="5"><h3 data-fr="ELYSIUM — Sovereign Cognitive Architecture" data-en="ELYSIUM — Sovereign Cognitive Architecture">ELYSIUM — Sovereign Cognitive Architecture</h3><p data-fr="Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d&#x27;une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l&#x27;AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d&#x27;audit git souveraine. ~30 mois en solo." data-en="Self-sovereign cognitive platform (700+ sub-projects, « SIGILs ») designed as the structured brain of a future autonomous AI: a 13K+ node KuzuDB Knowledge Graph indexing the AST of 22 languages, a custom GNN in pure NumPy, a 4-node K3s GPU cluster, a sovereign git audit chain. ~30 months solo.">Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d&#x27;une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l&#x27;AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d&#x27;audit git souveraine. ~30 mois en solo.</p></a>
+<a class="h-card" href="/projects/#pfe-hedging" data-idx="1" data-gen="3" data-lens-quant="5" data-lens-risk="5" data-lens-finance="5" data-lens-research="5"><h3 data-fr="Couverture dynamique en assurance/banque (PFE × EY)" data-en="Dynamic hedging in insurance/banking (Capstone × EY)">Couverture dynamique en assurance/banque (PFE × EY)</h3><p data-fr="Projet de fin d&#x27;études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l&#x27;art, prototype, soutenance)." data-en="Capstone project in partnership with EY: modeling and steering of dynamic hedging strategies on derivative portfolios, with weekly EY check-ins and deliverables (scoping note, literature review, prototype, defense).">Projet de fin d&#x27;études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l&#x27;art, prototype, soutenance).</p></a>
+<a class="h-card" href="/projects/#anthropos" data-idx="2" data-gen="1" data-lens-dev="3" data-lens-ai="3" data-lens-product="3"><h3 data-fr="Anthropos — Career OS &amp; Life Architect" data-en="Anthropos — Career OS &amp; Life Architect">Anthropos — Career OS &amp; Life Architect</h3><p data-fr="Plateforme local-first (FastAPI) de gestion de carrière et de développement personnel : career management, recherche d&#x27;emploi, architecture de vie. API-first." data-en="Plateforme local-first (FastAPI) de gestion de carrière et de développement personnel : career management, recherche d&#x27;emploi, architecture de vie. API-first.">Plateforme local-first (FastAPI) de gestion de carrière et de développement personnel : career management, recherche d&#x27;emploi, architecture de vie. API-first.</p></a>
+<a class="h-card" href="/projects/#hmm-studio" data-idx="3" data-gen="1" data-lens-quant="3" data-lens-data="3" data-lens-research="3"><h3 data-fr="hmm-studio — Modèles de Markov cachés contraints" data-en="hmm-studio — Modèles de Markov cachés contraints">hmm-studio — Modèles de Markov cachés contraints</h3><p data-fr="Bibliothèque HMM Python (pip-installable, compatible scikit-learn, native Jupyter) : moteur Baum-Welch contraint (topologies left-right/Bakis, priors de Dirichlet, NHMM, apprentissage supervisé) et studio optionnel FastAPI/React. Licence MIT." data-en="Bibliothèque HMM Python (pip-installable, compatible scikit-learn, native Jupyter) : moteur Baum-Welch contraint (topologies left-right/Bakis, priors de Dirichlet, NHMM, apprentissage supervisé) et studio optionnel FastAPI/React. Licence MIT.">Bibliothèque HMM Python (pip-installable, compatible scikit-learn, native Jupyter) : moteur Baum-Welch contraint (topologies left-right/Bakis, priors de Dirichlet, NHMM, apprentissage supervisé) et studio optionnel FastAPI/React. Licence MIT.</p></a>
+<a class="h-card" href="/projects/#derivatives-pricer" data-idx="4" data-gen="1" data-lens-quant="3" data-lens-finance="3"><h3 data-fr="Pricer d&#x27;options européennes (Black-Scholes)" data-en="Pricer d&#x27;options européennes (Black-Scholes)">Pricer d&#x27;options européennes (Black-Scholes)</h3><p data-fr="Pricing d&#x27;options européennes en temps réel (call/put + delta) — la démo interactive de la page d&#x27;accueil. Formule fermée de Black-Scholes." data-en="Pricing d&#x27;options européennes en temps réel (call/put + delta) — la démo interactive de la page d&#x27;accueil. Formule fermée de Black-Scholes.">Pricing d&#x27;options européennes en temps réel (call/put + delta) — la démo interactive de la page d&#x27;accueil. Formule fermée de Black-Scholes.</p></a>
+<a class="h-card" href="/projects/#monte-carlo-gbm" data-idx="5" data-gen="1" data-lens-quant="3" data-lens-data="3"><h3 data-fr="Simulation Monte-Carlo — Mouvement Brownien Géométrique" data-en="Simulation Monte-Carlo — Mouvement Brownien Géométrique">Simulation Monte-Carlo — Mouvement Brownien Géométrique</h3><p data-fr="Génération de trajectoires GBM pour le pricing d&#x27;options par simulation — la 2ᵉ démo interactive de la page d&#x27;accueil." data-en="Génération de trajectoires GBM pour le pricing d&#x27;options par simulation — la 2ᵉ démo interactive de la page d&#x27;accueil.">Génération de trajectoires GBM pour le pricing d&#x27;options par simulation — la 2ᵉ démo interactive de la page d&#x27;accueil.</p></a>
+<a class="h-card" href="/projects/#sudoku-cnn" data-idx="6" data-gen="1" data-lens-data="3" data-lens-ai="3"><h3 data-fr="Résolution de Sudoku par réseau de neurones convolutif" data-en="Résolution de Sudoku par réseau de neurones convolutif">Résolution de Sudoku par réseau de neurones convolutif</h3><p data-fr="Pipeline vision : pré-traitement d&#x27;image (binarisation, segmentation des cellules), reconnaissance des chiffres par CNN, puis résolution algorithmique de la grille." data-en="Pipeline vision : pré-traitement d&#x27;image (binarisation, segmentation des cellules), reconnaissance des chiffres par CNN, puis résolution algorithmique de la grille.">Pipeline vision : pré-traitement d&#x27;image (binarisation, segmentation des cellules), reconnaissance des chiffres par CNN, puis résolution algorithmique de la grille.</p></a>
+<a class="h-card" href="/projects/#trading-algo-csharp" data-idx="7" data-gen="1" data-lens-quant="3" data-lens-dev="3"><h3 data-fr="Algorithme de trading crypto / forex (C#)" data-en="Algorithme de trading crypto / forex (C#)">Algorithme de trading crypto / forex (C#)</h3><p data-fr="Algorithme de trading automatisé en C# pour marchés crypto et forex (stratégie, backtesting, connexion API marché)." data-en="Algorithme de trading automatisé en C# pour marchés crypto et forex (stratégie, backtesting, connexion API marché).">Algorithme de trading automatisé en C# pour marchés crypto et forex (stratégie, backtesting, connexion API marché).</p></a>
+<a class="h-card" href="/projects/#vba-index-tool" data-idx="8" data-gen="1" data-lens-finance="3" data-lens-data="3"><h3 data-fr="Outil VBA d&#x27;analyse &amp; visualisation d&#x27;indices boursiers" data-en="Outil VBA d&#x27;analyse &amp; visualisation d&#x27;indices boursiers">Outil VBA d&#x27;analyse &amp; visualisation d&#x27;indices boursiers</h3><p data-fr="Outil Excel/VBA : récupération automatique de cours, calcul d&#x27;indicateurs techniques (moyennes mobiles, RSI, volatilité) et graphiques dynamiques (CAC 40, S&amp;P 500…)." data-en="Outil Excel/VBA : récupération automatique de cours, calcul d&#x27;indicateurs techniques (moyennes mobiles, RSI, volatilité) et graphiques dynamiques (CAC 40, S&amp;P 500…).">Outil Excel/VBA : récupération automatique de cours, calcul d&#x27;indicateurs techniques (moyennes mobiles, RSI, volatilité) et graphiques dynamiques (CAC 40, S&amp;P 500…).</p></a>
+<a class="h-card" href="/projects/#vhdl-calculator" data-idx="9" data-gen="1" data-lens-dev="3"><h3 data-fr="Calculatrice 4 opérations en VHDL (FPGA)" data-en="Calculatrice 4 opérations en VHDL (FPGA)">Calculatrice 4 opérations en VHDL (FPGA)</h3><p data-fr="Conception et synthèse d&#x27;une calculatrice (add/sub/mul/div) en VHDL sur FPGA : ALU, gestion clavier matriciel, affichage 7 segments, machine à états finis." data-en="Conception et synthèse d&#x27;une calculatrice (add/sub/mul/div) en VHDL sur FPGA : ALU, gestion clavier matriciel, affichage 7 segments, machine à états finis.">Conception et synthèse d&#x27;une calculatrice (add/sub/mul/div) en VHDL sur FPGA : ALU, gestion clavier matriciel, affichage 7 segments, machine à états finis.</p></a>
+<a class="h-card" href="/projects/#atc-simulation" data-idx="10" data-gen="1" data-lens-dev="3"><h3 data-fr="Simulation de tour de contrôle aérienne" data-en="Simulation de tour de contrôle aérienne">Simulation de tour de contrôle aérienne</h3><p data-fr="Développement d&#x27;une simulation logicielle de tour de contrôle du trafic aérien." data-en="Développement d&#x27;une simulation logicielle de tour de contrôle du trafic aérien.">Développement d&#x27;une simulation logicielle de tour de contrôle du trafic aérien.</p></a>
+<a class="h-card" href="/projects/#gripper-robot" data-idx="11" data-gen="1" data-lens-dev="3"><h3 data-fr="Robot pince — modélisation 3D, impression &amp; assemblage" data-en="Robot pince — modélisation 3D, impression &amp; assemblage">Robot pince — modélisation 3D, impression &amp; assemblage</h3><p data-fr="Conception mécanique 3D d&#x27;un robot pince (SolidWorks), impression 3D des pièces, assemblage et intégration des actionneurs." data-en="Conception mécanique 3D d&#x27;un robot pince (SolidWorks), impression 3D des pièces, assemblage et intégration des actionneurs.">Conception mécanique 3D d&#x27;un robot pince (SolidWorks), impression 3D des pièces, assemblage et intégration des actionneurs.</p></a>
+<a class="h-card" href="/projects/#octoprint-bed-leveller" data-idx="12" data-gen="1" data-lens-dev="3"><h3 data-fr="Plugin Octoprint — Bed Leveller &amp; Visualizer" data-en="Plugin Octoprint — Bed Leveller &amp; Visualizer">Plugin Octoprint — Bed Leveller &amp; Visualizer</h3><p data-fr="Plugin Octoprint en Python : lecture du capteur de nivellement (BLTouch/probe), carte de chaleur de la planéité du plateau et suggestions de correction mécanique." data-en="Plugin Octoprint en Python : lecture du capteur de nivellement (BLTouch/probe), carte de chaleur de la planéité du plateau et suggestions de correction mécanique.">Plugin Octoprint en Python : lecture du capteur de nivellement (BLTouch/probe), carte de chaleur de la planéité du plateau et suggestions de correction mécanique.</p></a>
+<a class="h-card" href="/projects/#tms-bouygues" data-idx="13" data-gen="1" data-lens-finance="3" data-lens-data="3" data-lens-dev="3"><h3 data-fr="Treasury Management System (Bouygues Telecom)" data-en="Treasury Management System (Bouygues Telecom)">Treasury Management System (Bouygues Telecom)</h3><p data-fr="Conception et déploiement en production d&#x27;un TMS (Python/SQL/VBA, ODBC) : ~4h/jour gagnées pour l&#x27;équipe trésorerie, prévisions de cash automatisées, pricing d&#x27;IRS intégré, pipelines ETL Dataiku/BigQuery." data-en="Conception et déploiement en production d&#x27;un TMS (Python/SQL/VBA, ODBC) : ~4h/jour gagnées pour l&#x27;équipe trésorerie, prévisions de cash automatisées, pricing d&#x27;IRS intégré, pipelines ETL Dataiku/BigQuery.">Conception et déploiement en production d&#x27;un TMS (Python/SQL/VBA, ODBC) : ~4h/jour gagnées pour l&#x27;équipe trésorerie, prévisions de cash automatisées, pricing d&#x27;IRS intégré, pipelines ETL Dataiku/BigQuery.</p></a>
+<a class="h-card" href="/projects/#crypto-exploration" data-idx="14" data-gen="1" data-lens-quant="3" data-lens-data="3" data-lens-defi="3" data-lens-ai="3"><h3 data-fr="CryptoExploration — recherche quant DeFi (ALTEN)" data-en="CryptoExploration — recherche quant DeFi (ALTEN)">CryptoExploration — recherche quant DeFi (ALTEN)</h3><p data-fr="Détection et évaluation des fluctuations d&#x27;actifs sur protocoles DeFi émergents : modèles statistiques/ML (HMM, transfert d&#x27;entropie, copules, causalité), collecte on-chain automatisée (TVL, APY, Volume), env. reproductible Docker/Azure DevOps." data-en="Détection et évaluation des fluctuations d&#x27;actifs sur protocoles DeFi émergents : modèles statistiques/ML (HMM, transfert d&#x27;entropie, copules, causalité), collecte on-chain automatisée (TVL, APY, Volume), env. reproductible Docker/Azure DevOps.">Détection et évaluation des fluctuations d&#x27;actifs sur protocoles DeFi émergents : modèles statistiques/ML (HMM, transfert d&#x27;entropie, copules, causalité), collecte on-chain automatisée (TVL, APY, Volume), env. reproductible Docker/Azure DevOps.</p></a>
+<a class="h-card" href="/projects/#ppe-politique-monetaire" data-idx="15" data-gen="1" data-lens-finance="3" data-lens-research="3"><h3 data-fr="Recherche &amp; fixation de la politique monétaire (PPE)" data-en="Recherche &amp; fixation de la politique monétaire (PPE)">Recherche &amp; fixation de la politique monétaire (PPE)</h3><p data-fr="Projet de recherche (PPE) sur la conduite et la fixation de la politique monétaire." data-en="Projet de recherche (PPE) sur la conduite et la fixation de la politique monétaire.">Projet de recherche (PPE) sur la conduite et la fixation de la politique monétaire.</p></a>
+<a class="h-card" href="/projects/#portfolio-site" data-idx="16" data-gen="1" data-lens-dev="3" data-lens-product="3"><h3 data-fr="robin-denis.com — site portfolio &amp; pipeline candidature" data-en="robin-denis.com — site portfolio &amp; pipeline candidature">robin-denis.com — site portfolio &amp; pipeline candidature</h3><p data-fr="Site portfolio bilingue + interface admin locale (FastAPI) + bot de candidature automatisé." data-en="Site portfolio bilingue + interface admin locale (FastAPI) + bot de candidature automatisé.">Site portfolio bilingue + interface admin locale (FastAPI) + bot de candidature automatisé.</p></a>
+</div></section><section class="h-sec" data-sec="demos"><h2 class="h-st" data-fr="Démos" data-en="Demos">Démos</h2><div class="h-list">
+<a class="h-card" href="/demos/#bs" data-idx="0" data-gen="1" data-lens-quant="3" data-lens-finance="3"><h3 data-fr="Black-Scholes Pricer" data-en="Black-Scholes Pricer">Black-Scholes Pricer</h3><p data-fr="Pricing d&#x27;options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l&#x27;impact sur le prix." data-en="Real-time European option pricing with delta display. Adjust parameters to see the impact on price.">Pricing d&#x27;options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l&#x27;impact sur le prix.</p></a>
+<a class="h-card" href="/demos/#mc" data-idx="1" data-gen="1" data-lens-quant="3" data-lens-data="3"><h3 data-fr="Simulation Monte Carlo (GBM)" data-en="Simulation Monte Carlo (GBM)">Simulation Monte Carlo (GBM)</h3><p data-fr="Trajectoires d&#x27;un mouvement brownien géométrique pour le pricing d&#x27;options par simulation." data-en="Geometric Brownian Motion paths for option pricing via Monte Carlo simulation.">Trajectoires d&#x27;un mouvement brownien géométrique pour le pricing d&#x27;options par simulation.</p></a>
+</div></section><section class="h-sec" data-sec="articles"><h2 class="h-st" data-fr="Articles" data-en="Articles">Articles</h2><div class="h-list">
+<a class="h-card" href="/articles/couverture-dynamique.html" data-idx="0" data-gen="1" data-lens-quant="3" data-lens-risk="3" data-lens-finance="3"><h3 data-fr="Couverture dynamique : théorie vs pratique en assurance" data-en="Dynamic Hedging: Theory vs Practice in Insurance">Couverture dynamique : théorie vs pratique en assurance</h3><p data-fr="Retour d&#x27;expérience sur mon PFE avec EY : comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging." data-en="Lessons from my capstone project with EY: how theoretical models face operational constraints in portfolio hedging.">Retour d&#x27;expérience sur mon PFE avec EY : comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.</p></a>
+<a class="h-card" href="/#blog" data-idx="1" data-gen="1" data-lens-data="3" data-lens-defi="3"><h3 data-fr="Analyse on-chain : détecter les signaux faibles en DeFi" data-en="On-Chain Analytics: Detecting Weak Signals in DeFi">Analyse on-chain : détecter les signaux faibles en DeFi</h3><p data-fr="Méthodologie de collecte et d&#x27;analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents." data-en="Methodology for collecting and analyzing on-chain metrics (TVL, APY, Volume) to identify patterns on emerging protocols.">Méthodologie de collecte et d&#x27;analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.</p></a>
+</div></section>
+
+<footer>Robin Denis · 2026-07-08 · <a href="/" style="color:var(--accent);text-decoration:none" data-fr="Retour à l'accueil" data-en="Back home">Retour à l'accueil</a></footer>
+</div>
+
+<script>
+  const CAPS = {"skills": 10, "experiences": 3, "projects": 6, "demos": 2, "articles": 2};
+  const LENS_LABELS = {"quant": {"fr": "Finance quantitative", "en": "Quantitative Finance"}, "risk": {"fr": "Gestion des risques", "en": "Risk Management"}, "finance": {"fr": "Finance d'entreprise / Tr\u00e9sorerie", "en": "Corporate Finance / Treasury"}, "data": {"fr": "Data Engineering / ML", "en": "Data Engineering / ML"}, "defi": {"fr": "DeFi / Blockchain", "en": "DeFi / Blockchain"}, "dev": {"fr": "D\u00e9veloppement logiciel", "en": "Software Development"}, "ai": {"fr": "IA / LLM", "en": "AI / LLM Engineering"}, "research": {"fr": "Recherche / R&D", "en": "Research / R&D"}, "product": {"fr": "Produit / SaaS", "en": "Product / SaaS"}};
+  const LENS_IDS = ["quant", "risk", "finance", "data", "defi", "dev", "ai", "research", "product"];
+  const root = document.documentElement;
+  let curLens = '';
+
+  function curLang(){ return root.getAttribute('data-lang') || 'fr'; }
+  function camel(id){ return 'lens' + id.replace(/(^|-)([a-z])/g, function(m, p1, c){ return c.toUpperCase(); }); }
+
+  function applyLens(lens){
+    curLens = lens;
+    document.querySelectorAll('.h-chip').forEach(function(c){
+      c.classList.toggle('active', c.dataset.lens === lens);
+    });
+    document.querySelectorAll('.h-sec').forEach(function(sec){
+      const list = sec.querySelector('.h-list');
+      const cap = CAPS[sec.dataset.sec] || 6;
+      let items = Array.prototype.slice.call(list.children);
+      if (lens){
+        const key = camel(lens);
+        items = items.filter(function(it){ return it.dataset[key] !== undefined; })
+                     .sort(function(a,b){ return parseFloat(b.dataset[key]) - parseFloat(a.dataset[key]); });
+      } else {
+        items = items.sort(function(a,b){ return parseInt(a.dataset.idx) - parseInt(b.dataset.idx); });
+      }
+      Array.prototype.slice.call(list.children).forEach(function(it){ it.style.display = 'none'; });
+      items.slice(0, cap).forEach(function(it){ it.style.display = ''; list.appendChild(it); });
+      sec.style.display = items.length ? '' : 'none';
+    });
+    updateBanner();
+  }
+
+  function updateBanner(){
+    const b = document.getElementById('banner');
+    if (curLens && LENS_LABELS[curLens]){
+      const lab = LENS_LABELS[curLens][curLang()];
+      b.textContent = (curLang() === 'fr' ? 'Profil orienté ' : 'Profile focused on ') + lab;
+      b.hidden = false;
+    } else { b.hidden = true; }
+  }
+
+  document.getElementById('lenses').addEventListener('click', function(ev){
+    const c = ev.target.closest('.h-chip'); if (!c) return;
+    const lens = c.dataset.lens;
+    applyLens(lens);
+    history.replaceState(null, '', lens ? ('?lens=' + lens) : location.pathname);
+  });
+
+  document.getElementById('copy').addEventListener('click', function(){
+    const b = document.getElementById('copy');
+    navigator.clipboard.writeText(location.href).then(function(){
+      b.textContent = curLang() === 'fr' ? 'Copié ✓' : 'Copied ✓';
+      setTimeout(function(){ b.textContent = curLang() === 'fr' ? b.dataset.fr : b.dataset.en; }, 1400);
+    });
+  });
+
+  function applyBrowseLang(lang){
+    document.querySelectorAll('[data-fr][data-en]').forEach(function(el){
+      el.textContent = lang === 'fr' ? el.dataset.fr : el.dataset.en;
+    });
+    root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
+    document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
+    updateBanner();
+  }
+  function toggleLang(){
+    const next = curLang() === 'fr' ? 'en' : 'fr';
+    localStorage.setItem('lang', next);
+    applyBrowseLang(next);
+  }
+  function tgTheme(){
+    const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    document.getElementById('themeBtn').textContent = next === 'light' ? '☀️' : '🌙';
+  }
+
+  (function(){
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme){ root.setAttribute('data-theme', savedTheme);
+      document.getElementById('themeBtn').textContent = savedTheme === 'light' ? '☀️' : '🌙'; }
+    const savedLang = localStorage.getItem('lang') || 'fr';
+    if (savedLang !== 'fr') applyBrowseLang(savedLang);
+    const params = new URLSearchParams(location.search);
+    const lens = params.get('lens') || '';
+    applyLens(LENS_IDS.indexOf(lens) >= 0 ? lens : '');
+  })();
+</script>
+</body>
+</html>
