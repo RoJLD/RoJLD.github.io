@@ -60,6 +60,9 @@ header.hd p{color:var(--tx-2);font-size:15px;max-width:600px;margin:6px auto 0}
 .g-compose{padding:7px 15px;border-radius:100px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;display:none}
 .g-compose:disabled{opacity:.4;cursor:not-allowed}
 .g-stage{position:relative;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-1);overflow:hidden;height:70vh;min-height:460px}
+.g-zoom{position:absolute;bottom:12px;right:12px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.g-zoom button{width:34px;height:34px;border-radius:9px;border:1px solid var(--border-hi);background:var(--bg-2);color:var(--tx-1);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.g-zoom button:hover{border-color:var(--accent)}
 #graph{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
 #graph.panning{cursor:grabbing}
 .gedge{stroke:var(--border-hi);stroke-width:1;opacity:.5;transition:opacity .2s,stroke .2s}
@@ -127,6 +130,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     <div class="gp-conn" id="pConn"></div>
     <a class="gp-go" id="pGo" href="#" data-fr="Voir la page ↗" data-en="Open page ↗">Voir la page ↗</a>
   </div>
+  <div class="g-zoom"><button id="zoomIn" aria-label="Zoom avant" title="Zoom +">+</button><button id="zoomOut" aria-label="Zoom arrière" title="Zoom −">−</button></div>
 </div>
 <div class="g-legend">@@LEGEND@@</div>
 
@@ -144,22 +148,23 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   const TYPES = Array.from(new Set(NODES.map(function(n){ return n.type; })));
   const REL_LABEL = { has_domain:{fr:'domaine',en:'domain'}, context:{fr:'contexte',en:'context'},
     used_in:{fr:'utilisé dans',en:'used in'}, demo_of:{fr:'démo de',en:'demo of'}, refs:{fr:'référence',en:'refs'} };
+  const TYPE_LABEL = { identity:['Moi','Me'], domain:['Domaines','Domains'], experience:['Expériences','Experience'],
+    education:['Formations','Education'], project:['Projets','Projects'], article:['Articles','Articles'],
+    demo:['Démos','Demos'], journey:['Parcours','Journey'], skill:['Compétences','Skills'] };
   let hiddenTypes = new Set(), cvMode = false, picked = new Set();
   let openId = null, searchQ = '', moved = false;
+  let downClient = null;
 
   function curLang(){ return root.getAttribute('data-lang') || 'fr'; }
 
   // ---- Chips par type (générées client-side depuis TYPES présents) ----
   (function buildChips(){
-    const T = { identity:['Moi','Me'], domain:['Domaines','Domains'], experience:['Expériences','Experience'],
-      education:['Formations','Education'], project:['Projets','Projects'], article:['Articles','Articles'],
-      demo:['Démos','Demos'], journey:['Parcours','Journey'], skill:['Compétences','Skills'] };
     const box = document.getElementById('chips');
     TYPES.forEach(function(t){
       const c = document.createElement('button');
       c.className = 'g-chip'; c.dataset.type = t;
-      c.setAttribute('data-fr', T[t][0]); c.setAttribute('data-en', T[t][1]);
-      c.textContent = curLang() === 'fr' ? T[t][0] : T[t][1];
+      c.setAttribute('data-fr', TYPE_LABEL[t][0]); c.setAttribute('data-en', TYPE_LABEL[t][1]);
+      c.textContent = curLang() === 'fr' ? TYPE_LABEL[t][0] : TYPE_LABEL[t][1];
       box.appendChild(c);
     });
     box.addEventListener('click', function(ev){
@@ -231,7 +236,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   function openPanel(n){
     openId = n.id;
     const L = curLang();
-    document.getElementById('pType').textContent = n.type;
+    document.getElementById('pType').textContent = TYPE_LABEL[n.type] ? TYPE_LABEL[n.type][L === 'fr' ? 0 : 1] : n.type;
     document.getElementById('pTitle').textContent = L === 'fr' ? n.fr : n.en;
     const conns = EDGES.filter(function(ed){ return ed.source === n.id || ed.target === n.id; })
       .map(function(ed){
@@ -253,7 +258,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   document.getElementById('cvToggle').addEventListener('click', function(){
     cvMode = !cvMode;
     this.classList.toggle('active', cvMode);
-    document.getElementById('compose').style.display = cvMode ? '' : 'none';
+    document.getElementById('compose').style.display = cvMode ? 'inline-block' : 'none';
     if (!cvMode){ picked.clear(); document.querySelectorAll('.gnode.pick').forEach(function(g){ g.classList.remove('pick'); }); }
     updateCompose();
     closePanel();
@@ -266,16 +271,19 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   }
   document.getElementById('compose').addEventListener('click', function(){
     if (!picked.size) return;
+    const w = window.open('', '_blank');                 // synchrone dans le geste du clic (popup-blocker OK)
+    if (!w){ alert(curLang() === 'fr' ? 'Autorisez les pop-ups pour générer le CV.' : 'Allow pop-ups to generate the CV.'); return; }
     const doms = Array.from(picked).map(function(id){ return id.split(':')[1]; });
     fetch('/profile.json').then(function(r){ return r.json(); }).then(function(profile){
       const lang = curLang();
-      // min_relevance:2 (> échelle [0,1]) => filtre = seule intersection de domaines
       const exps = window.CVSelect.selectExperiences(profile, { domains_in: doms, relevance_key: 'general', min_relevance: 2 });
       const cv = window.CVSelect.buildStructuredCv(profile, exps, lang);
       const htmlDoc = window.CVRender.renderHtml(cv);
-      const w = window.open('', '_blank');
       w.document.write(htmlDoc); w.document.close();
       w.focus(); setTimeout(function(){ w.print(); }, 300);
+    }).catch(function(){
+      try { w.close(); } catch (e) {}
+      alert(curLang() === 'fr' ? 'Impossible de générer le CV.' : 'Could not generate the CV.');
     });
   });
 
@@ -284,11 +292,14 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   let vb = { x:0, y:0, w:1000, h:700 }, dragNode = null, panning = false, last = null;
   function setVB(){ svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h); }
   function svgPt(ev){
-    const r = svg.getBoundingClientRect();
-    return { x: vb.x + (ev.clientX - r.left) / r.width * vb.w, y: vb.y + (ev.clientY - r.top) / r.height * vb.h };
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: vb.x + vb.w / 2, y: vb.y + vb.h / 2 };
+    const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y };
   }
   svg.addEventListener('pointerdown', function(ev){
     moved = false;
+    downClient = { x: ev.clientX, y: ev.clientY };
     const g = ev.target.closest('.gnode');
     if (g){ dragNode = g; }
     else { panning = true; svg.classList.add('panning'); }
@@ -296,7 +307,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   });
   svg.addEventListener('pointermove', function(ev){
     if (!dragNode && !panning) return;
-    moved = true;
+    if (downClient && Math.hypot(ev.clientX - downClient.x, ev.clientY - downClient.y) > 5) moved = true;
     const p = svgPt(ev), dx = p.x - last.x, dy = p.y - last.y;
     if (dragNode){
       const id = dragNode.dataset.id, n = byId[id];
@@ -317,6 +328,13 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     vb.x = p.x - (p.x - vb.x) * (nw / vb.w); vb.y = p.y - (p.y - vb.y) * (nh / vb.h);
     vb.w = nw; vb.h = nh; setVB();
   }, { passive: false });
+  function zoomBy(f){
+    const cxv = vb.x + vb.w / 2, cyv = vb.y + vb.h / 2;
+    const nw = Math.min(2000, Math.max(200, vb.w * f)), nh = nw * (700 / 1000);
+    vb.x = cxv - nw / 2; vb.y = cyv - nh / 2; vb.w = nw; vb.h = nh; setVB();
+  }
+  document.getElementById('zoomIn').addEventListener('click', function(){ zoomBy(0.8); });
+  document.getElementById('zoomOut').addEventListener('click', function(){ zoomBy(1.25); });
 
   // ---- Langue / thème (partagé localStorage, boot APRÈS le DOM du panneau) ----
   function applyGraphLang(lang){
@@ -502,15 +520,24 @@ def compute_layout(nodes, edges, width=1000, height=700, iterations=300):
             ux, uy = dx / dist, dy / dist
             disp[a][0] -= ux * f; disp[a][1] -= uy * f
             disp[b][0] += ux * f; disp[b][1] += uy * f
-        for nid in ids:                                  # déplacement borné (identity figé)
+        for nid in ids:                                  # déplacement borné en magnitude (identity figé)
             if nid == "identity:self":
                 continue
             ddx, ddy = disp[nid]
             d = math.hypot(ddx, ddy) or 0.01
             step = min(d, t)
-            pos[nid][0] = min(width - 10, max(10, pos[nid][0] + ddx / d * step))
-            pos[nid][1] = min(height - 10, max(10, pos[nid][1] + ddy / d * step))
+            pos[nid][0] += ddx / d * step
+            pos[nid][1] += ddy / d * step
         t -= dt
+    pad = 40.0
+    max_dx = max((abs(pos[nid][0] - cx) for nid in ids), default=0.0)
+    max_dy = max((abs(pos[nid][1] - cy) for nid in ids), default=0.0)
+    sx = (width / 2.0 - pad) / max_dx if max_dx > 0 else 1.0
+    sy = (height / 2.0 - pad) / max_dy if max_dy > 0 else 1.0
+    s = min(sx, sy, 1.0) if (max_dx > 0 or max_dy > 0) else 1.0
+    for nid in ids:
+        pos[nid][0] = cx + (pos[nid][0] - cx) * s
+        pos[nid][1] = cy + (pos[nid][1] - cy) * s
     return {nid: (round(pos[nid][0], 2), round(pos[nid][1], 2)) for nid in ids}
 
 
