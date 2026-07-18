@@ -76,3 +76,36 @@ def test_node_href_mapping():
     assert href("journey:0", "journey") == "/#parcours"
     assert href("skill:Python", "skill") == "/explorer/"
     assert href("identity:self", "identity") == ""
+
+
+def test_assemble_enriched_nodes():
+    p = _profile()
+    data = bg.assemble(p)
+    n0 = data["nodes"][0]
+    assert set(n0) == {"id", "type", "fr", "en", "x", "y", "href"}
+    assert all(isinstance(n["x"], float) and isinstance(n["y"], float) for n in data["nodes"])
+
+
+def test_render_graph_page_structure():
+    p = _profile()
+    out = bg.render_graph_page(p)
+    n_nodes = len(bg.graph_nodes(p))
+    n_edges = len(bg.graph_edges(p))
+    assert out.count('class="gnode"') == n_nodes
+    assert out.count('class="gedge"') == n_edges
+    assert 'id="graph-data"' in out                 # JSON embarqué
+    # JSON embarqué parseable
+    import re
+    m = re.search(r'id="graph-data"[^>]*>(.*?)</script>', out, re.S)
+    parsed = json.loads(m.group(1))
+    assert len(parsed["nodes"]) == n_nodes and len(parsed["edges"]) == n_edges
+    assert 'data-fr=' in out and 'data-en=' in out  # bilingue
+    assert '@@' not in out                           # tous les markers remplacés
+
+
+def test_build_graph_writes(tmp_path, monkeypatch):
+    p = _profile()
+    target = tmp_path / "graph" / "index.html"
+    monkeypatch.setattr(bg, "OUT", target)
+    bg.build_graph(p, write=True)
+    assert target.exists() and 'id="graph"' in target.read_text(encoding="utf-8")

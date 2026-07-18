@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark" data-lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graphe du profil — Robin Denis</title>
+<meta name="description" content="Le profil de Robin Denis comme réseau : domaines, expériences, projets, compétences et leurs relations.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px;--ease:cubic-bezier(.4,0,.2,1)}
+[data-theme="dark"]{--bg-0:#060a12;--bg-1:#0a1020;--bg-2:#111a2e;--bg-3:#162244;--border:#1a2847;--border-hi:#253a68;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--glass:rgba(10,16,32,.75);--shadow:rgba(0,0,0,.3)}
+[data-theme="light"]{--bg-0:#f5f7fa;--bg-1:#edf0f5;--bg-2:#ffffff;--bg-3:#f0f3f8;--border:#d8dfe9;--border-hi:#c2cbda;--tx-1:#1a2035;--tx-2:#546178;--tx-3:#8594ad;--accent:#2563eb;--glass:rgba(245,247,250,.8);--shadow:rgba(0,0,0,.06)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
+nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
+.nav-i{max-width:1200px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);text-decoration:none}.nav-brand b{color:var(--accent)}
+.nav-r{display:flex;align-items:center;gap:18px}
+.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease)}
+.nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
+.ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
+.ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}.ctrl-btn.lang-btn{font-size:12px;font-weight:700;font-family:var(--mono)}
+.wrap{max-width:1200px;margin:0 auto;padding:96px 24px 24px;position:relative}
+header.hd{text-align:center;margin-bottom:16px}
+header.hd h1{font-family:var(--serif);font-size:clamp(34px,5vw,48px);font-weight:400;letter-spacing:-.03em}
+header.hd p{color:var(--tx-2);font-size:15px;max-width:600px;margin:6px auto 0}
+.g-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0}
+.g-chip{padding:6px 13px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-2);font-size:12px;font-weight:600;cursor:pointer;transition:all .25s var(--ease)}
+.g-chip:hover{border-color:var(--border-hi);color:var(--tx-1)}.g-chip.off{opacity:.35}
+.g-search{padding:7px 14px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-1);font-size:13px;font-family:var(--sans);outline:none;min-width:180px}
+.g-search:focus{border-color:var(--accent)}
+.g-cv{margin-left:auto;display:flex;align-items:center;gap:10px}
+.g-cvtoggle{padding:7px 14px;border-radius:100px;border:1px solid var(--border);background:var(--bg-2);color:var(--tx-2);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .25s var(--ease)}
+.g-cvtoggle.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.g-compose{padding:7px 15px;border-radius:100px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;display:none}
+.g-compose:disabled{opacity:.4;cursor:not-allowed}
+.g-stage{position:relative;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-1);overflow:hidden;height:70vh;min-height:460px}
+#graph{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#graph.panning{cursor:grabbing}
+.gedge{stroke:var(--border-hi);stroke-width:1;opacity:.5;transition:opacity .2s,stroke .2s}
+.gedge.hl{stroke:var(--accent);opacity:.9;stroke-width:1.5}
+.gnode{cursor:pointer}
+.gnode circle{stroke:var(--bg-1);stroke-width:1.5;transition:opacity .2s}
+.gnode text.glabel{font-family:var(--sans);font-size:9px;fill:var(--tx-2);pointer-events:none;transition:opacity .2s}
+.gnode.dim{opacity:.15}
+.gnode.pick circle{stroke:var(--accent);stroke-width:3}
+.g-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11.5px;color:var(--tx-3)}
+.gleg{display:flex;align-items:center;gap:5px}.gleg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.g-panel{position:absolute;top:12px;right:12px;width:260px;max-width:calc(100% - 24px);background:var(--bg-2);border:1px solid var(--border-hi);border-radius:var(--radius);padding:16px;box-shadow:0 12px 32px var(--shadow);display:none}
+.g-panel.show{display:block}
+.g-panel .gp-type{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx-3);font-weight:600}
+.g-panel .gp-title{font-family:var(--serif);font-size:20px;margin:2px 0 8px}
+.g-panel .gp-conn{font-size:12.5px;color:var(--tx-2);line-height:1.7}
+.g-panel a.gp-go{display:inline-block;margin-top:12px;padding:7px 14px;border-radius:100px;background:var(--accent);color:#fff;text-decoration:none;font-size:12.5px;font-weight:600}
+.g-panel .gp-close{position:absolute;top:10px;right:12px;cursor:pointer;color:var(--tx-3);font-size:18px;line-height:1}
+footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
+@media(max-width:640px){.wrap{padding:88px 14px 18px}.nav-r a:not(.on){display:none}.g-cv{margin-left:0;width:100%}.g-panel{top:auto;bottom:12px;right:12px;left:12px;width:auto}.g-stage{height:62vh}}
+</style>
+</head>
+<body>
+<nav><div class="nav-i">
+  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
+  <div class="nav-r">
+    <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
+    <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
+    <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
+    <a href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
+    <a href="/academy/" data-fr="Academy" data-en="Academy">Academy</a>
+    <a class="on" href="/graph/" data-fr="Graphe" data-en="Graph">Graphe</a>
+    <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Langue">FR</button>
+    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
+  </div>
+</div></nav>
+
+<div class="wrap">
+<header class="hd">
+  <h1 data-fr="Graphe du profil" data-en="Profile graph">Graphe du profil</h1>
+  <p data-fr="Le profil comme réseau : domaines, expériences, projets, compétences et leurs liens. Survolez, cliquez, ou composez un CV depuis une sélection de domaines."
+     data-en="The profile as a network: domains, experiences, projects, skills and their links. Hover, click, or compose a CV from a domain selection.">Le profil comme réseau…</p>
+</header>
+
+<div class="g-controls">
+  <div class="g-chips" id="chips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  <input class="g-search" id="search" type="search" placeholder="Rechercher…" data-fr-ph="Rechercher…" data-en-ph="Search…">
+  <div class="g-cv">
+    <button class="g-cvtoggle" id="cvToggle" data-fr="Mode CV" data-en="CV mode">Mode CV</button>
+    <button class="g-compose" id="compose" disabled data-fr="Composer mon CV" data-en="Compose my CV">Composer mon CV</button>
+  </div>
+</div>
+
+<div class="g-stage">
+  <svg id="graph" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet">
+    <g id="viewport">
+      <g id="edges"><line class="gedge" data-s="experience:alten_2026" data-t="domain:quant" x1="729.04" y1="164.24" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="experience:alten_2026" data-t="domain:data" x1="729.04" y1="164.24" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="experience:alten_2026" data-t="domain:defi" x1="729.04" y1="164.24" x2="878.83" y2="90.38"/>
+<line class="gedge" data-s="experience:alten_2026" data-t="domain:ai" x1="729.04" y1="164.24" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="experience:bouygues_2025" data-t="domain:finance" x1="507.87" y1="140.8" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="experience:bouygues_2025" data-t="domain:dev" x1="507.87" y1="140.8" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="experience:bouygues_2025" data-t="domain:data" x1="507.87" y1="140.8" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="experience:manco_2024" data-t="domain:risk" x1="167.47" y1="101.28" x2="129.11" y2="155.25"/>
+<line class="gedge" data-s="experience:manco_2024" data-t="domain:finance" x1="167.47" y1="101.28" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="project:elysium" data-t="domain:ai" x1="871.18" y1="569.62" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="project:elysium" data-t="domain:architecture" x1="871.18" y1="569.62" x2="931.23" y2="690.0"/>
+<line class="gedge" data-s="project:elysium" data-t="domain:infra" x1="871.18" y1="569.62" x2="990.0" y2="690.0"/>
+<line class="gedge" data-s="project:elysium" data-t="domain:knowledge-graph" x1="871.18" y1="569.62" x2="990.0" y2="690.0"/>
+<line class="gedge" data-s="project:elysium" data-t="domain:research" x1="871.18" y1="569.62" x2="603.75" y2="411.27"/>
+<line class="gedge" data-s="project:elysium" data-t="domain:dev" x1="871.18" y1="569.62" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:pfe-hedging" data-t="domain:quant" x1="311.93" y1="296.18" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="project:pfe-hedging" data-t="domain:risk" x1="311.93" y1="296.18" x2="129.11" y2="155.25"/>
+<line class="gedge" data-s="project:pfe-hedging" data-t="domain:finance" x1="311.93" y1="296.18" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="project:pfe-hedging" data-t="domain:research" x1="311.93" y1="296.18" x2="603.75" y2="411.27"/>
+<line class="gedge" data-s="project:pfe-hedging" data-t="education:ece" x1="311.93" y1="296.18" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:anthropos" data-t="domain:dev" x1="780.97" y1="545.0" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:anthropos" data-t="domain:product" x1="780.97" y1="545.0" x2="814.88" y2="690.0"/>
+<line class="gedge" data-s="project:anthropos" data-t="domain:ai" x1="780.97" y1="545.0" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="project:hmm-studio" data-t="domain:quant" x1="671.89" y1="258.91" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="project:hmm-studio" data-t="domain:data" x1="671.89" y1="258.91" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="project:hmm-studio" data-t="domain:research" x1="671.89" y1="258.91" x2="603.75" y2="411.27"/>
+<line class="gedge" data-s="project:derivatives-pricer" data-t="domain:quant" x1="237.32" y1="260.17" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="project:derivatives-pricer" data-t="domain:finance" x1="237.32" y1="260.17" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="project:derivatives-pricer" data-t="education:ece" x1="237.32" y1="260.17" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:monte-carlo-gbm" data-t="domain:quant" x1="396.33" y1="113.59" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="project:monte-carlo-gbm" data-t="domain:data" x1="396.33" y1="113.59" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="project:monte-carlo-gbm" data-t="education:ece" x1="396.33" y1="113.59" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:sudoku-cnn" data-t="domain:data" x1="652.11" y1="327.42" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="project:sudoku-cnn" data-t="domain:ai" x1="652.11" y1="327.42" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="project:sudoku-cnn" data-t="education:ece" x1="652.11" y1="327.42" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:trading-algo-csharp" data-t="domain:quant" x1="463.13" y1="415.76" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="project:trading-algo-csharp" data-t="domain:dev" x1="463.13" y1="415.76" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:trading-algo-csharp" data-t="education:ece" x1="463.13" y1="415.76" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:vba-index-tool" data-t="domain:finance" x1="438.62" y1="148.49" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="project:vba-index-tool" data-t="domain:data" x1="438.62" y1="148.49" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="project:vba-index-tool" data-t="education:ece" x1="438.62" y1="148.49" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:vhdl-calculator" data-t="domain:dev" x1="392.64" y1="512.21" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:vhdl-calculator" data-t="education:ece" x1="392.64" y1="512.21" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:atc-simulation" data-t="domain:dev" x1="407.01" y1="555.91" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:atc-simulation" data-t="education:ece" x1="407.01" y1="555.91" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:gripper-robot" data-t="domain:dev" x1="450.75" y1="529.82" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:gripper-robot" data-t="education:ece" x1="450.75" y1="529.82" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:octoprint-bed-leveller" data-t="domain:dev" x1="502.84" y1="690.0" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:tms-bouygues" data-t="domain:finance" x1="511.12" y1="267.85" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="project:tms-bouygues" data-t="domain:dev" x1="511.12" y1="267.85" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:tms-bouygues" data-t="domain:data" x1="511.12" y1="267.85" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="project:tms-bouygues" data-t="experience:bouygues_2025" x1="511.12" y1="267.85" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="project:crypto-exploration" data-t="domain:quant" x1="761.38" y1="209.57" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="project:crypto-exploration" data-t="domain:data" x1="761.38" y1="209.57" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="project:crypto-exploration" data-t="domain:defi" x1="761.38" y1="209.57" x2="878.83" y2="90.38"/>
+<line class="gedge" data-s="project:crypto-exploration" data-t="domain:ai" x1="761.38" y1="209.57" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="project:crypto-exploration" data-t="experience:alten_2026" x1="761.38" y1="209.57" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="project:ppe-politique-monetaire" data-t="domain:finance" x1="427.42" y1="332.97" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="project:ppe-politique-monetaire" data-t="domain:research" x1="427.42" y1="332.97" x2="603.75" y2="411.27"/>
+<line class="gedge" data-s="project:ppe-politique-monetaire" data-t="education:ece" x1="427.42" y1="332.97" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="project:portfolio-site" data-t="domain:dev" x1="694.66" y1="690.0" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="project:portfolio-site" data-t="domain:product" x1="694.66" y1="690.0" x2="814.88" y2="690.0"/>
+<line class="gedge" data-s="article:couverture_dynamique" data-t="domain:quant" x1="271.99" y1="113.66" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="article:couverture_dynamique" data-t="domain:risk" x1="271.99" y1="113.66" x2="129.11" y2="155.25"/>
+<line class="gedge" data-s="article:couverture_dynamique" data-t="domain:finance" x1="271.99" y1="113.66" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="article:onchain_analytics" data-t="domain:defi" x1="812.61" y1="10.0" x2="878.83" y2="90.38"/>
+<line class="gedge" data-s="article:onchain_analytics" data-t="domain:data" x1="812.61" y1="10.0" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:Python" data-t="experience:alten_2026" x1="624.43" y1="255.79" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="skill:Python" data-t="experience:bouygues_2025" x1="624.43" y1="255.79" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:Python" data-t="domain:quant" x1="624.43" y1="255.79" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Python" data-t="domain:data" x1="624.43" y1="255.79" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:Python" data-t="domain:dev" x1="624.43" y1="255.79" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="skill:SQL" data-t="experience:bouygues_2025" x1="427.05" y1="235.81" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:SQL" data-t="experience:manco_2024" x1="427.05" y1="235.81" x2="167.47" y2="101.28"/>
+<line class="gedge" data-s="skill:SQL" data-t="domain:data" x1="427.05" y1="235.81" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:SQL" data-t="domain:dev" x1="427.05" y1="235.81" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="skill:VBA" data-t="experience:bouygues_2025" x1="308.19" y1="24.69" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:VBA" data-t="experience:manco_2024" x1="308.19" y1="24.69" x2="167.47" y2="101.28"/>
+<line class="gedge" data-s="skill:VBA" data-t="domain:finance" x1="308.19" y1="24.69" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="skill:Java" data-t="domain:dev" x1="617.92" y1="690.0" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="skill:C/C++" data-t="domain:dev" x1="550.6" y1="408.62" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="skill:C/C++" data-t="domain:quant" x1="550.6" y1="408.62" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:C#" data-t="domain:dev" x1="562.51" y1="690.0" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="skill:Finance Quantitative" data-t="experience:alten_2026" x1="572.56" y1="257.32" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="skill:Finance Quantitative" data-t="education:ece" x1="572.56" y1="257.32" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="skill:Finance Quantitative" data-t="domain:quant" x1="572.56" y1="257.32" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Calcul Stochastique" data-t="education:ece" x1="316.62" y1="359.26" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="skill:Calcul Stochastique" data-t="domain:quant" x1="316.62" y1="359.26" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Pricing Dérivés" data-t="experience:bouygues_2025" x1="386.0" y1="197.77" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:Pricing Dérivés" data-t="education:ece" x1="386.0" y1="197.77" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="skill:Pricing Dérivés" data-t="domain:quant" x1="386.0" y1="197.77" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Risk Management" data-t="experience:manco_2024" x1="150.56" y1="239.75" x2="167.47" y2="101.28"/>
+<line class="gedge" data-s="skill:Risk Management" data-t="education:ece" x1="150.56" y1="239.75" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="skill:Risk Management" data-t="domain:risk" x1="150.56" y1="239.75" x2="129.11" y2="155.25"/>
+<line class="gedge" data-s="skill:Trésorerie d&#x27;entreprise" data-t="experience:bouygues_2025" x1="387.99" y1="10.0" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:Trésorerie d&#x27;entreprise" data-t="domain:finance" x1="387.99" y1="10.0" x2="340.55" y2="159.31"/>
+<line class="gedge" data-s="skill:Couverture dynamique" data-t="education:ece" x1="273.91" y1="213.63" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="skill:Couverture dynamique" data-t="domain:quant" x1="273.91" y1="213.63" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Couverture dynamique" data-t="domain:risk" x1="273.91" y1="213.63" x2="129.11" y2="155.25"/>
+<line class="gedge" data-s="skill:Machine Learning" data-t="experience:alten_2026" x1="564.92" y1="196.45" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="skill:Machine Learning" data-t="education:ece" x1="564.92" y1="196.45" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="skill:Machine Learning" data-t="domain:quant" x1="564.92" y1="196.45" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Machine Learning" data-t="domain:data" x1="564.92" y1="196.45" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:Statistics" data-t="experience:alten_2026" x1="647.49" y1="81.68" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="skill:Statistics" data-t="domain:quant" x1="647.49" y1="81.68" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Statistics" data-t="domain:data" x1="647.49" y1="81.68" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:ETL / Data Pipelines" data-t="experience:alten_2026" x1="678.42" y1="21.09" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="skill:ETL / Data Pipelines" data-t="experience:bouygues_2025" x1="678.42" y1="21.09" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:ETL / Data Pipelines" data-t="domain:data" x1="678.42" y1="21.09" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:BigQuery" data-t="experience:bouygues_2025" x1="617.83" y1="10.0" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:BigQuery" data-t="domain:data" x1="617.83" y1="10.0" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:Dataiku" data-t="experience:bouygues_2025" x1="567.39" y1="10.0" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="skill:Dataiku" data-t="domain:data" x1="567.39" y1="10.0" x2="608.5" y2="140.23"/>
+<line class="gedge" data-s="skill:DeFi / Blockchain" data-t="experience:alten_2026" x1="701.0" y1="88.71" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="skill:DeFi / Blockchain" data-t="domain:quant" x1="701.0" y1="88.71" x2="495.08" y2="221.79"/>
+<line class="gedge" data-s="skill:Compliance" data-t="experience:manco_2024" x1="10.0" y1="50.67" x2="167.47" y2="101.28"/>
+<line class="gedge" data-s="skill:Compliance" data-t="domain:risk" x1="10.0" y1="50.67" x2="129.11" y2="155.25"/>
+<line class="gedge" data-s="skill:Actuariat" data-t="experience:manco_2024" x1="10.0" y1="100.29" x2="167.47" y2="101.28"/>
+<line class="gedge" data-s="skill:Actuariat" data-t="domain:risk" x1="10.0" y1="100.29" x2="129.11" y2="155.25"/>
+<line class="gedge" data-s="skill:Kubernetes / K3s" data-t="project:elysium" x1="990.0" y1="690.0" x2="871.18" y2="569.62"/>
+<line class="gedge" data-s="skill:Kubernetes / K3s" data-t="domain:infra" x1="990.0" y1="690.0" x2="990.0" y2="690.0"/>
+<line class="gedge" data-s="skill:LLM Orchestration" data-t="project:elysium" x1="990.0" y1="489.26" x2="871.18" y2="569.62"/>
+<line class="gedge" data-s="skill:LLM Orchestration" data-t="domain:ai" x1="990.0" y1="489.26" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="skill:Knowledge Graphs" data-t="project:elysium" x1="988.8" y1="553.23" x2="871.18" y2="569.62"/>
+<line class="gedge" data-s="skill:Knowledge Graphs" data-t="domain:ai" x1="988.8" y1="553.23" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="skill:Knowledge Graphs" data-t="domain:architecture" x1="988.8" y1="553.23" x2="931.23" y2="690.0"/>
+<line class="gedge" data-s="skill:Multi-Agent Systems" data-t="project:elysium" x1="990.0" y1="444.21" x2="871.18" y2="569.62"/>
+<line class="gedge" data-s="skill:Multi-Agent Systems" data-t="domain:ai" x1="990.0" y1="444.21" x2="858.15" y2="392.83"/>
+<line class="gedge" data-s="skill:DevOps / GitOps" data-t="project:elysium" x1="990.0" y1="690.0" x2="871.18" y2="569.62"/>
+<line class="gedge" data-s="skill:DevOps / GitOps" data-t="domain:infra" x1="990.0" y1="690.0" x2="990.0" y2="690.0"/>
+<line class="gedge" data-s="skill:TDD / Testing" data-t="project:elysium" x1="740.46" y1="616.94" x2="871.18" y2="569.62"/>
+<line class="gedge" data-s="skill:TDD / Testing" data-t="domain:dev" x1="740.46" y1="616.94" x2="582.39" y2="484.85"/>
+<line class="gedge" data-s="demo:bs" data-t="project:derivatives-pricer" x1="10.0" y1="281.0" x2="237.32" y2="260.17"/>
+<line class="gedge" data-s="demo:mc" data-t="project:monte-carlo-gbm" x1="221.38" y1="10.0" x2="396.33" y2="113.59"/>
+<line class="gedge" data-s="journey:0" data-t="education:prepa" x1="10.0" y1="674.51" x2="10.0" y2="690.0"/>
+<line class="gedge" data-s="journey:1" data-t="education:ece" x1="219.17" y1="516.01" x2="376.62" y2="338.55"/>
+<line class="gedge" data-s="journey:2" data-t="experience:manco_2024" x1="10.0" y1="10.0" x2="167.47" y2="101.28"/>
+<line class="gedge" data-s="journey:3" data-t="experience:bouygues_2025" x1="477.89" y1="10.0" x2="507.87" y2="140.8"/>
+<line class="gedge" data-s="journey:4" data-t="project:pfe-hedging" x1="84.76" y1="372.42" x2="311.93" y2="296.18"/>
+<line class="gedge" data-s="journey:5" data-t="experience:alten_2026" x1="935.49" y1="23.08" x2="729.04" y2="164.24"/>
+<line class="gedge" data-s="journey:6" data-t="project:elysium" x1="990.0" y1="690.0" x2="871.18" y2="569.62"/>
+<line class="gedge" data-s="journey:7" data-t="education:ece" x1="173.98" y1="457.77" x2="376.62" y2="338.55"/></g>
+      <g id="nodes"><g class="gnode" data-id="identity:self" data-type="identity" transform="translate(500.0,350.0)"><circle r="13" fill="var(--accent)"/><text class="glabel" x="16" y="4" data-fr="Robin Denis" data-en="Robin Denis">Robin Denis</text></g>
+<g class="gnode" data-id="domain:quant" data-type="domain" transform="translate(495.08,221.79)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Finance quantitative" data-en="Quantitative Finance">Finance quantitative</text></g>
+<g class="gnode" data-id="domain:risk" data-type="domain" transform="translate(129.11,155.25)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Gestion des risques" data-en="Risk Management">Gestion des risques</text></g>
+<g class="gnode" data-id="domain:finance" data-type="domain" transform="translate(340.55,159.31)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Finance d&#x27;entreprise / Trésorerie" data-en="Corporate Finance / Treasury">Finance d&#x27;entreprise / Trésorerie</text></g>
+<g class="gnode" data-id="domain:data" data-type="domain" transform="translate(608.5,140.23)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Data Engineering / ML" data-en="Data Engineering / ML">Data Engineering / ML</text></g>
+<g class="gnode" data-id="domain:defi" data-type="domain" transform="translate(878.83,90.38)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="DeFi / Blockchain" data-en="DeFi / Blockchain">DeFi / Blockchain</text></g>
+<g class="gnode" data-id="domain:dev" data-type="domain" transform="translate(582.39,484.85)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Développement logiciel" data-en="Software Development">Développement logiciel</text></g>
+<g class="gnode" data-id="domain:ai" data-type="domain" transform="translate(858.15,392.83)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="IA / LLM" data-en="AI / LLM Engineering">IA / LLM</text></g>
+<g class="gnode" data-id="domain:architecture" data-type="domain" transform="translate(931.23,690.0)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Architecture logicielle" data-en="Software Architecture">Architecture logicielle</text></g>
+<g class="gnode" data-id="domain:infra" data-type="domain" transform="translate(990.0,690.0)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="DevOps / Kubernetes" data-en="DevOps / Kubernetes">DevOps / Kubernetes</text></g>
+<g class="gnode" data-id="domain:knowledge-graph" data-type="domain" transform="translate(990.0,690.0)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Graphes de connaissance" data-en="Knowledge Graphs">Graphes de connaissance</text></g>
+<g class="gnode" data-id="domain:research" data-type="domain" transform="translate(603.75,411.27)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Recherche / R&amp;D" data-en="Research / R&amp;D">Recherche / R&amp;D</text></g>
+<g class="gnode" data-id="domain:product" data-type="domain" transform="translate(814.88,690.0)"><circle r="9" fill="#f59e42"/><text class="glabel" x="12" y="4" data-fr="Produit / SaaS" data-en="Product / SaaS">Produit / SaaS</text></g>
+<g class="gnode" data-id="experience:alten_2026" data-type="experience" transform="translate(729.04,164.24)"><circle r="8" fill="#22c55e"/><text class="glabel" x="11" y="4" data-fr="Quantitative Researcher DeFi" data-en="DeFi Quantitative Researcher">Quantitative Researcher DeFi</text></g>
+<g class="gnode" data-id="experience:bouygues_2025" data-type="experience" transform="translate(507.87,140.8)"><circle r="8" fill="#22c55e"/><text class="glabel" x="11" y="4" data-fr="Trésorier &amp; Développeur Full Stack" data-en="Treasury Manager &amp; Full Stack Developer">Trésorier &amp; Développeur Full Stack</text></g>
+<g class="gnode" data-id="experience:manco_2024" data-type="experience" transform="translate(167.47,101.28)"><circle r="8" fill="#22c55e"/><text class="glabel" x="11" y="4" data-fr="Risk Manager" data-en="Risk Manager">Risk Manager</text></g>
+<g class="gnode" data-id="education:ece" data-type="education" transform="translate(376.62,338.55)"><circle r="8" fill="#a78bfa"/><text class="glabel" x="11" y="4" data-fr="ECE Paris, Cycle Ingénieur" data-en="ECE Paris, Engineering Program">ECE Paris, Cycle Ingénieur</text></g>
+<g class="gnode" data-id="education:prepa" data-type="education" transform="translate(10.0,690.0)"><circle r="8" fill="#a78bfa"/><text class="glabel" x="11" y="4" data-fr="Classes Préparatoires MPSI – MP" data-en="Preparatory Classes MPSI – MP">Classes Préparatoires MPSI – MP</text></g>
+<g class="gnode" data-id="project:elysium" data-type="project" transform="translate(871.18,569.62)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="ELYSIUM — Sovereign Cognitive Architecture" data-en="ELYSIUM — Sovereign Cognitive Architecture">ELYSIUM — Sovereign Cognitive Architecture</text></g>
+<g class="gnode" data-id="project:pfe-hedging" data-type="project" transform="translate(311.93,296.18)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Couverture dynamique en assurance/banque (PFE × EY)" data-en="Dynamic hedging in insurance/banking (Capstone × EY)">Couverture dynamique en assurance/banque (PFE × EY)</text></g>
+<g class="gnode" data-id="project:anthropos" data-type="project" transform="translate(780.97,545.0)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Anthropos — Career OS &amp; Life Architect" data-en="Anthropos — Career OS &amp; Life Architect">Anthropos — Career OS &amp; Life Architect</text></g>
+<g class="gnode" data-id="project:hmm-studio" data-type="project" transform="translate(671.89,258.91)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="hmm-studio — Modèles de Markov cachés contraints" data-en="hmm-studio — Modèles de Markov cachés contraints">hmm-studio — Modèles de Markov cachés contraints</text></g>
+<g class="gnode" data-id="project:derivatives-pricer" data-type="project" transform="translate(237.32,260.17)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Pricer d&#x27;options européennes (Black-Scholes)" data-en="Pricer d&#x27;options européennes (Black-Scholes)">Pricer d&#x27;options européennes (Black-Scholes)</text></g>
+<g class="gnode" data-id="project:monte-carlo-gbm" data-type="project" transform="translate(396.33,113.59)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Simulation Monte-Carlo — Mouvement Brownien Géométrique" data-en="Simulation Monte-Carlo — Mouvement Brownien Géométrique">Simulation Monte-Carlo — Mouvement Brownien Géométrique</text></g>
+<g class="gnode" data-id="project:sudoku-cnn" data-type="project" transform="translate(652.11,327.42)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Résolution de Sudoku par réseau de neurones convolutif" data-en="Résolution de Sudoku par réseau de neurones convolutif">Résolution de Sudoku par réseau de neurones convolutif</text></g>
+<g class="gnode" data-id="project:trading-algo-csharp" data-type="project" transform="translate(463.13,415.76)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Algorithme de trading crypto / forex (C#)" data-en="Algorithme de trading crypto / forex (C#)">Algorithme de trading crypto / forex (C#)</text></g>
+<g class="gnode" data-id="project:vba-index-tool" data-type="project" transform="translate(438.62,148.49)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Outil VBA d&#x27;analyse &amp; visualisation d&#x27;indices boursiers" data-en="Outil VBA d&#x27;analyse &amp; visualisation d&#x27;indices boursiers">Outil VBA d&#x27;analyse &amp; visualisation d&#x27;indices boursiers</text></g>
+<g class="gnode" data-id="project:vhdl-calculator" data-type="project" transform="translate(392.64,512.21)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Calculatrice 4 opérations en VHDL (FPGA)" data-en="Calculatrice 4 opérations en VHDL (FPGA)">Calculatrice 4 opérations en VHDL (FPGA)</text></g>
+<g class="gnode" data-id="project:atc-simulation" data-type="project" transform="translate(407.01,555.91)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Simulation de tour de contrôle aérienne" data-en="Simulation de tour de contrôle aérienne">Simulation de tour de contrôle aérienne</text></g>
+<g class="gnode" data-id="project:gripper-robot" data-type="project" transform="translate(450.75,529.82)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Robot pince — modélisation 3D, impression &amp; assemblage" data-en="Robot pince — modélisation 3D, impression &amp; assemblage">Robot pince — modélisation 3D, impression &amp; assemblage</text></g>
+<g class="gnode" data-id="project:octoprint-bed-leveller" data-type="project" transform="translate(502.84,690.0)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Plugin Octoprint — Bed Leveller &amp; Visualizer" data-en="Plugin Octoprint — Bed Leveller &amp; Visualizer">Plugin Octoprint — Bed Leveller &amp; Visualizer</text></g>
+<g class="gnode" data-id="project:tms-bouygues" data-type="project" transform="translate(511.12,267.85)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Treasury Management System (Bouygues Telecom)" data-en="Treasury Management System (Bouygues Telecom)">Treasury Management System (Bouygues Telecom)</text></g>
+<g class="gnode" data-id="project:crypto-exploration" data-type="project" transform="translate(761.38,209.57)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="CryptoExploration — recherche quant DeFi (ALTEN)" data-en="CryptoExploration — recherche quant DeFi (ALTEN)">CryptoExploration — recherche quant DeFi (ALTEN)</text></g>
+<g class="gnode" data-id="project:ppe-politique-monetaire" data-type="project" transform="translate(427.42,332.97)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="Recherche &amp; fixation de la politique monétaire (PPE)" data-en="Recherche &amp; fixation de la politique monétaire (PPE)">Recherche &amp; fixation de la politique monétaire (PPE)</text></g>
+<g class="gnode" data-id="project:portfolio-site" data-type="project" transform="translate(694.66,690.0)"><circle r="7" fill="#3b82f6"/><text class="glabel" x="10" y="4" data-fr="robin-denis.com — site portfolio &amp; pipeline candidature" data-en="robin-denis.com — site portfolio &amp; pipeline candidature">robin-denis.com — site portfolio &amp; pipeline candidature</text></g>
+<g class="gnode" data-id="article:couverture_dynamique" data-type="article" transform="translate(271.99,113.66)"><circle r="6" fill="#ec4899"/><text class="glabel" x="9" y="4" data-fr="Couverture dynamique : théorie vs pratique en assurance" data-en="Dynamic Hedging: Theory vs Practice in Insurance">Couverture dynamique : théorie vs pratique en assurance</text></g>
+<g class="gnode" data-id="article:onchain_analytics" data-type="article" transform="translate(812.61,10.0)"><circle r="6" fill="#ec4899"/><text class="glabel" x="9" y="4" data-fr="Analyse on-chain : détecter les signaux faibles en DeFi" data-en="On-Chain Analytics: Detecting Weak Signals in DeFi">Analyse on-chain : détecter les signaux faibles en DeFi</text></g>
+<g class="gnode" data-id="demo:bs" data-type="demo" transform="translate(10.0,281.0)"><circle r="6" fill="#14b8a6"/><text class="glabel" x="9" y="4" data-fr="Black-Scholes Pricer" data-en="Black-Scholes Pricer">Black-Scholes Pricer</text></g>
+<g class="gnode" data-id="demo:mc" data-type="demo" transform="translate(221.38,10.0)"><circle r="6" fill="#14b8a6"/><text class="glabel" x="9" y="4" data-fr="Simulation Monte Carlo (GBM)" data-en="Simulation Monte Carlo (GBM)">Simulation Monte Carlo (GBM)</text></g>
+<g class="gnode" data-id="journey:0" data-type="journey" transform="translate(10.0,674.51)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="Prépa MPSI" data-en="Prep School MPSI">Prépa MPSI</text></g>
+<g class="gnode" data-id="journey:1" data-type="journey" transform="translate(219.17,516.01)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="ECE Paris" data-en="ECE Paris">ECE Paris</text></g>
+<g class="gnode" data-id="journey:2" data-type="journey" transform="translate(10.0,10.0)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="Risk Manager" data-en="Risk Manager">Risk Manager</text></g>
+<g class="gnode" data-id="journey:3" data-type="journey" transform="translate(477.89,10.0)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="Trésorier &amp; Dev" data-en="Treasurer &amp; Dev">Trésorier &amp; Dev</text></g>
+<g class="gnode" data-id="journey:4" data-type="journey" transform="translate(84.76,372.42)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="PFE avec EY" data-en="Capstone with EY">PFE avec EY</text></g>
+<g class="gnode" data-id="journey:5" data-type="journey" transform="translate(935.49,23.08)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="Quant Researcher" data-en="Quant Researcher">Quant Researcher</text></g>
+<g class="gnode" data-id="journey:6" data-type="journey" transform="translate(990.0,690.0)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="ELYSIUM" data-en="ELYSIUM">ELYSIUM</text></g>
+<g class="gnode" data-id="journey:7" data-type="journey" transform="translate(173.98,457.77)"><circle r="6" fill="#eab308"/><text class="glabel" x="9" y="4" data-fr="Diplôme Ingénieur" data-en="Engineering Degree">Diplôme Ingénieur</text></g>
+<g class="gnode" data-id="skill:Python" data-type="skill" transform="translate(624.43,255.79)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Python" data-en="Python">Python</text></g>
+<g class="gnode" data-id="skill:SQL" data-type="skill" transform="translate(427.05,235.81)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="SQL" data-en="SQL">SQL</text></g>
+<g class="gnode" data-id="skill:VBA" data-type="skill" transform="translate(308.19,24.69)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="VBA" data-en="VBA">VBA</text></g>
+<g class="gnode" data-id="skill:Java" data-type="skill" transform="translate(617.92,690.0)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Java" data-en="Java">Java</text></g>
+<g class="gnode" data-id="skill:C/C++" data-type="skill" transform="translate(550.6,408.62)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="C/C++" data-en="C/C++">C/C++</text></g>
+<g class="gnode" data-id="skill:C#" data-type="skill" transform="translate(562.51,690.0)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="C#" data-en="C#">C#</text></g>
+<g class="gnode" data-id="skill:Finance Quantitative" data-type="skill" transform="translate(572.56,257.32)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Finance Quantitative" data-en="Finance Quantitative">Finance Quantitative</text></g>
+<g class="gnode" data-id="skill:Calcul Stochastique" data-type="skill" transform="translate(316.62,359.26)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Calcul Stochastique" data-en="Calcul Stochastique">Calcul Stochastique</text></g>
+<g class="gnode" data-id="skill:Pricing Dérivés" data-type="skill" transform="translate(386.0,197.77)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Pricing Dérivés" data-en="Pricing Dérivés">Pricing Dérivés</text></g>
+<g class="gnode" data-id="skill:Risk Management" data-type="skill" transform="translate(150.56,239.75)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Risk Management" data-en="Risk Management">Risk Management</text></g>
+<g class="gnode" data-id="skill:Trésorerie d&#x27;entreprise" data-type="skill" transform="translate(387.99,10.0)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Trésorerie d&#x27;entreprise" data-en="Trésorerie d&#x27;entreprise">Trésorerie d&#x27;entreprise</text></g>
+<g class="gnode" data-id="skill:Couverture dynamique" data-type="skill" transform="translate(273.91,213.63)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Couverture dynamique" data-en="Couverture dynamique">Couverture dynamique</text></g>
+<g class="gnode" data-id="skill:Machine Learning" data-type="skill" transform="translate(564.92,196.45)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Machine Learning" data-en="Machine Learning">Machine Learning</text></g>
+<g class="gnode" data-id="skill:Statistics" data-type="skill" transform="translate(647.49,81.68)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Statistics" data-en="Statistics">Statistics</text></g>
+<g class="gnode" data-id="skill:ETL / Data Pipelines" data-type="skill" transform="translate(678.42,21.09)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="ETL / Data Pipelines" data-en="ETL / Data Pipelines">ETL / Data Pipelines</text></g>
+<g class="gnode" data-id="skill:BigQuery" data-type="skill" transform="translate(617.83,10.0)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="BigQuery" data-en="BigQuery">BigQuery</text></g>
+<g class="gnode" data-id="skill:Dataiku" data-type="skill" transform="translate(567.39,10.0)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Dataiku" data-en="Dataiku">Dataiku</text></g>
+<g class="gnode" data-id="skill:DeFi / Blockchain" data-type="skill" transform="translate(701.0,88.71)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="DeFi / Blockchain" data-en="DeFi / Blockchain">DeFi / Blockchain</text></g>
+<g class="gnode" data-id="skill:Compliance" data-type="skill" transform="translate(10.0,50.67)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Compliance" data-en="Compliance">Compliance</text></g>
+<g class="gnode" data-id="skill:Actuariat" data-type="skill" transform="translate(10.0,100.29)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Actuariat" data-en="Actuariat">Actuariat</text></g>
+<g class="gnode" data-id="skill:Kubernetes / K3s" data-type="skill" transform="translate(990.0,690.0)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Kubernetes / K3s" data-en="Kubernetes / K3s">Kubernetes / K3s</text></g>
+<g class="gnode" data-id="skill:LLM Orchestration" data-type="skill" transform="translate(990.0,489.26)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="LLM Orchestration" data-en="LLM Orchestration">LLM Orchestration</text></g>
+<g class="gnode" data-id="skill:Knowledge Graphs" data-type="skill" transform="translate(988.8,553.23)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Knowledge Graphs" data-en="Knowledge Graphs">Knowledge Graphs</text></g>
+<g class="gnode" data-id="skill:Multi-Agent Systems" data-type="skill" transform="translate(990.0,444.21)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="Multi-Agent Systems" data-en="Multi-Agent Systems">Multi-Agent Systems</text></g>
+<g class="gnode" data-id="skill:DevOps / GitOps" data-type="skill" transform="translate(990.0,690.0)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="DevOps / GitOps" data-en="DevOps / GitOps">DevOps / GitOps</text></g>
+<g class="gnode" data-id="skill:TDD / Testing" data-type="skill" transform="translate(740.46,616.94)"><circle r="6" fill="#64748b"/><text class="glabel" x="9" y="4" data-fr="TDD / Testing" data-en="TDD / Testing">TDD / Testing</text></g></g>
+    </g>
+  </svg>
+  <div class="g-panel" id="panel">
+    <span class="gp-close" onclick="closePanel()">×</span>
+    <div class="gp-type" id="pType"></div>
+    <div class="gp-title" id="pTitle"></div>
+    <div class="gp-conn" id="pConn"></div>
+    <a class="gp-go" id="pGo" href="#" data-fr="Voir la page ↗" data-en="Open page ↗">Voir la page ↗</a>
+  </div>
+</div>
+<div class="g-legend"><span class="gleg"><i style="background:var(--accent)"></i><span data-fr="Moi" data-en="Me">Moi</span></span><span class="gleg"><i style="background:#f59e42"></i><span data-fr="Domaines" data-en="Domains">Domaines</span></span><span class="gleg"><i style="background:#22c55e"></i><span data-fr="Expériences" data-en="Experience">Expériences</span></span><span class="gleg"><i style="background:#a78bfa"></i><span data-fr="Formations" data-en="Education">Formations</span></span><span class="gleg"><i style="background:#3b82f6"></i><span data-fr="Projets" data-en="Projects">Projets</span></span><span class="gleg"><i style="background:#ec4899"></i><span data-fr="Articles" data-en="Articles">Articles</span></span><span class="gleg"><i style="background:#14b8a6"></i><span data-fr="Démos" data-en="Demos">Démos</span></span><span class="gleg"><i style="background:#eab308"></i><span data-fr="Parcours" data-en="Journey">Parcours</span></span><span class="gleg"><i style="background:#64748b"></i><span data-fr="Compétences" data-en="Skills">Compétences</span></span></div>
+
+<footer>Robin Denis · 2026-07-08 · <a href="/" style="color:var(--accent);text-decoration:none" data-fr="Retour à l'accueil" data-en="Back home">Retour</a></footer>
+</div>
+
+<script src="/assets/js/cv-select.js"></script>
+<script src="/assets/js/cv-render.js"></script>
+<script id="graph-data" type="application/json">{"nodes": [{"id": "identity:self", "type": "identity", "fr": "Robin Denis", "en": "Robin Denis", "x": 500.0, "y": 350.0, "href": ""}, {"id": "domain:quant", "type": "domain", "fr": "Finance quantitative", "en": "Quantitative Finance", "x": 495.08, "y": 221.79, "href": "/highlights/?lens=quant"}, {"id": "domain:risk", "type": "domain", "fr": "Gestion des risques", "en": "Risk Management", "x": 129.11, "y": 155.25, "href": "/highlights/?lens=risk"}, {"id": "domain:finance", "type": "domain", "fr": "Finance d'entreprise / Tr\u00e9sorerie", "en": "Corporate Finance / Treasury", "x": 340.55, "y": 159.31, "href": "/highlights/?lens=finance"}, {"id": "domain:data", "type": "domain", "fr": "Data Engineering / ML", "en": "Data Engineering / ML", "x": 608.5, "y": 140.23, "href": "/highlights/?lens=data"}, {"id": "domain:defi", "type": "domain", "fr": "DeFi / Blockchain", "en": "DeFi / Blockchain", "x": 878.83, "y": 90.38, "href": "/highlights/?lens=defi"}, {"id": "domain:dev", "type": "domain", "fr": "D\u00e9veloppement logiciel", "en": "Software Development", "x": 582.39, "y": 484.85, "href": "/highlights/?lens=dev"}, {"id": "domain:ai", "type": "domain", "fr": "IA / LLM", "en": "AI / LLM Engineering", "x": 858.15, "y": 392.83, "href": "/highlights/?lens=ai"}, {"id": "domain:architecture", "type": "domain", "fr": "Architecture logicielle", "en": "Software Architecture", "x": 931.23, "y": 690.0, "href": "/explorer/"}, {"id": "domain:infra", "type": "domain", "fr": "DevOps / Kubernetes", "en": "DevOps / Kubernetes", "x": 990.0, "y": 690.0, "href": "/explorer/"}, {"id": "domain:knowledge-graph", "type": "domain", "fr": "Graphes de connaissance", "en": "Knowledge Graphs", "x": 990.0, "y": 690.0, "href": "/explorer/"}, {"id": "domain:research", "type": "domain", "fr": "Recherche / R&D", "en": "Research / R&D", "x": 603.75, "y": 411.27, "href": "/highlights/?lens=research"}, {"id": "domain:product", "type": "domain", "fr": "Produit / SaaS", "en": "Product / SaaS", "x": 814.88, "y": 690.0, "href": "/highlights/?lens=product"}, {"id": "experience:alten_2026", "type": "experience", "fr": "Quantitative Researcher DeFi", "en": "DeFi Quantitative Researcher", "x": 729.04, "y": 164.24, "href": "/#experience"}, {"id": "experience:bouygues_2025", "type": "experience", "fr": "Tr\u00e9sorier & D\u00e9veloppeur Full Stack", "en": "Treasury Manager & Full Stack Developer", "x": 507.87, "y": 140.8, "href": "/#experience"}, {"id": "experience:manco_2024", "type": "experience", "fr": "Risk Manager", "en": "Risk Manager", "x": 167.47, "y": 101.28, "href": "/#experience"}, {"id": "education:ece", "type": "education", "fr": "ECE Paris, Cycle Ing\u00e9nieur", "en": "ECE Paris, Engineering Program", "x": 376.62, "y": 338.55, "href": "/#education"}, {"id": "education:prepa", "type": "education", "fr": "Classes Pr\u00e9paratoires MPSI \u2013 MP", "en": "Preparatory Classes MPSI \u2013 MP", "x": 10.0, "y": 690.0, "href": "/#education"}, {"id": "project:elysium", "type": "project", "fr": "ELYSIUM \u2014 Sovereign Cognitive Architecture", "en": "ELYSIUM \u2014 Sovereign Cognitive Architecture", "x": 871.18, "y": 569.62, "href": "/projects/#elysium"}, {"id": "project:pfe-hedging", "type": "project", "fr": "Couverture dynamique en assurance/banque (PFE \u00d7 EY)", "en": "Dynamic hedging in insurance/banking (Capstone \u00d7 EY)", "x": 311.93, "y": 296.18, "href": "/projects/#pfe-hedging"}, {"id": "project:anthropos", "type": "project", "fr": "Anthropos \u2014 Career OS & Life Architect", "en": "Anthropos \u2014 Career OS & Life Architect", "x": 780.97, "y": 545.0, "href": "/projects/#anthropos"}, {"id": "project:hmm-studio", "type": "project", "fr": "hmm-studio \u2014 Mod\u00e8les de Markov cach\u00e9s contraints", "en": "hmm-studio \u2014 Mod\u00e8les de Markov cach\u00e9s contraints", "x": 671.89, "y": 258.91, "href": "/projects/#hmm-studio"}, {"id": "project:derivatives-pricer", "type": "project", "fr": "Pricer d'options europ\u00e9ennes (Black-Scholes)", "en": "Pricer d'options europ\u00e9ennes (Black-Scholes)", "x": 237.32, "y": 260.17, "href": "/projects/#derivatives-pricer"}, {"id": "project:monte-carlo-gbm", "type": "project", "fr": "Simulation Monte-Carlo \u2014 Mouvement Brownien G\u00e9om\u00e9trique", "en": "Simulation Monte-Carlo \u2014 Mouvement Brownien G\u00e9om\u00e9trique", "x": 396.33, "y": 113.59, "href": "/projects/#monte-carlo-gbm"}, {"id": "project:sudoku-cnn", "type": "project", "fr": "R\u00e9solution de Sudoku par r\u00e9seau de neurones convolutif", "en": "R\u00e9solution de Sudoku par r\u00e9seau de neurones convolutif", "x": 652.11, "y": 327.42, "href": "/projects/#sudoku-cnn"}, {"id": "project:trading-algo-csharp", "type": "project", "fr": "Algorithme de trading crypto / forex (C#)", "en": "Algorithme de trading crypto / forex (C#)", "x": 463.13, "y": 415.76, "href": "/projects/#trading-algo-csharp"}, {"id": "project:vba-index-tool", "type": "project", "fr": "Outil VBA d'analyse & visualisation d'indices boursiers", "en": "Outil VBA d'analyse & visualisation d'indices boursiers", "x": 438.62, "y": 148.49, "href": "/projects/#vba-index-tool"}, {"id": "project:vhdl-calculator", "type": "project", "fr": "Calculatrice 4 op\u00e9rations en VHDL (FPGA)", "en": "Calculatrice 4 op\u00e9rations en VHDL (FPGA)", "x": 392.64, "y": 512.21, "href": "/projects/#vhdl-calculator"}, {"id": "project:atc-simulation", "type": "project", "fr": "Simulation de tour de contr\u00f4le a\u00e9rienne", "en": "Simulation de tour de contr\u00f4le a\u00e9rienne", "x": 407.01, "y": 555.91, "href": "/projects/#atc-simulation"}, {"id": "project:gripper-robot", "type": "project", "fr": "Robot pince \u2014 mod\u00e9lisation 3D, impression & assemblage", "en": "Robot pince \u2014 mod\u00e9lisation 3D, impression & assemblage", "x": 450.75, "y": 529.82, "href": "/projects/#gripper-robot"}, {"id": "project:octoprint-bed-leveller", "type": "project", "fr": "Plugin Octoprint \u2014 Bed Leveller & Visualizer", "en": "Plugin Octoprint \u2014 Bed Leveller & Visualizer", "x": 502.84, "y": 690.0, "href": "/projects/#octoprint-bed-leveller"}, {"id": "project:tms-bouygues", "type": "project", "fr": "Treasury Management System (Bouygues Telecom)", "en": "Treasury Management System (Bouygues Telecom)", "x": 511.12, "y": 267.85, "href": "/projects/#tms-bouygues"}, {"id": "project:crypto-exploration", "type": "project", "fr": "CryptoExploration \u2014 recherche quant DeFi (ALTEN)", "en": "CryptoExploration \u2014 recherche quant DeFi (ALTEN)", "x": 761.38, "y": 209.57, "href": "/projects/#crypto-exploration"}, {"id": "project:ppe-politique-monetaire", "type": "project", "fr": "Recherche & fixation de la politique mon\u00e9taire (PPE)", "en": "Recherche & fixation de la politique mon\u00e9taire (PPE)", "x": 427.42, "y": 332.97, "href": "/projects/#ppe-politique-monetaire"}, {"id": "project:portfolio-site", "type": "project", "fr": "robin-denis.com \u2014 site portfolio & pipeline candidature", "en": "robin-denis.com \u2014 site portfolio & pipeline candidature", "x": 694.66, "y": 690.0, "href": "/projects/#portfolio-site"}, {"id": "article:couverture_dynamique", "type": "article", "fr": "Couverture dynamique : th\u00e9orie vs pratique en assurance", "en": "Dynamic Hedging: Theory vs Practice in Insurance", "x": 271.99, "y": 113.66, "href": "/articles/couverture-dynamique.html"}, {"id": "article:onchain_analytics", "type": "article", "fr": "Analyse on-chain : d\u00e9tecter les signaux faibles en DeFi", "en": "On-Chain Analytics: Detecting Weak Signals in DeFi", "x": 812.61, "y": 10.0, "href": "/explorer/"}, {"id": "demo:bs", "type": "demo", "fr": "Black-Scholes Pricer", "en": "Black-Scholes Pricer", "x": 10.0, "y": 281.0, "href": "/demos/#bs"}, {"id": "demo:mc", "type": "demo", "fr": "Simulation Monte Carlo (GBM)", "en": "Simulation Monte Carlo (GBM)", "x": 221.38, "y": 10.0, "href": "/demos/#mc"}, {"id": "journey:0", "type": "journey", "fr": "Pr\u00e9pa MPSI", "en": "Prep School MPSI", "x": 10.0, "y": 674.51, "href": "/#parcours"}, {"id": "journey:1", "type": "journey", "fr": "ECE Paris", "en": "ECE Paris", "x": 219.17, "y": 516.01, "href": "/#parcours"}, {"id": "journey:2", "type": "journey", "fr": "Risk Manager", "en": "Risk Manager", "x": 10.0, "y": 10.0, "href": "/#parcours"}, {"id": "journey:3", "type": "journey", "fr": "Tr\u00e9sorier & Dev", "en": "Treasurer & Dev", "x": 477.89, "y": 10.0, "href": "/#parcours"}, {"id": "journey:4", "type": "journey", "fr": "PFE avec EY", "en": "Capstone with EY", "x": 84.76, "y": 372.42, "href": "/#parcours"}, {"id": "journey:5", "type": "journey", "fr": "Quant Researcher", "en": "Quant Researcher", "x": 935.49, "y": 23.08, "href": "/#parcours"}, {"id": "journey:6", "type": "journey", "fr": "ELYSIUM", "en": "ELYSIUM", "x": 990.0, "y": 690.0, "href": "/#parcours"}, {"id": "journey:7", "type": "journey", "fr": "Dipl\u00f4me Ing\u00e9nieur", "en": "Engineering Degree", "x": 173.98, "y": 457.77, "href": "/#parcours"}, {"id": "skill:Python", "type": "skill", "fr": "Python", "en": "Python", "x": 624.43, "y": 255.79, "href": "/explorer/"}, {"id": "skill:SQL", "type": "skill", "fr": "SQL", "en": "SQL", "x": 427.05, "y": 235.81, "href": "/explorer/"}, {"id": "skill:VBA", "type": "skill", "fr": "VBA", "en": "VBA", "x": 308.19, "y": 24.69, "href": "/explorer/"}, {"id": "skill:Java", "type": "skill", "fr": "Java", "en": "Java", "x": 617.92, "y": 690.0, "href": "/explorer/"}, {"id": "skill:C/C++", "type": "skill", "fr": "C/C++", "en": "C/C++", "x": 550.6, "y": 408.62, "href": "/explorer/"}, {"id": "skill:C#", "type": "skill", "fr": "C#", "en": "C#", "x": 562.51, "y": 690.0, "href": "/explorer/"}, {"id": "skill:Finance Quantitative", "type": "skill", "fr": "Finance Quantitative", "en": "Finance Quantitative", "x": 572.56, "y": 257.32, "href": "/explorer/"}, {"id": "skill:Calcul Stochastique", "type": "skill", "fr": "Calcul Stochastique", "en": "Calcul Stochastique", "x": 316.62, "y": 359.26, "href": "/explorer/"}, {"id": "skill:Pricing D\u00e9riv\u00e9s", "type": "skill", "fr": "Pricing D\u00e9riv\u00e9s", "en": "Pricing D\u00e9riv\u00e9s", "x": 386.0, "y": 197.77, "href": "/explorer/"}, {"id": "skill:Risk Management", "type": "skill", "fr": "Risk Management", "en": "Risk Management", "x": 150.56, "y": 239.75, "href": "/explorer/"}, {"id": "skill:Tr\u00e9sorerie d'entreprise", "type": "skill", "fr": "Tr\u00e9sorerie d'entreprise", "en": "Tr\u00e9sorerie d'entreprise", "x": 387.99, "y": 10.0, "href": "/explorer/"}, {"id": "skill:Couverture dynamique", "type": "skill", "fr": "Couverture dynamique", "en": "Couverture dynamique", "x": 273.91, "y": 213.63, "href": "/explorer/"}, {"id": "skill:Machine Learning", "type": "skill", "fr": "Machine Learning", "en": "Machine Learning", "x": 564.92, "y": 196.45, "href": "/explorer/"}, {"id": "skill:Statistics", "type": "skill", "fr": "Statistics", "en": "Statistics", "x": 647.49, "y": 81.68, "href": "/explorer/"}, {"id": "skill:ETL / Data Pipelines", "type": "skill", "fr": "ETL / Data Pipelines", "en": "ETL / Data Pipelines", "x": 678.42, "y": 21.09, "href": "/explorer/"}, {"id": "skill:BigQuery", "type": "skill", "fr": "BigQuery", "en": "BigQuery", "x": 617.83, "y": 10.0, "href": "/explorer/"}, {"id": "skill:Dataiku", "type": "skill", "fr": "Dataiku", "en": "Dataiku", "x": 567.39, "y": 10.0, "href": "/explorer/"}, {"id": "skill:DeFi / Blockchain", "type": "skill", "fr": "DeFi / Blockchain", "en": "DeFi / Blockchain", "x": 701.0, "y": 88.71, "href": "/explorer/"}, {"id": "skill:Compliance", "type": "skill", "fr": "Compliance", "en": "Compliance", "x": 10.0, "y": 50.67, "href": "/explorer/"}, {"id": "skill:Actuariat", "type": "skill", "fr": "Actuariat", "en": "Actuariat", "x": 10.0, "y": 100.29, "href": "/explorer/"}, {"id": "skill:Kubernetes / K3s", "type": "skill", "fr": "Kubernetes / K3s", "en": "Kubernetes / K3s", "x": 990.0, "y": 690.0, "href": "/explorer/"}, {"id": "skill:LLM Orchestration", "type": "skill", "fr": "LLM Orchestration", "en": "LLM Orchestration", "x": 990.0, "y": 489.26, "href": "/explorer/"}, {"id": "skill:Knowledge Graphs", "type": "skill", "fr": "Knowledge Graphs", "en": "Knowledge Graphs", "x": 988.8, "y": 553.23, "href": "/explorer/"}, {"id": "skill:Multi-Agent Systems", "type": "skill", "fr": "Multi-Agent Systems", "en": "Multi-Agent Systems", "x": 990.0, "y": 444.21, "href": "/explorer/"}, {"id": "skill:DevOps / GitOps", "type": "skill", "fr": "DevOps / GitOps", "en": "DevOps / GitOps", "x": 990.0, "y": 690.0, "href": "/explorer/"}, {"id": "skill:TDD / Testing", "type": "skill", "fr": "TDD / Testing", "en": "TDD / Testing", "x": 740.46, "y": 616.94, "href": "/explorer/"}], "edges": [{"source": "experience:alten_2026", "target": "domain:quant", "rel": "has_domain"}, {"source": "experience:alten_2026", "target": "domain:data", "rel": "has_domain"}, {"source": "experience:alten_2026", "target": "domain:defi", "rel": "has_domain"}, {"source": "experience:alten_2026", "target": "domain:ai", "rel": "has_domain"}, {"source": "experience:bouygues_2025", "target": "domain:finance", "rel": "has_domain"}, {"source": "experience:bouygues_2025", "target": "domain:dev", "rel": "has_domain"}, {"source": "experience:bouygues_2025", "target": "domain:data", "rel": "has_domain"}, {"source": "experience:manco_2024", "target": "domain:risk", "rel": "has_domain"}, {"source": "experience:manco_2024", "target": "domain:finance", "rel": "has_domain"}, {"source": "project:elysium", "target": "domain:ai", "rel": "has_domain"}, {"source": "project:elysium", "target": "domain:architecture", "rel": "has_domain"}, {"source": "project:elysium", "target": "domain:infra", "rel": "has_domain"}, {"source": "project:elysium", "target": "domain:knowledge-graph", "rel": "has_domain"}, {"source": "project:elysium", "target": "domain:research", "rel": "has_domain"}, {"source": "project:elysium", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:pfe-hedging", "target": "domain:quant", "rel": "has_domain"}, {"source": "project:pfe-hedging", "target": "domain:risk", "rel": "has_domain"}, {"source": "project:pfe-hedging", "target": "domain:finance", "rel": "has_domain"}, {"source": "project:pfe-hedging", "target": "domain:research", "rel": "has_domain"}, {"source": "project:pfe-hedging", "target": "education:ece", "rel": "context"}, {"source": "project:anthropos", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:anthropos", "target": "domain:product", "rel": "has_domain"}, {"source": "project:anthropos", "target": "domain:ai", "rel": "has_domain"}, {"source": "project:hmm-studio", "target": "domain:quant", "rel": "has_domain"}, {"source": "project:hmm-studio", "target": "domain:data", "rel": "has_domain"}, {"source": "project:hmm-studio", "target": "domain:research", "rel": "has_domain"}, {"source": "project:derivatives-pricer", "target": "domain:quant", "rel": "has_domain"}, {"source": "project:derivatives-pricer", "target": "domain:finance", "rel": "has_domain"}, {"source": "project:derivatives-pricer", "target": "education:ece", "rel": "context"}, {"source": "project:monte-carlo-gbm", "target": "domain:quant", "rel": "has_domain"}, {"source": "project:monte-carlo-gbm", "target": "domain:data", "rel": "has_domain"}, {"source": "project:monte-carlo-gbm", "target": "education:ece", "rel": "context"}, {"source": "project:sudoku-cnn", "target": "domain:data", "rel": "has_domain"}, {"source": "project:sudoku-cnn", "target": "domain:ai", "rel": "has_domain"}, {"source": "project:sudoku-cnn", "target": "education:ece", "rel": "context"}, {"source": "project:trading-algo-csharp", "target": "domain:quant", "rel": "has_domain"}, {"source": "project:trading-algo-csharp", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:trading-algo-csharp", "target": "education:ece", "rel": "context"}, {"source": "project:vba-index-tool", "target": "domain:finance", "rel": "has_domain"}, {"source": "project:vba-index-tool", "target": "domain:data", "rel": "has_domain"}, {"source": "project:vba-index-tool", "target": "education:ece", "rel": "context"}, {"source": "project:vhdl-calculator", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:vhdl-calculator", "target": "education:ece", "rel": "context"}, {"source": "project:atc-simulation", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:atc-simulation", "target": "education:ece", "rel": "context"}, {"source": "project:gripper-robot", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:gripper-robot", "target": "education:ece", "rel": "context"}, {"source": "project:octoprint-bed-leveller", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:tms-bouygues", "target": "domain:finance", "rel": "has_domain"}, {"source": "project:tms-bouygues", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:tms-bouygues", "target": "domain:data", "rel": "has_domain"}, {"source": "project:tms-bouygues", "target": "experience:bouygues_2025", "rel": "context"}, {"source": "project:crypto-exploration", "target": "domain:quant", "rel": "has_domain"}, {"source": "project:crypto-exploration", "target": "domain:data", "rel": "has_domain"}, {"source": "project:crypto-exploration", "target": "domain:defi", "rel": "has_domain"}, {"source": "project:crypto-exploration", "target": "domain:ai", "rel": "has_domain"}, {"source": "project:crypto-exploration", "target": "experience:alten_2026", "rel": "context"}, {"source": "project:ppe-politique-monetaire", "target": "domain:finance", "rel": "has_domain"}, {"source": "project:ppe-politique-monetaire", "target": "domain:research", "rel": "has_domain"}, {"source": "project:ppe-politique-monetaire", "target": "education:ece", "rel": "context"}, {"source": "project:portfolio-site", "target": "domain:dev", "rel": "has_domain"}, {"source": "project:portfolio-site", "target": "domain:product", "rel": "has_domain"}, {"source": "article:couverture_dynamique", "target": "domain:quant", "rel": "has_domain"}, {"source": "article:couverture_dynamique", "target": "domain:risk", "rel": "has_domain"}, {"source": "article:couverture_dynamique", "target": "domain:finance", "rel": "has_domain"}, {"source": "article:onchain_analytics", "target": "domain:defi", "rel": "has_domain"}, {"source": "article:onchain_analytics", "target": "domain:data", "rel": "has_domain"}, {"source": "skill:Python", "target": "experience:alten_2026", "rel": "used_in"}, {"source": "skill:Python", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:Python", "target": "domain:quant", "rel": "context"}, {"source": "skill:Python", "target": "domain:data", "rel": "context"}, {"source": "skill:Python", "target": "domain:dev", "rel": "context"}, {"source": "skill:SQL", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:SQL", "target": "experience:manco_2024", "rel": "used_in"}, {"source": "skill:SQL", "target": "domain:data", "rel": "context"}, {"source": "skill:SQL", "target": "domain:dev", "rel": "context"}, {"source": "skill:VBA", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:VBA", "target": "experience:manco_2024", "rel": "used_in"}, {"source": "skill:VBA", "target": "domain:finance", "rel": "context"}, {"source": "skill:Java", "target": "domain:dev", "rel": "context"}, {"source": "skill:C/C++", "target": "domain:dev", "rel": "context"}, {"source": "skill:C/C++", "target": "domain:quant", "rel": "context"}, {"source": "skill:C#", "target": "domain:dev", "rel": "context"}, {"source": "skill:Finance Quantitative", "target": "experience:alten_2026", "rel": "used_in"}, {"source": "skill:Finance Quantitative", "target": "education:ece", "rel": "used_in"}, {"source": "skill:Finance Quantitative", "target": "domain:quant", "rel": "context"}, {"source": "skill:Calcul Stochastique", "target": "education:ece", "rel": "used_in"}, {"source": "skill:Calcul Stochastique", "target": "domain:quant", "rel": "context"}, {"source": "skill:Pricing D\u00e9riv\u00e9s", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:Pricing D\u00e9riv\u00e9s", "target": "education:ece", "rel": "used_in"}, {"source": "skill:Pricing D\u00e9riv\u00e9s", "target": "domain:quant", "rel": "context"}, {"source": "skill:Risk Management", "target": "experience:manco_2024", "rel": "used_in"}, {"source": "skill:Risk Management", "target": "education:ece", "rel": "used_in"}, {"source": "skill:Risk Management", "target": "domain:risk", "rel": "context"}, {"source": "skill:Tr\u00e9sorerie d'entreprise", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:Tr\u00e9sorerie d'entreprise", "target": "domain:finance", "rel": "context"}, {"source": "skill:Couverture dynamique", "target": "education:ece", "rel": "used_in"}, {"source": "skill:Couverture dynamique", "target": "domain:quant", "rel": "context"}, {"source": "skill:Couverture dynamique", "target": "domain:risk", "rel": "context"}, {"source": "skill:Machine Learning", "target": "experience:alten_2026", "rel": "used_in"}, {"source": "skill:Machine Learning", "target": "education:ece", "rel": "used_in"}, {"source": "skill:Machine Learning", "target": "domain:quant", "rel": "context"}, {"source": "skill:Machine Learning", "target": "domain:data", "rel": "context"}, {"source": "skill:Statistics", "target": "experience:alten_2026", "rel": "used_in"}, {"source": "skill:Statistics", "target": "domain:quant", "rel": "context"}, {"source": "skill:Statistics", "target": "domain:data", "rel": "context"}, {"source": "skill:ETL / Data Pipelines", "target": "experience:alten_2026", "rel": "used_in"}, {"source": "skill:ETL / Data Pipelines", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:ETL / Data Pipelines", "target": "domain:data", "rel": "context"}, {"source": "skill:BigQuery", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:BigQuery", "target": "domain:data", "rel": "context"}, {"source": "skill:Dataiku", "target": "experience:bouygues_2025", "rel": "used_in"}, {"source": "skill:Dataiku", "target": "domain:data", "rel": "context"}, {"source": "skill:DeFi / Blockchain", "target": "experience:alten_2026", "rel": "used_in"}, {"source": "skill:DeFi / Blockchain", "target": "domain:quant", "rel": "context"}, {"source": "skill:Compliance", "target": "experience:manco_2024", "rel": "used_in"}, {"source": "skill:Compliance", "target": "domain:risk", "rel": "context"}, {"source": "skill:Actuariat", "target": "experience:manco_2024", "rel": "used_in"}, {"source": "skill:Actuariat", "target": "domain:risk", "rel": "context"}, {"source": "skill:Kubernetes / K3s", "target": "project:elysium", "rel": "used_in"}, {"source": "skill:Kubernetes / K3s", "target": "domain:infra", "rel": "context"}, {"source": "skill:LLM Orchestration", "target": "project:elysium", "rel": "used_in"}, {"source": "skill:LLM Orchestration", "target": "domain:ai", "rel": "context"}, {"source": "skill:Knowledge Graphs", "target": "project:elysium", "rel": "used_in"}, {"source": "skill:Knowledge Graphs", "target": "domain:ai", "rel": "context"}, {"source": "skill:Knowledge Graphs", "target": "domain:architecture", "rel": "context"}, {"source": "skill:Multi-Agent Systems", "target": "project:elysium", "rel": "used_in"}, {"source": "skill:Multi-Agent Systems", "target": "domain:ai", "rel": "context"}, {"source": "skill:DevOps / GitOps", "target": "project:elysium", "rel": "used_in"}, {"source": "skill:DevOps / GitOps", "target": "domain:infra", "rel": "context"}, {"source": "skill:TDD / Testing", "target": "project:elysium", "rel": "used_in"}, {"source": "skill:TDD / Testing", "target": "domain:dev", "rel": "context"}, {"source": "demo:bs", "target": "project:derivatives-pricer", "rel": "demo_of"}, {"source": "demo:mc", "target": "project:monte-carlo-gbm", "rel": "demo_of"}, {"source": "journey:0", "target": "education:prepa", "rel": "refs"}, {"source": "journey:1", "target": "education:ece", "rel": "refs"}, {"source": "journey:2", "target": "experience:manco_2024", "rel": "refs"}, {"source": "journey:3", "target": "experience:bouygues_2025", "rel": "refs"}, {"source": "journey:4", "target": "project:pfe-hedging", "rel": "refs"}, {"source": "journey:5", "target": "experience:alten_2026", "rel": "refs"}, {"source": "journey:6", "target": "project:elysium", "rel": "refs"}, {"source": "journey:7", "target": "education:ece", "rel": "refs"}]}</script>
+<script>
+  const root = document.documentElement;
+  const GD = JSON.parse(document.getElementById('graph-data').textContent);
+  const NODES = GD.nodes, EDGES = GD.edges;
+  const byId = {}; NODES.forEach(function(n){ byId[n.id] = n; });
+  const TYPES = Array.from(new Set(NODES.map(function(n){ return n.type; })));
+  const REL_LABEL = { has_domain:{fr:'domaine',en:'domain'}, context:{fr:'contexte',en:'context'},
+    used_in:{fr:'utilisé dans',en:'used in'}, demo_of:{fr:'démo de',en:'demo of'}, refs:{fr:'référence',en:'refs'} };
+  let hiddenTypes = new Set(), cvMode = false, picked = new Set();
+
+  function curLang(){ return root.getAttribute('data-lang') || 'fr'; }
+
+  // ---- Chips par type (générées client-side depuis TYPES présents) ----
+  (function buildChips(){
+    const T = { identity:['Moi','Me'], domain:['Domaines','Domains'], experience:['Expériences','Experience'],
+      education:['Formations','Education'], project:['Projets','Projects'], article:['Articles','Articles'],
+      demo:['Démos','Demos'], journey:['Parcours','Journey'], skill:['Compétences','Skills'] };
+    const box = document.getElementById('chips');
+    TYPES.forEach(function(t){
+      const c = document.createElement('button');
+      c.className = 'g-chip'; c.dataset.type = t;
+      c.setAttribute('data-fr', T[t][0]); c.setAttribute('data-en', T[t][1]);
+      c.textContent = curLang() === 'fr' ? T[t][0] : T[t][1];
+      box.appendChild(c);
+    });
+    box.addEventListener('click', function(ev){
+      const c = ev.target.closest('.g-chip'); if (!c) return;
+      const t = c.dataset.type;
+      if (hiddenTypes.has(t)) hiddenTypes.delete(t); else hiddenTypes.add(t);
+      c.classList.toggle('off', hiddenTypes.has(t));
+      applyFilter();
+    });
+  })();
+
+  function nodeEl(id){ return document.querySelector('.gnode[data-id="' + CSS.escape(id) + '"]'); }
+
+  function applyFilter(){
+    document.querySelectorAll('.gnode').forEach(function(g){
+      g.style.display = hiddenTypes.has(g.dataset.type) ? 'none' : '';
+    });
+    document.querySelectorAll('.gedge').forEach(function(l){
+      const s = byId[l.dataset.s], t = byId[l.dataset.t];
+      const vis = s && t && !hiddenTypes.has(s.type) && !hiddenTypes.has(t.type);
+      l.style.display = vis ? '' : 'none';
+    });
+  }
+
+  // ---- Recherche live ----
+  document.getElementById('search').addEventListener('input', function(ev){
+    const q = ev.target.value.trim().toLowerCase();
+    document.querySelectorAll('.gnode').forEach(function(g){
+      if (!q){ g.classList.remove('dim'); return; }
+      const n = byId[g.dataset.id];
+      const hit = (n.fr + ' ' + n.en).toLowerCase().indexOf(q) >= 0;
+      g.classList.toggle('dim', !hit);
+    });
+  });
+
+  // ---- Survol : surligne voisins ----
+  function neighbors(id){
+    const set = new Set();
+    EDGES.forEach(function(ed){
+      if (ed.source === id) set.add(ed.target);
+      if (ed.target === id) set.add(ed.source);
+    });
+    return set;
+  }
+  document.getElementById('nodes').addEventListener('mouseover', function(ev){
+    const g = ev.target.closest('.gnode'); if (!g) return;
+    const id = g.dataset.id, nb = neighbors(id);
+    document.querySelectorAll('.gnode').forEach(function(x){
+      x.classList.toggle('dim', x.dataset.id !== id && !nb.has(x.dataset.id));
+    });
+    document.querySelectorAll('.gedge').forEach(function(l){
+      l.classList.toggle('hl', l.dataset.s === id || l.dataset.t === id);
+    });
+  });
+  document.getElementById('nodes').addEventListener('mouseout', function(){
+    document.querySelectorAll('.gnode').forEach(function(x){ x.classList.remove('dim'); });
+    document.querySelectorAll('.gedge').forEach(function(l){ l.classList.remove('hl'); });
+  });
+
+  // ---- Clic : panneau détail OU sélection CV ----
+  document.getElementById('nodes').addEventListener('click', function(ev){
+    const g = ev.target.closest('.gnode'); if (!g) return;
+    const id = g.dataset.id, n = byId[id];
+    if (cvMode && n.type === 'domain'){
+      if (picked.has(id)) picked.delete(id); else picked.add(id);
+      g.classList.toggle('pick', picked.has(id));
+      updateCompose();
+      return;
+    }
+    openPanel(n);
+  });
+
+  function openPanel(n){
+    const L = curLang();
+    document.getElementById('pType').textContent = n.type;
+    document.getElementById('pTitle').textContent = L === 'fr' ? n.fr : n.en;
+    const conns = EDGES.filter(function(ed){ return ed.source === n.id || ed.target === n.id; })
+      .map(function(ed){
+        const other = byId[ed.source === n.id ? ed.target : ed.source];
+        const rl = REL_LABEL[ed.rel] ? REL_LABEL[ed.rel][L] : ed.rel;
+        return other ? (rl + ' → ' + (L === 'fr' ? other.fr : other.en)) : '';
+      }).filter(Boolean);
+    document.getElementById('pConn').innerHTML = conns.length
+      ? conns.map(function(c){ return '<div>' + c.replace(/</g,'&lt;') + '</div>'; }).join('')
+      : (L === 'fr' ? 'Aucune connexion.' : 'No connection.');
+    const go = document.getElementById('pGo');
+    if (n.href){ go.style.display = ''; go.href = n.href; } else { go.style.display = 'none'; }
+    document.getElementById('panel').classList.add('show');
+  }
+  function closePanel(){ document.getElementById('panel').classList.remove('show'); }
+  window.closePanel = closePanel;
+
+  // ---- Mode CV ----
+  document.getElementById('cvToggle').addEventListener('click', function(){
+    cvMode = !cvMode;
+    this.classList.toggle('active', cvMode);
+    document.getElementById('compose').style.display = cvMode ? '' : 'none';
+    if (!cvMode){ picked.clear(); document.querySelectorAll('.gnode.pick').forEach(function(g){ g.classList.remove('pick'); }); }
+    updateCompose();
+    closePanel();
+  });
+  function updateCompose(){
+    const btn = document.getElementById('compose'), L = curLang();
+    btn.disabled = picked.size === 0;
+    const base = L === 'fr' ? 'Composer mon CV' : 'Compose my CV';
+    btn.textContent = picked.size ? base + ' (' + picked.size + ')' : base;
+  }
+  document.getElementById('compose').addEventListener('click', function(){
+    if (!picked.size) return;
+    const doms = Array.from(picked).map(function(id){ return id.split(':')[1]; });
+    fetch('/profile.json').then(function(r){ return r.json(); }).then(function(profile){
+      const lang = curLang();
+      // min_relevance:2 (> échelle [0,1]) => filtre = seule intersection de domaines
+      const exps = window.CVSelect.selectExperiences(profile, { domains_in: doms, relevance_key: 'general', min_relevance: 2 });
+      const cv = window.CVSelect.buildStructuredCv(profile, exps, lang);
+      const htmlDoc = window.CVRender.renderHtml(cv);
+      const w = window.open('', '_blank');
+      w.document.write(htmlDoc); w.document.close();
+      w.focus(); setTimeout(function(){ w.print(); }, 300);
+    });
+  });
+
+  // ---- Drag de nœud (DOM pur) + pan/zoom ----
+  const svg = document.getElementById('graph'), vp = document.getElementById('viewport');
+  let vb = { x:0, y:0, w:1000, h:700 }, dragNode = null, panning = false, last = null;
+  function setVB(){ svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h); }
+  function svgPt(ev){
+    const r = svg.getBoundingClientRect();
+    return { x: vb.x + (ev.clientX - r.left) / r.width * vb.w, y: vb.y + (ev.clientY - r.top) / r.height * vb.h };
+  }
+  svg.addEventListener('pointerdown', function(ev){
+    const g = ev.target.closest('.gnode');
+    if (g){ dragNode = g; }
+    else { panning = true; svg.classList.add('panning'); }
+    last = svgPt(ev); svg.setPointerCapture(ev.pointerId);
+  });
+  svg.addEventListener('pointermove', function(ev){
+    if (!dragNode && !panning) return;
+    const p = svgPt(ev), dx = p.x - last.x, dy = p.y - last.y;
+    if (dragNode){
+      const id = dragNode.dataset.id, n = byId[id];
+      n.x += dx; n.y += dy;
+      dragNode.setAttribute('transform', 'translate(' + n.x + ',' + n.y + ')');
+      document.querySelectorAll('.gedge').forEach(function(l){
+        if (l.dataset.s === id){ l.setAttribute('x1', n.x); l.setAttribute('y1', n.y); }
+        if (l.dataset.t === id){ l.setAttribute('x2', n.x); l.setAttribute('y2', n.y); }
+      });
+    } else { vb.x -= dx; vb.y -= dy; setVB(); }
+    last = svgPt(ev);
+  });
+  svg.addEventListener('pointerup', function(ev){ dragNode = null; panning = false; svg.classList.remove('panning'); });
+  svg.addEventListener('wheel', function(ev){
+    ev.preventDefault();
+    const p = svgPt(ev), f = ev.deltaY < 0 ? 0.9 : 1.1;
+    const nw = Math.min(2000, Math.max(200, vb.w * f)), nh = nw * (700 / 1000);
+    vb.x = p.x - (p.x - vb.x) * (nw / vb.w); vb.y = p.y - (p.y - vb.y) * (nh / vb.h);
+    vb.w = nw; vb.h = nh; setVB();
+  }, { passive: false });
+
+  // ---- Langue / thème (partagé localStorage, boot APRÈS le DOM du panneau) ----
+  function applyGraphLang(lang){
+    document.querySelectorAll('[data-fr][data-en]').forEach(function(el){
+      el.textContent = lang === 'fr' ? el.dataset.fr : el.dataset.en;
+    });
+    const s = document.getElementById('search');
+    s.placeholder = lang === 'fr' ? s.dataset.frPh : s.dataset.enPh;
+    root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
+    document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
+    updateCompose();
+    if (document.getElementById('panel').classList.contains('show')){
+      // re-render panneau ouvert dans la nouvelle langue : ré-ouvrir via l'id courant
+      const t = document.getElementById('pTitle').textContent;
+    }
+  }
+  function toggleLang(){ const n = curLang() === 'fr' ? 'en' : 'fr'; localStorage.setItem('lang', n); applyGraphLang(n); }
+  function tgTheme(){
+    const n = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', n); localStorage.setItem('theme', n);
+    document.getElementById('themeBtn').textContent = n === 'light' ? '☀️' : '🌙';
+  }
+  window.toggleLang = toggleLang; window.tgTheme = tgTheme;
+
+  (function boot(){
+    const th = localStorage.getItem('theme');
+    if (th){ root.setAttribute('data-theme', th); document.getElementById('themeBtn').textContent = th === 'light' ? '☀️' : '🌙'; }
+    const lg = localStorage.getItem('lang') || 'fr';
+    if (lg !== 'fr') applyGraphLang(lg);
+    setVB();
+  })();
+</script>
+</body>
+</html>
