@@ -382,3 +382,18 @@ def test_nav_academy_link_everywhere():
     assert 'href="/academy/"' in bb.render_browse_page(p)
     assert 'href="/academy/"' in bh.render_highlights_page(p)
     assert 'href="/academy/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
+
+
+def test_build_also_generates_graph_page():
+    import build_graph as bg
+    p = bs.load_profile()
+    out = bg.build_graph(p, write=False)
+    assert '<title>Graphe du profil' in out and out.count('class="gnode"') > 0
+    import build_site, inspect
+    assert "build_graph" in inspect.getsource(build_site.build)
+
+
+def test_nav_has_graph_link():
+    import build_highlights as bh, build_browse as bb
+    for mod in (bh, bb):
+        assert 'href="/graph/"' in mod.PAGE_TEMPLATE

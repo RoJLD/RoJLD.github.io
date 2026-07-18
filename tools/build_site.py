@@ -577,6 +577,8 @@ def build(profile_path=None, index_path=None, write=True):
     try:
         import build_academy
         build_academy.build_academy(write=write)
+        import build_graph
+        build_graph.build_graph(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération page academy échouée : {exc}")
     return out
