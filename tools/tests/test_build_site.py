@@ -394,6 +394,11 @@ def test_build_also_generates_graph_page():
 
 
 def test_nav_has_graph_link():
-    import build_highlights as bh, build_browse as bb
-    for mod in (bh, bb):
-        assert 'href="/graph/"' in mod.PAGE_TEMPLATE
+    import build_projects as bp, build_demos as bd, build_browse as bb, build_highlights as bh, build_academy as bac
+    p = bs.load_profile()
+    assert 'href="/graph/"' in bp.build_projects(p, write=False)
+    assert 'href="/graph/"' in bd.build_demos(p, write=False)
+    assert 'href="/graph/"' in bb.render_browse_page(p)
+    assert 'href="/graph/"' in bh.render_highlights_page(p)
+    assert 'href="/graph/"' in bac.render_academy_page(bac.load_academy())
+    assert 'href="/graph/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
