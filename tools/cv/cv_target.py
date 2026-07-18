@@ -7,7 +7,7 @@ clampe** contre les domaines/clés réellement présents (config-only reject-lou
 isomorphe S4). Le cfg alimente ensuite cv_select.select_experiences → render → PDF.
 
 Seam `complete_fn` injectable (comme score_job_offer) : les tests passent une
-fonction factice, la prod route via le résolveur souverain llm_client (SIGIL-1674,
+fonction factice, la prod route via le résolveur souverain llm_client (SIGIL-1714,
 tier local-precision). Aucun réseau dans les tests.
 """
 from __future__ import annotations
@@ -128,25 +128,36 @@ def targeted_structured_cv(job_posting: str, profile: dict, lang: str = "fr",
     return cfg, scv
 
 
-def _sovereign_complete(prompt: str) -> str:
-    """Route via le résolveur souverain llm_client du sibling ELYSIUM career.
+def _resolve_career(here: "pathlib.Path"):
+    """(career_dir, elysium_root) si career/core/llm_client.py existe, sinon None.
 
-    Import paresseux + sibling-path (comme profile_source trouve profile.json).
-    Lève si indisponible → extract_cfg retombe sur le cfg défaut (loud).
+    Pur : aucune insertion sys.path, aucun import — testable avec un faux arbre tmp.
+    tools/cv/x.py -> parents[2]=racine repo site -> .parent -> ELYSIUM sibling.
+    """
+    elysium_root = here.parents[2].parent / "ELYSIUM"
+    career = elysium_root / "satellites" / "anthropos" / "apps" / "career"
+    if (career / "core" / "llm_client.py").exists():
+        return career, elysium_root
+    return None
+
+
+def _sovereign_complete(prompt: str) -> str:
+    """Route via le résolveur souverain llm_client du sibling ELYSIUM career (SIGIL-1714).
+
+    Insère la **racine ELYSIUM** (pour que le tier-1 sigma_llm_gateway — importé en
+    `scripts.governance.sigma_llm_gateway` — soit atteignable) ET le dossier career
+    (pour `core.llm_client` / `core.config`) sur sys.path, puis importe `complete`.
+    Lève si le sibling est absent → extract_cfg retombe sur le cfg défaut (loud).
     """
     import pathlib
     import sys
 
-    # tools/cv -> repo site -> parent commun -> ELYSIUM/satellites/anthropos/apps/career
-    here = pathlib.Path(__file__).resolve()
-    elysium = here.parents[2].parent / "ELYSIUM"
-    rel = ("satellites", "anthropos", "apps", "career")
-    candidates = [elysium.joinpath(*rel)]
-    # Pré-merge : llm_client.py peut vivre dans un worktree (PR #492 non mergée à main).
-    candidates += sorted(elysium.glob("/".join((".claude", "worktrees", "*") + rel)))
-    for c in candidates:
-        if (c / "core" / "llm_client.py").exists():
-            sys.path.insert(0, str(c))
-            from core.llm_client import complete  # type: ignore
-            return complete(prompt, tier="local-precision", max_tokens=1024)
-    raise RuntimeError("llm_client souverain introuvable (ELYSIUM career sibling absent)")
+    resolved = _resolve_career(pathlib.Path(__file__).resolve())
+    if resolved is None:
+        raise RuntimeError("llm_client souverain introuvable (ELYSIUM career sibling absent)")
+    career, elysium_root = resolved
+    for p in (str(elysium_root), str(career)):   # racine ELYSIUM (tier-1) ET career (core.*)
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    from core.llm_client import complete  # type: ignore
+    return complete(prompt, tier="local-precision", max_tokens=1024)

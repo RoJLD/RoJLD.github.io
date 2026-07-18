@@ -6,7 +6,7 @@ extract_cfg (LLM souverain) → select_experiences → render_html → Playwrigh
 Lancer localement :  python tools/cv/atelier.py    (→ http://127.0.0.1:8010)
 
 Non servi par GitHub Pages (stdlib http.server, single-user). Fondation du futur
-CMS (sous-projet D). Le LLM passe par llm_client SIGIL-1674 (sibling ELYSIUM) ;
+CMS (sous-projet D). Le LLM passe par llm_client SIGIL-1714 (sibling ELYSIUM) ;
 s'il est indisponible, extract_cfg retombe sur un cfg défaut (CV général) — loud.
 """
 from __future__ import annotations
