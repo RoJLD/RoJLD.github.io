@@ -47,3 +47,16 @@ def test_graph_edges_reused():
     rels = {(e["source"], e["target"], e["rel"]) for e in edges}
     assert ("experience:alten", "domain:quant", "has_domain") in rels
     assert ("skill:Python", "experience:alten", "used_in") in rels
+
+
+def test_layout_deterministic_and_bounded():
+    p = _profile()
+    nodes, edges = bg.graph_nodes(p), bg.graph_edges(p)
+    a = bg.compute_layout(nodes, edges, iterations=50)
+    b = bg.compute_layout(nodes, edges, iterations=50)
+    assert a == b                                   # déterminisme strict
+    assert a["identity:self"] == (500.0, 350.0)     # centre figé
+    for (x, y) in a.values():
+        assert 10 <= x <= 990 and 10 <= y <= 690    # bornes
+        assert x == x and y == y                     # pas de NaN
+    assert set(a.keys()) == {n["id"] for n in nodes}
