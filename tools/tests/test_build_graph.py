@@ -127,3 +127,37 @@ def test_build_graph_writes(tmp_path, monkeypatch):
     monkeypatch.setattr(bg, "OUT", target)
     bg.build_graph(p, write=True)
     assert target.exists() and 'id="graph"' in target.read_text(encoding="utf-8")
+
+
+def test_page_cv_cfg_min_relevance_2():
+    out = bg.render_graph_page(_profile())
+    assert "min_relevance: 2" in out   # garde anti-inertie (0 laisserait tout passer)
+
+
+import re
+def test_node_text_has_bilingual_attrs():
+    out = bg.render_graph_page(_profile())
+    assert re.search(r'<text class="glabel"[^>]*\bdata-fr=', out)
+    assert re.search(r'<text class="glabel"[^>]*\bdata-en=', out)
+
+
+def test_graph_page_has_self_nav_link():
+    out = bg.render_graph_page(_profile())
+    assert 'href="/graph/"' in out
+    assert 'class="on"' in out   # Graphe est la page active
+
+
+def test_node_href_article_without_url_falls_back_to_explorer():
+    p = _profile()
+    p["articles"] = [{"id": "noURL", "title": {"fr": "X", "en": "X"}, "domains": ["risk"]}]
+    assert bg._node_href("article:noURL", "article", p, ["quant", "risk"]) == "/explorer/"
+    # article inconnu -> /explorer/ aussi
+    assert bg._node_href("article:ghost", "article", p, []) == "/explorer/"
+
+
+def test_bi_label_unknown_id_falls_back_to_rid():
+    p = _profile()
+    assert bg._bi_label("domain:inexistant", p) == {"fr": "inexistant", "en": "inexistant"}
+    # journey index invalide -> fallback
+    r = bg._bi_label("journey:99", p)
+    assert r["fr"] and r["en"]   # ne crashe pas (try/except ValueError/IndexError)

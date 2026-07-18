@@ -72,7 +72,7 @@ header.hd p{color:var(--tx-2);font-size:15px;max-width:600px;margin:6px auto 0}
 .gnode text.glabel{font-family:var(--sans);font-size:9px;fill:var(--tx-2);pointer-events:none;transition:opacity .2s}
 .gnode.dim{opacity:.15}
 .gnode.pick circle{stroke:var(--accent);stroke-width:3}
-.g-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11.5px;color:var(--tx-3)}
+.g-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11.5px;color:var(--tx-2)}
 .gleg{display:flex;align-items:center;gap:5px}.gleg i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .g-panel{position:absolute;top:12px;right:12px;width:260px;max-width:calc(100% - 24px);background:var(--bg-2);border:1px solid var(--border-hi);border-radius:var(--radius);padding:16px;box-shadow:0 12px 32px var(--shadow);display:none}
 .g-panel.show{display:block}
@@ -81,6 +81,7 @@ header.hd p{color:var(--tx-2);font-size:15px;max-width:600px;margin:6px auto 0}
 .g-panel .gp-conn{font-size:12.5px;color:var(--tx-2);line-height:1.7}
 .g-panel a.gp-go{display:inline-block;margin-top:12px;padding:7px 14px;border-radius:100px;background:var(--accent);color:#fff;text-decoration:none;font-size:12.5px;font-weight:600}
 .g-panel .gp-close{position:absolute;top:10px;right:12px;cursor:pointer;color:var(--tx-3);font-size:18px;line-height:1}
+.g-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--tx-2);font-size:14px;font-family:var(--sans);pointer-events:none}
 footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
 @media(max-width:640px){.wrap{padding:88px 14px 18px}.nav-r a:not(.on){display:none}.g-cv{margin-left:0;width:100%}.g-panel{top:auto;bottom:12px;right:12px;left:12px;width:auto}.g-stage{height:62vh}}
 </style>
@@ -104,7 +105,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
 <header class="hd">
   <h1 data-fr="Graphe du profil" data-en="Profile graph">Graphe du profil</h1>
   <p data-fr="Le profil comme réseau : domaines, expériences, projets, compétences et leurs liens. Survolez, cliquez, ou composez un CV depuis une sélection de domaines."
-     data-en="The profile as a network: domains, experiences, projects, skills and their links. Hover, click, or compose a CV from a domain selection.">Le profil comme réseau…</p>
+     data-en="The profile as a network: domains, experiences, projects, skills and their links. Hover, click, or compose a CV from a domain selection.">Le profil comme réseau : domaines, expériences, projets, compétences et leurs liens. Survolez, cliquez, ou composez un CV depuis une sélection de domaines.</p>
 </header>
 
 <div class="g-controls">
@@ -117,24 +118,25 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
 </div>
 
 <div class="g-stage">
-  <svg id="graph" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet">
+  <svg id="graph" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Graphe du profil de Robin Denis">
     <g id="viewport">
       <g id="edges">@@EDGES_SVG@@</g>
       <g id="nodes">@@NODES_SVG@@</g>
     </g>
   </svg>
   <div class="g-panel" id="panel">
-    <span class="gp-close" onclick="closePanel()">×</span>
+    <span class="gp-close" role="button" tabindex="0" onclick="closePanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();closePanel();}">×</span>
     <div class="gp-type" id="pType"></div>
     <div class="gp-title" id="pTitle"></div>
     <div class="gp-conn" id="pConn"></div>
     <a class="gp-go" id="pGo" href="#" data-fr="Voir la page ↗" data-en="Open page ↗">Voir la page ↗</a>
   </div>
+  <div class="g-empty" id="empty" hidden data-fr="Aucun résultat" data-en="No result">Aucun résultat</div>
   <div class="g-zoom"><button id="zoomIn" aria-label="Zoom avant" title="Zoom +">+</button><button id="zoomOut" aria-label="Zoom arrière" title="Zoom −">−</button></div>
 </div>
 <div class="g-legend">@@LEGEND@@</div>
 
-<footer>Robin Denis · @@UPDATED@@ · <a href="/" style="color:var(--accent);text-decoration:none" data-fr="Retour à l'accueil" data-en="Back home">Retour</a></footer>
+<footer>Robin Denis · @@UPDATED@@ · <a href="/" style="color:var(--accent);text-decoration:none" data-fr="Retour à l'accueil" data-en="Back home">Retour à l'accueil</a></footer>
 </div>
 
 <script src="/assets/js/cv-select.js"></script>
@@ -176,6 +178,14 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     });
   })();
 
+  function updateEmpty(){
+    let vis = 0;
+    document.querySelectorAll('.gnode').forEach(function(g){
+      if (g.style.display !== 'none' && !g.classList.contains('dim')) vis++;
+    });
+    document.getElementById('empty').hidden = vis > 0;
+  }
+
   function applyFilter(){
     document.querySelectorAll('.gnode').forEach(function(g){
       g.style.display = hiddenTypes.has(g.dataset.type) ? 'none' : '';
@@ -185,6 +195,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
       const vis = s && t && !hiddenTypes.has(s.type) && !hiddenTypes.has(t.type);
       l.style.display = vis ? '' : 'none';
     });
+    updateEmpty();
   }
 
   // ---- Recherche live ----
@@ -192,7 +203,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     searchQ = ev.target.value.trim().toLowerCase();
     applySearchDim();
   });
-  function applySearchDim(){ document.querySelectorAll('.gnode').forEach(function(g){ if(!searchQ){ g.classList.remove('dim'); return; } const n=byId[g.dataset.id]; const hit=(n.fr+' '+n.en).toLowerCase().indexOf(searchQ)>=0; g.classList.toggle('dim', !hit); }); }
+  function applySearchDim(){ document.querySelectorAll('.gnode').forEach(function(g){ if(!searchQ){ g.classList.remove('dim'); return; } const n=byId[g.dataset.id]; const hit=(n.fr+' '+n.en).toLowerCase().indexOf(searchQ)>=0; g.classList.toggle('dim', !hit); }); updateEmpty(); }
 
   // ---- Survol : surligne voisins ----
   function neighbors(id){
@@ -253,6 +264,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   }
   function closePanel(){ openId = null; document.getElementById('panel').classList.remove('show'); }
   window.closePanel = closePanel;
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closePanel(); });
 
   // ---- Mode CV ----
   document.getElementById('cvToggle').addEventListener('click', function(){
@@ -344,6 +356,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     const s = document.getElementById('search');
     s.placeholder = lang === 'fr' ? s.dataset.frPh : s.dataset.enPh;
     root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
+    document.title = lang === 'fr' ? 'Graphe du profil — Robin Denis' : 'Profile graph — Robin Denis';
     document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
     updateCompose();
     if (openId && document.getElementById('panel').classList.contains('show')){
