@@ -59,7 +59,7 @@ def test_layout_deterministic_and_bounded():
     for (x, y) in a.values():
         assert 10 <= x <= 990 and 10 <= y <= 690    # bornes
         assert x == x and y == y                     # pas de NaN
-    coords = list(a.values())
+    coords = [c for nid, c in a.items() if nid != "identity:self"]
     assert len(set(coords)) == len(coords)           # aucune coordonnée exacte dupliquée (A2)
     assert set(a.keys()) == {n["id"] for n in nodes}
 

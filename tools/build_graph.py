@@ -530,14 +530,21 @@ def compute_layout(nodes, edges, width=1000, height=700, iterations=300):
             pos[nid][1] += ddy / d * step
         t -= dt
     pad = 40.0
-    max_dx = max((abs(pos[nid][0] - cx) for nid in ids), default=0.0)
-    max_dy = max((abs(pos[nid][1] - cy) for nid in ids), default=0.0)
-    sx = (width / 2.0 - pad) / max_dx if max_dx > 0 else 1.0
-    sy = (height / 2.0 - pad) / max_dy if max_dy > 0 else 1.0
-    s = min(sx, sy, 1.0) if (max_dx > 0 or max_dy > 0) else 1.0
-    for nid in ids:
-        pos[nid][0] = cx + (pos[nid][0] - cx) * s
-        pos[nid][1] = cy + (pos[nid][1] - cy) * s
+    others = [nid for nid in ids if nid != "identity:self"]
+    if others:
+        xs = [pos[nid][0] for nid in others]
+        ys = [pos[nid][1] for nid in others]
+        minx, maxx = min(xs), max(xs)
+        miny, maxy = min(ys), max(ys)
+        spanx = (maxx - minx) or 1.0
+        spany = (maxy - miny) or 1.0
+        s = min((width - 2 * pad) / spanx, (height - 2 * pad) / spany)
+        offx = (width - spanx * s) / 2.0 - minx * s
+        offy = (height - spany * s) / 2.0 - miny * s
+        for nid in others:
+            pos[nid][0] = pos[nid][0] * s + offx
+            pos[nid][1] = pos[nid][1] * s + offy
+    pos["identity:self"] = [float(cx), float(cy)]
     return {nid: (round(pos[nid][0], 2), round(pos[nid][1], 2)) for nid in ids}
 
 
