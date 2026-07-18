@@ -60,3 +60,19 @@ def test_layout_deterministic_and_bounded():
         assert 10 <= x <= 990 and 10 <= y <= 690    # bornes
         assert x == x and y == y                     # pas de NaN
     assert set(a.keys()) == {n["id"] for n in nodes}
+
+
+def test_node_href_mapping():
+    p = _profile()
+    lens = ["quant", "risk"]   # domaines à ≥2 items
+    href = lambda nid, typ: bg._node_href(nid, typ, p, lens)
+    assert href("project:p1", "project") == "/projects/#p1"
+    assert href("domain:quant", "domain") == "/highlights/?lens=quant"
+    assert href("domain:dev", "domain") == "/explorer/"          # hors lentille
+    assert href("experience:alten", "experience") == "/#experience"
+    assert href("education:ece", "education") == "/#education"
+    assert href("demo:d1", "demo") == "/demos/#d1"
+    assert href("article:a1", "article") == "/articles/a1.html"  # url absolutisée
+    assert href("journey:0", "journey") == "/#parcours"
+    assert href("skill:Python", "skill") == "/explorer/"
+    assert href("identity:self", "identity") == ""

@@ -81,6 +81,38 @@ def _bi_label(node_id, profile):
     return {"fr": rid, "en": rid}
 
 
+def _abs_url(u):
+    if not u:
+        return ""
+    if u.startswith(("http://", "https://", "/", "#")):
+        return u
+    return "/" + u
+
+
+def _node_href(node_id, node_type, profile, lens_ids):
+    _, _, rid = str(node_id).partition(":")
+    if node_type == "project":
+        return f"/projects/#{rid}"
+    if node_type == "domain":
+        return f"/highlights/?lens={rid}" if rid in lens_ids else "/explorer/"
+    if node_type == "experience":
+        return "/#experience"
+    if node_type == "education":
+        return "/#education"
+    if node_type == "demo":
+        return f"/demos/#{rid}"
+    if node_type == "article":
+        for a in profile.get("articles", []):
+            if a.get("id") == rid:
+                return _abs_url(a.get("url")) or "/explorer/"
+        return "/explorer/"
+    if node_type == "journey":
+        return "/#parcours"
+    if node_type == "skill":
+        return "/explorer/"
+    return ""
+
+
 def graph_edges(profile):
     return _load_topology(profile)["edges"]
 
