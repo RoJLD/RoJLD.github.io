@@ -103,6 +103,22 @@ def test_render_graph_page_structure():
     assert '@@' not in out                           # tous les markers remplacés
 
 
+def test_embedded_json_escapes_angle_bracket():
+    # fix #2 : un label contenant "<script>" ne peut pas casser le bloc <script id="graph-data">
+    import re
+    p = _profile()
+    p["domains"].append({"id": "x", "label": {"fr": "a<script>b", "en": "a<script>b"}})
+    out = bg.render_graph_page(p)
+    m = re.search(r'id="graph-data"[^>]*>(.*?)</script>', out, re.S)
+    assert m, "bloc graph-data introuvable"
+    region = m.group(1)
+    assert "</script" not in region          # le bloc ne peut être terminé prématurément
+    assert "\\u003c" in region               # '<' échappé en < dans le JSON embarqué
+    parsed = json.loads(region)              # reste du JSON valide
+    labels = {n["fr"] for n in parsed["nodes"]}
+    assert "a<script>b" in labels            # reparse fidèle du label original
+
+
 def test_build_graph_writes(tmp_path, monkeypatch):
     p = _profile()
     target = tmp_path / "graph" / "index.html"

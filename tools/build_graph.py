@@ -145,6 +145,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   const REL_LABEL = { has_domain:{fr:'domaine',en:'domain'}, context:{fr:'contexte',en:'context'},
     used_in:{fr:'utilisé dans',en:'used in'}, demo_of:{fr:'démo de',en:'demo of'}, refs:{fr:'référence',en:'refs'} };
   let hiddenTypes = new Set(), cvMode = false, picked = new Set();
+  let openId = null, searchQ = '', moved = false;
 
   function curLang(){ return root.getAttribute('data-lang') || 'fr'; }
 
@@ -170,8 +171,6 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     });
   })();
 
-  function nodeEl(id){ return document.querySelector('.gnode[data-id="' + CSS.escape(id) + '"]'); }
-
   function applyFilter(){
     document.querySelectorAll('.gnode').forEach(function(g){
       g.style.display = hiddenTypes.has(g.dataset.type) ? 'none' : '';
@@ -185,14 +184,10 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
 
   // ---- Recherche live ----
   document.getElementById('search').addEventListener('input', function(ev){
-    const q = ev.target.value.trim().toLowerCase();
-    document.querySelectorAll('.gnode').forEach(function(g){
-      if (!q){ g.classList.remove('dim'); return; }
-      const n = byId[g.dataset.id];
-      const hit = (n.fr + ' ' + n.en).toLowerCase().indexOf(q) >= 0;
-      g.classList.toggle('dim', !hit);
-    });
+    searchQ = ev.target.value.trim().toLowerCase();
+    applySearchDim();
   });
+  function applySearchDim(){ document.querySelectorAll('.gnode').forEach(function(g){ if(!searchQ){ g.classList.remove('dim'); return; } const n=byId[g.dataset.id]; const hit=(n.fr+' '+n.en).toLowerCase().indexOf(searchQ)>=0; g.classList.toggle('dim', !hit); }); }
 
   // ---- Survol : surligne voisins ----
   function neighbors(id){
@@ -215,11 +210,13 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   });
   document.getElementById('nodes').addEventListener('mouseout', function(){
     document.querySelectorAll('.gnode').forEach(function(x){ x.classList.remove('dim'); });
+    applySearchDim();
     document.querySelectorAll('.gedge').forEach(function(l){ l.classList.remove('hl'); });
   });
 
   // ---- Clic : panneau détail OU sélection CV ----
   document.getElementById('nodes').addEventListener('click', function(ev){
+    if (moved){ moved = false; return; }
     const g = ev.target.closest('.gnode'); if (!g) return;
     const id = g.dataset.id, n = byId[id];
     if (cvMode && n.type === 'domain'){
@@ -232,6 +229,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   });
 
   function openPanel(n){
+    openId = n.id;
     const L = curLang();
     document.getElementById('pType').textContent = n.type;
     document.getElementById('pTitle').textContent = L === 'fr' ? n.fr : n.en;
@@ -248,7 +246,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     if (n.href){ go.style.display = ''; go.href = n.href; } else { go.style.display = 'none'; }
     document.getElementById('panel').classList.add('show');
   }
-  function closePanel(){ document.getElementById('panel').classList.remove('show'); }
+  function closePanel(){ openId = null; document.getElementById('panel').classList.remove('show'); }
   window.closePanel = closePanel;
 
   // ---- Mode CV ----
@@ -282,7 +280,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   });
 
   // ---- Drag de nœud (DOM pur) + pan/zoom ----
-  const svg = document.getElementById('graph'), vp = document.getElementById('viewport');
+  const svg = document.getElementById('graph');
   let vb = { x:0, y:0, w:1000, h:700 }, dragNode = null, panning = false, last = null;
   function setVB(){ svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h); }
   function svgPt(ev){
@@ -290,6 +288,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     return { x: vb.x + (ev.clientX - r.left) / r.width * vb.w, y: vb.y + (ev.clientY - r.top) / r.height * vb.h };
   }
   svg.addEventListener('pointerdown', function(ev){
+    moved = false;
     const g = ev.target.closest('.gnode');
     if (g){ dragNode = g; }
     else { panning = true; svg.classList.add('panning'); }
@@ -297,6 +296,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
   });
   svg.addEventListener('pointermove', function(ev){
     if (!dragNode && !panning) return;
+    moved = true;
     const p = svgPt(ev), dx = p.x - last.x, dy = p.y - last.y;
     if (dragNode){
       const id = dragNode.dataset.id, n = byId[id];
@@ -328,9 +328,8 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
     root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
     document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
     updateCompose();
-    if (document.getElementById('panel').classList.contains('show')){
-      // re-render panneau ouvert dans la nouvelle langue : ré-ouvrir via l'id courant
-      const t = document.getElementById('pTitle').textContent;
+    if (openId && document.getElementById('panel').classList.contains('show')){
+      openPanel(byId[openId]);
     }
   }
   function toggleLang(){ const n = curLang() === 'fr' ? 'en' : 'fr'; localStorage.setItem('lang', n); applyGraphLang(n); }
@@ -588,7 +587,7 @@ def render_graph_page(profile):
             .replace("@@NODES_SVG@@", _nodes_svg(data))
             .replace("@@LEGEND@@", _legend(profile))
             .replace("@@CHIPS_PLACEHOLDER@@", "")
-            .replace("@@DATA@@", json.dumps(data, ensure_ascii=True))
+            .replace("@@DATA@@", json.dumps(data, ensure_ascii=True).replace("<", "\\u003c"))
             .replace("@@UPDATED@@", e(updated)))
 
 
