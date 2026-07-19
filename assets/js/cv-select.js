@@ -15,9 +15,13 @@
     return value == null ? "" : String(value);
   }
 
+  // Miroir de _as_list : liste STRICTE (une chaîne ne doit pas être itérée).
+  function asList(v) { return Array.isArray(v) ? v : []; }
+
   // Miroir de _neg_date : complément à 9 des chiffres → tri asc = date desc.
-  function negDate(s) {
-    s = s || "";
+  // Non-chaîne → "" (miroir explicite du garde isinstance côté Python).
+  function negDate(v) {
+    var s = (typeof v === "string") ? v : "";
     var out = "";
     for (var i = 0; i < s.length; i++) {
       var c = s[i];
@@ -28,6 +32,51 @@
 
   function relOf(exp, key) {
     return Number((exp.relevance || {})[key] || 0);
+  }
+
+  // Miroir de _link_display : retire le schéma http(s):// puis un préfixe www.
+  // Chaînes UNIQUEMENT (une URL non-str ne doit pas être stringifiée ici).
+  function linkDisplay(url) {
+    var s = (typeof url === "string") ? url.trim() : "";
+    if (s.indexOf("https://") === 0) s = s.slice(8);
+    else if (s.indexOf("http://") === 0) s = s.slice(7);
+    if (s.indexOf("www.") === 0) s = s.slice(4);
+    return s;
+  }
+
+  // Miroir de _location_str : 'City, Country'. Le téléphone n'est JAMAIS projeté.
+  function locationStr(identity) {
+    var l = identity.location;
+    if (!l || typeof l !== "object" || Array.isArray(l)) return "";
+    return [(typeof l.city === "string" ? l.city : "").trim(),
+            (typeof l.country === "string" ? l.country : "").trim()]
+      .filter(function (p) { return p; }).join(", ");
+  }
+
+  // Miroir de _education
+  function educationOf(profile, lang) {
+    return asList(profile.education).map(function (e) {
+      var cap = e.capstone;
+      return {
+        school: loc(e.school, lang),
+        title: loc(e.title, lang),
+        org: loc(e.org, lang),
+        period: loc(e.period, lang),
+        degree: loc(e.degree, lang),
+        courses_label: loc(e.courses_label, lang),
+        courses: asList(e.courses).map(function (c) { return loc(c, lang); }),
+        capstone: (cap && typeof cap === "object" && !Array.isArray(cap))
+          ? { label: loc(cap.label, lang), summary: loc(cap.summary, lang) }
+          : null,
+      };
+    });
+  }
+
+  // Miroir de _languages
+  function languagesOf(profile, lang) {
+    return asList(profile.languages).map(function (lg) {
+      return { name: loc(lg.name, lang), level: loc(lg.level, lang) };
+    });
   }
 
   function selectExperiences(profile, cfg) {
@@ -42,21 +91,34 @@
       return (exp.domains || []).some(function (d) { return domainsIn.has(d); });
     });
 
-    matched.sort(function (a, b) {
-      var ra = -relOf(a, key), rb = -relOf(b, key);
-      if (ra !== rb) return ra < rb ? -1 : 1;
-      var na = negDate(a.start || ""), nb = negDate(b.start || "");
-      if (na !== nb) return na < nb ? -1 : 1;
-      var ia = a.id || "", ib = b.id || "";
-      return ia < ib ? -1 : ia > ib ? 1 : 0;
-    });
+    if (cfg.sort_by === "date") {
+      // Miroir Python : CV complet = reverse-chrono, IGNORE la relevance.
+      matched.sort(function (a, b) {
+        var na = negDate(a.start || ""), nb = negDate(b.start || "");
+        if (na !== nb) return na < nb ? -1 : 1;
+        var ia = a.id || "", ib = b.id || "";
+        return ia < ib ? -1 : ia > ib ? 1 : 0;
+      });
+    } else {
+      matched.sort(function (a, b) {
+        var ra = -relOf(a, key), rb = -relOf(b, key);
+        if (ra !== rb) return ra < rb ? -1 : 1;
+        var na = negDate(a.start || ""), nb = negDate(b.start || "");
+        if (na !== nb) return na < nb ? -1 : 1;
+        var ia = a.id || "", ib = b.id || "";
+        return ia < ib ? -1 : ia > ib ? 1 : 0;
+      });
+    }
 
-    if (typeof maxExp === "number" && maxExp >= 0) matched = matched.slice(0, maxExp);
+    // Prédicat ENTIER STRICT (miroir Python) : exclut bool, float, NaN, Infinity.
+    if (Number.isInteger(maxExp) && maxExp >= 0) matched = matched.slice(0, maxExp);
     return matched;
   }
 
   function selectManual(profile, bulletIds, lang) {
-    var wanted = {};
+    // Object.create(null) : un exp.id valant une clé d'Object.prototype
+    // ("constructor", "toString"...) casserait l'accumulation avec un {} nu.
+    var wanted = Object.create(null);
     (bulletIds || []).forEach(function (bid) {
       var dot = bid.lastIndexOf(".");
       if (dot <= 0) return;
@@ -92,26 +154,45 @@
         company: loc(exp.company, lang),
         title: loc(exp.title, lang),
         dates: (exp.start || "") + " → " + (exp.current ? present : (exp.end || "")),
-        bullets: ((exp.bullets || {})[lang] || []).slice(),
+        bullets: asList((exp.bullets || {})[lang]).slice(),
       };
     });
 
+    // Projection défensive : SEULES des chaînes non vides (miroir Python). Avant,
+    // une entrée sans `name` exploitable retombait sur l'objet → « [object Object] »
+    // côté JS et fuite des champs internes via str(dict) côté Python.
     var skills = profile.skills || {};
     var skillsTop = [];
     ["programming", "finance", "data_ml"].forEach(function (cat) {
-      (skills[cat] || []).slice(0, 3).forEach(function (s) {
-        skillsTop.push(s && typeof s === "object" ? (s.name || s) : s);
+      asList(skills[cat]).slice(0, 3).forEach(function (s) {
+        var n = (s && typeof s === "object" && !Array.isArray(s)) ? s.name : s;
+        if (typeof n === "string" && n) skillsTop.push(n);
       });
     });
 
     var name = ((identity.first_name || "") + " " + (identity.last_name || "")).trim()
                || loc(identity.name, lang);
+    var links = identity.links || {};
     return {
       lang: lang,
-      identity: { name: name, title: loc(identity.title, lang), email: loc(identity.email, lang) },
+      identity: {
+        name: name,
+        // tagline = sous-titre du profil (identity.title absent de profile.json)
+        title: loc(identity.tagline || identity.title, lang),
+        email: loc(identity.email, lang),
+        location: locationStr(identity),      // tél JAMAIS projeté (public)
+        linkedin: linkDisplay(links.linkedin),
+        github: linkDisplay(links.github),
+      },
       sections: sections,
       skills_top: skillsTop,
-      footer: { updated: profile.$updated || "" },
+      education: educationOf(profile, lang),
+      languages: languagesOf(profile, lang),
+      // certifications passe par loc() comme interests (miroir Python) : une
+      // entrée bilingue {fr,en} doit être résolue, pas stringifiée.
+      certifications: asList(profile.certifications).map(function (c) { return loc(c, lang); }),
+      interests: asList(profile.interests).map(function (i) { return loc(i, lang); }),
+      footer: { updated: loc(profile.$updated, lang) },
     };
   }
 

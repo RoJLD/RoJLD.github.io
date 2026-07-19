@@ -31,7 +31,8 @@
       "relevance_key": "general",
       "min_relevance": 0.0,
       "domains_in": [],
-      "max_experiences": null
+      "max_experiences": null,
+      "sort_by": "date"
     }
   ]
 }

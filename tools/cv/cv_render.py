@@ -30,11 +30,21 @@ ul.cv-bullets li { margin-bottom: 2px; }
 .cv-skills { margin-top: 10px; font-size: 9.5pt; }
 .cv-skills strong { color: #4361ee; }
 .cv-footer { margin-top: 16px; font-size: 8pt; color: #999; text-align: right; }
+.cv-h2 { font-size: 11pt; color: #4361ee; margin: 0 0 6px; border-bottom: 1px solid #dde; padding-bottom: 2px; }
+.cv-edu-head { display: flex; justify-content: space-between; font-weight: 600; }
+.cv-edu-school { color: #16213e; }
+.cv-edu-meta { font-size: 9.5pt; color: #444; margin-top: 2px; }
+.cv-extra { margin-top: 6px; font-size: 9.5pt; }
+.cv-extra strong { color: #4361ee; }
 """
 
 _LABELS = {
-    "fr": {"skills": "Compétences", "updated": "Mis à jour"},
-    "en": {"skills": "Skills", "updated": "Updated"},
+    "fr": {"skills": "Compétences", "updated": "Mis à jour", "education": "Formation",
+           "languages": "Langues", "certifications": "Certifications",
+           "interests": "Centres d'intérêt"},
+    "en": {"skills": "Skills", "updated": "Updated", "education": "Education",
+           "languages": "Languages", "certifications": "Certifications",
+           "interests": "Interests"},
 }
 
 
@@ -57,8 +67,13 @@ def render_html(structured_cv: dict[str, Any]) -> str:
     parts.append(f'<h1 class="cv-name">{_esc(idy.get("name", ""))}</h1>')
     if idy.get("title"):
         parts.append(f'<p class="cv-title">{_esc(idy["title"])}</p>')
-    if idy.get("email"):
-        parts.append(f'<p class="cv-contact">{_esc(idy["email"])}</p>')
+    # Ligne de contact : localisation • email • linkedin • github. Le TÉLÉPHONE
+    # n'y figure jamais (build_structured_cv ne le projette pas) : les préfabriqués
+    # sont servis publiquement sur GitHub Pages.
+    contact = " • ".join(x for x in (idy.get("location", ""), idy.get("email", ""),
+                                     idy.get("linkedin", ""), idy.get("github", "")) if x)
+    if contact:
+        parts.append(f'<p class="cv-contact">{_esc(contact)}</p>')
     parts.append("</header>")
 
     # Sections (expériences)
@@ -77,12 +92,76 @@ def render_html(structured_cv: dict[str, Any]) -> str:
             parts.append("</ul>")
         parts.append("</section>")
 
+    # Formation (education) — après les expériences, comme le CV ATS de référence
+    education = structured_cv.get("education", [])
+    if education:
+        parts.append('<section class="cv-section">')
+        parts.append(f'<h2 class="cv-h2">{_esc(lab["education"])}</h2>')
+        for e in education:
+            parts.append('<div class="cv-edu-head">')
+            parts.append(f'<span class="cv-edu-school">{_esc(e.get("school", ""))}</span>')
+            parts.append(f'<span class="cv-exp-dates">{_esc(e.get("period", ""))}</span>')
+            parts.append("</div>")
+            # `title` recouvre souvent `school` dans profile.json ("ECE Paris" vs
+            # "ECE Paris, Cycle Ingénieur") : on l'omet alors, sinon le PDF public
+            # affiche deux fois le nom de l'école.
+            title_txt = e.get("title", "")
+            school_txt = e.get("school", "")
+            if title_txt and school_txt and title_txt.startswith(school_txt):
+                title_txt = ""
+            sub = " — ".join(x for x in (title_txt, e.get("org", "")) if x)
+            if sub:
+                parts.append(f'<div class="cv-exp-title">{_esc(sub)}</div>')
+            if e.get("degree"):
+                parts.append(f'<div class="cv-edu-meta">{_esc(e["degree"])}</div>')
+            courses = e.get("courses", [])
+            if courses:
+                parts.append(
+                    f'<div class="cv-edu-meta"><strong>{_esc(e.get("courses_label", ""))}:</strong> '
+                    f'{_esc(" · ".join(str(c) for c in courses))}</div>'
+                )
+            cap = e.get("capstone")
+            if cap:
+                cap_txt = " — ".join(x for x in (cap.get("label", ""), cap.get("summary", "")) if x)
+                if cap_txt:
+                    parts.append(f'<div class="cv-edu-meta">{_esc(cap_txt)}</div>')
+        parts.append("</section>")
+
     # Skills
     skills = structured_cv.get("skills_top", [])
     if skills:
         parts.append(
             f'<p class="cv-skills"><strong>{_esc(lab["skills"])}:</strong> '
             f'{_esc(" · ".join(str(s) for s in skills))}</p>'
+        )
+
+    # Compléments : certifications · langues · centres d'intérêt (ordre du CV ATS)
+    certs = structured_cv.get("certifications", [])
+    if certs:
+        parts.append(
+            f'<p class="cv-extra"><strong>{_esc(lab["certifications"])}:</strong> '
+            f'{_esc(" · ".join(str(c) for c in certs))}</p>'
+        )
+
+    languages = structured_cv.get("languages", [])
+    if languages:
+        lang_items = []
+        for lg in languages:
+            nm, lvl = lg.get("name", ""), lg.get("level", "")
+            item = f"{nm} — {lvl}" if nm and lvl else (nm or lvl)
+            if item:
+                lang_items.append(item)
+        if lang_items:
+            parts.append(
+                f'<p class="cv-extra"><strong>{_esc(lab["languages"])}:</strong> '
+                f'{_esc(" · ".join(lang_items))}</p>'
+            )
+
+    interests = structured_cv.get("interests", [])
+    if interests:
+        parts.append(
+            f'<p class="cv-extra"><strong>{_esc(lab["interests"])}:</strong> '
+            f'{_esc(" · ".join(str(i) for i in interests))}</p>'
         )
 
     # Footer
