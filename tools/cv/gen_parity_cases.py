@@ -32,8 +32,9 @@ cases = []
 # 1-2 : profil RÉEL du dépôt (exerce education / languages / certifications / interests)
 for name, key, thr, lang in [("real_quant_en", "quant", 0.6, "en"),
                              ("real_full_fr", "general", 0.0, "fr")]:
-    exps = cv_select.select_experiences(prof, {"relevance_key": key, "min_relevance": thr})
-    cases.append((name, cv_select.build_structured_cv(prof, exps, lang)))
+    _cfg = {"relevance_key": key, "min_relevance": thr}
+    exps = cv_select.select_experiences(prof, _cfg)
+    cases.append((name, cv_select.build_structured_cv(prof, exps, lang, _cfg)))
 
 # 3 : échappement (< > & " ') — y compris dans les NOUVEAUX blocs
 cases.append(("escaping", {
@@ -80,19 +81,45 @@ cases.append(("partial_sections", {
 render_cases = [{"name": n, "cv": cv, "html_py": cv_render.render_html(cv)} for n, cv in cases]
 
 # ── PIPELINE : parité de la PROJECTION (ordre + structured_cv + HTML) ─────────
+# `sel_cfg` sert à select_experiences, `build_cfg` à build_structured_cv (il peut
+# être None : c'est le chemin du NAVIGATEUR, qui appelle sans cfg — sans ce cas,
+# l'ordre par défaut des catégories n'était vérifié par rien).
+_SEL = {"relevance_key": "general", "min_relevance": 0.0}
+
+# Variante : une entrée skills SANS `name` exploitable. Témoin de l'invariant
+# anti-fuite CÔTÉ JS aussi (le profil réel n'a que des `name` propres, donc la
+# régression `[object Object]` / champs internes y était invisible).
+_prof_noname = json.loads(json.dumps(prof))
+_prof_noname.setdefault("skills", {})["programming"] = [
+    {"weight": 0.9, "level": "expert", "used_in": ["x"]},   # pas de `name`
+    {"name": "SQL"},
+]
+
 pipeline = []
 for cfg in cfgs:
     for lang in ("fr", "en"):
-        exps = cv_select.select_experiences(prof, cfg)
-        scv = cv_select.build_structured_cv(prof, exps, lang)
-        pipeline.append({
-            "name": f"pipe_{cfg['id']}_{lang}",
-            "cfg": cfg,
-            "lang": lang,
-            "order_py": [e.get("id") for e in exps],
-            "scv_py": scv,
-            "html_py": cv_render.render_html(scv),
-        })
+        pipeline.append({"name": f"pipe_{cfg['id']}_{lang}", "sel_cfg": cfg,
+                         "build_cfg": cfg, "lang": lang, "profile": None})
+
+pipeline += [
+    # build SANS cfg → exerce _DEFAULT_SKILL_CATS (ordre inclus), chemin navigateur
+    {"name": "pipe_nocfg_fr", "sel_cfg": _SEL, "build_cfg": None, "lang": "fr", "profile": None},
+    {"name": "pipe_nocfg_en", "sel_cfg": _SEL, "build_cfg": None, "lang": "en", "profile": None},
+    # entrée skills sans `name` → anti-fuite témoin des DEUX côtés
+    {"name": "pipe_noname_fr", "sel_cfg": _SEL, "build_cfg": None, "lang": "fr",
+     "profile": _prof_noname},
+    # cap actif → exerce skills_per_category des DEUX côtés
+    {"name": "pipe_cap_fr", "sel_cfg": _SEL, "lang": "fr", "profile": None,
+     "build_cfg": {**_SEL, "skills_per_category": 2}},
+]
+
+for c in pipeline:
+    p = c["profile"] or prof
+    exps = cv_select.select_experiences(p, c["sel_cfg"])
+    scv = cv_select.build_structured_cv(p, exps, c["lang"], c["build_cfg"])
+    c["order_py"] = [e.get("id") for e in exps]
+    c["scv_py"] = scv
+    c["html_py"] = cv_render.render_html(scv)
 
 out = {"render": render_cases, "pipeline": {"profile": prof, "cases": pipeline}}
 (_HERE / "parity_cases.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")

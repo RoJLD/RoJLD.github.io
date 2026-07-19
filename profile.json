@@ -803,6 +803,13 @@
       "Project Management": 0.7
     }
   },
+  "skills_labels": {
+    "programming": {"fr": "Langages de programmation", "en": "Programming languages"},
+    "finance": {"fr": "Finance & quantitatif", "en": "Finance & quantitative"},
+    "data_ml": {"fr": "Data & Machine Learning", "en": "Data & Machine Learning"},
+    "domain": {"fr": "Domaines", "en": "Domains"},
+    "engineering": {"fr": "Ingénierie & infrastructure", "en": "Engineering & infrastructure"}
+  },
   "hidden_edge": {
     "description": "Combinaisons rares identifiées par croisement de skills",
     "combos": [

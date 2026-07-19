@@ -10,29 +10,29 @@
   "use strict";
 
   var CV_CSS = "" +
-    "@page { size: A4; margin: 18mm 16mm; }\n" +
+    "@page { size: A4; margin: 12mm 14mm; }\n" +
     "* { box-sizing: border-box; }\n" +
     "body { font-family: -apple-system, \"Segoe UI\", Roboto, sans-serif; color: #1a1a2e;\n" +
-    "       font-size: 10.5pt; line-height: 1.45; margin: 0; }\n" +
-    ".cv-header { border-bottom: 2px solid #4361ee; padding-bottom: 8px; margin-bottom: 14px; }\n" +
-    ".cv-name { font-size: 20pt; font-weight: 700; margin: 0; }\n" +
-    ".cv-title { font-size: 11pt; color: #4361ee; margin: 2px 0 0; }\n" +
-    ".cv-contact { font-size: 9pt; color: #555; margin-top: 4px; }\n" +
-    ".cv-section { margin-bottom: 12px; page-break-inside: avoid; }\n" +
+    "       font-size: 9.8pt; line-height: 1.3; margin: 0; }\n" +
+    ".cv-header { border-bottom: 2px solid #4361ee; padding-bottom: 5px; margin-bottom: 9px; }\n" +
+    ".cv-name { font-size: 17pt; font-weight: 700; margin: 0; }\n" +
+    ".cv-title { font-size: 10.5pt; color: #4361ee; margin: 1px 0 0; }\n" +
+    ".cv-contact { font-size: 8.5pt; color: #555; margin-top: 3px; }\n" +
+    ".cv-section { margin-bottom: 7px; page-break-inside: avoid; }\n" +
     ".cv-exp-head { display: flex; justify-content: space-between; font-weight: 600; }\n" +
     ".cv-exp-company { color: #16213e; }\n" +
-    ".cv-exp-dates { color: #777; font-size: 9pt; font-weight: 400; white-space: nowrap; }\n" +
-    ".cv-exp-title { font-style: italic; color: #444; font-size: 9.5pt; margin-bottom: 3px; }\n" +
-    "ul.cv-bullets { margin: 3px 0 0; padding-left: 16px; }\n" +
-    "ul.cv-bullets li { margin-bottom: 2px; }\n" +
-    ".cv-skills { margin-top: 10px; font-size: 9.5pt; }\n" +
+    ".cv-exp-dates { color: #777; font-size: 8.5pt; font-weight: 400; white-space: nowrap; }\n" +
+    ".cv-exp-title { font-style: italic; color: #444; font-size: 9pt; margin-bottom: 2px; }\n" +
+    "ul.cv-bullets { margin: 2px 0 0; padding-left: 15px; }\n" +
+    "ul.cv-bullets li { margin-bottom: 1px; }\n" +
+    ".cv-skills { margin-top: 4px; font-size: 9pt; }\n" +
     ".cv-skills strong { color: #4361ee; }\n" +
-    ".cv-footer { margin-top: 16px; font-size: 8pt; color: #999; text-align: right; }\n" +
-    ".cv-h2 { font-size: 11pt; color: #4361ee; margin: 0 0 6px; border-bottom: 1px solid #dde; padding-bottom: 2px; }\n" +
+    ".cv-footer { margin-top: 8px; font-size: 8pt; color: #999; text-align: right; }\n" +
+    ".cv-h2 { font-size: 10.5pt; color: #4361ee; margin: 0 0 4px; border-bottom: 1px solid #dde; padding-bottom: 2px; }\n" +
     ".cv-edu-head { display: flex; justify-content: space-between; font-weight: 600; }\n" +
     ".cv-edu-school { color: #16213e; }\n" +
-    ".cv-edu-meta { font-size: 9.5pt; color: #444; margin-top: 2px; }\n" +
-    ".cv-extra { margin-top: 6px; font-size: 9.5pt; }\n" +
+    ".cv-edu-meta { font-size: 9pt; color: #444; margin-top: 1px; }\n" +
+    ".cv-extra { margin-top: 3px; font-size: 9pt; }\n" +
     ".cv-extra strong { color: #4361ee; }\n";
 
   var LABELS = {
@@ -120,10 +120,22 @@
       p.push("</section>");
     }
 
-    var skills = cv.skills_top || [];
-    if (skills.length) {
-      p.push('<p class="cv-skills"><strong>' + esc(lab.skills) + ":</strong> " +
-             esc(skills.map(function (s) { return String(s); }).join(" · ")) + "</p>");
+    // Compétences : une ligne LIBELLÉE par catégorie (miroir Python), repli sur
+    // la liste plate si un structured_cv ancien (sans skills_groups) est rendu.
+    var groups = cv.skills_groups;
+    if (Array.isArray(groups) && groups.length) {
+      groups.forEach(function (g) {
+        var items = Array.isArray(g.items) ? g.items : [];
+        if (!items.length) return;
+        p.push('<p class="cv-skills"><strong>' + esc(g.label || "") + ":</strong> " +
+               esc(items.map(function (i) { return String(i); }).join(" · ")) + "</p>");
+      });
+    } else {
+      var skills = cv.skills_top || [];
+      if (skills.length) {
+        p.push('<p class="cv-skills"><strong>' + esc(lab.skills) + ":</strong> " +
+               esc(skills.map(function (s) { return String(s); }).join(" · ")) + "</p>");
+      }
     }
 
     // Compléments : certifications · langues · centres d'intérêt (ordre du CV ATS)

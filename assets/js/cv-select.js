@@ -18,6 +18,38 @@
   // Miroir de _as_list : liste STRICTE (une chaîne ne doit pas être itérée).
   function asList(v) { return Array.isArray(v) ? v : []; }
 
+  // Miroir de _DEFAULT_SKILL_CATS : ordre EXPLICITE (jamais Object.keys, dont
+  // l'ordre déciderait du CV et embarquerait radar_scores).
+  var DEFAULT_SKILL_CATS = ["finance", "programming", "data_ml", "domain", "engineering"];
+
+  // Miroir de _skills_groups
+  function skillsGroups(profile, lang, cfg) {
+    cfg = cfg || {};
+    var cats = Array.isArray(cfg.skills_categories) && cfg.skills_categories.length
+      ? cfg.skills_categories : DEFAULT_SKILL_CATS;
+    var cap = cfg.skills_per_category;
+    cap = (Number.isInteger(cap) && cap >= 0) ? cap : null;
+    var labels = profile.skills_labels || {};
+    var skills = profile.skills || {};
+    // own() : une catégorie nommée comme une propriété d'Object.prototype
+    // ("constructor", "toString") renverrait sinon la fonction native — le
+    // libellé du CV deviendrait « function Object() { [native code] } ».
+    function own(o, k) {
+      return Object.prototype.hasOwnProperty.call(o, k) ? o[k] : undefined;
+    }
+    var groups = [];
+    cats.forEach(function (cat) {
+      var items = [];
+      asList(own(skills, cat)).forEach(function (s) {
+        var n = (s && typeof s === "object" && !Array.isArray(s)) ? s.name : s;
+        if (typeof n === "string" && n) items.push(n);
+      });
+      if (cap !== null) items = items.slice(0, cap);
+      if (items.length) groups.push({ label: loc(own(labels, cat), lang) || String(cat), items: items });
+    });
+    return groups;
+  }
+
   // Miroir de _neg_date : complément à 9 des chiffres → tri asc = date desc.
   // Non-chaîne → "" (miroir explicite du garde isinstance côté Python).
   function negDate(v) {
@@ -145,7 +177,7 @@
     return out;
   }
 
-  function buildStructuredCv(profile, experiences, lang) {
+  function buildStructuredCv(profile, experiences, lang, cfg) {
     var identity = profile.identity || {};
     var present = lang === "fr" ? "présent" : "present";
     var sections = (experiences || []).map(function (exp) {
@@ -158,17 +190,11 @@
       };
     });
 
-    // Projection défensive : SEULES des chaînes non vides (miroir Python). Avant,
-    // une entrée sans `name` exploitable retombait sur l'objet → « [object Object] »
-    // côté JS et fuite des champs internes via str(dict) côté Python.
-    var skills = profile.skills || {};
+    // Compétences groupées par catégorie (pilotées par cfg) ; skills_top reste la
+    // liste PLATE dérivée, pour les consommateurs historiques du schéma.
+    var groups = skillsGroups(profile, lang, cfg);
     var skillsTop = [];
-    ["programming", "finance", "data_ml"].forEach(function (cat) {
-      asList(skills[cat]).slice(0, 3).forEach(function (s) {
-        var n = (s && typeof s === "object" && !Array.isArray(s)) ? s.name : s;
-        if (typeof n === "string" && n) skillsTop.push(n);
-      });
-    });
+    groups.forEach(function (g) { g.items.forEach(function (n) { skillsTop.push(n); }); });
 
     var name = ((identity.first_name || "") + " " + (identity.last_name || "")).trim()
                || loc(identity.name, lang);
@@ -185,6 +211,7 @@
         github: linkDisplay(links.github),
       },
       sections: sections,
+      skills_groups: groups,
       skills_top: skillsTop,
       education: educationOf(profile, lang),
       languages: languagesOf(profile, lang),

@@ -124,7 +124,7 @@ def targeted_structured_cv(job_posting: str, profile: dict, lang: str = "fr",
 
     cfg = extract_cfg(job_posting, profile, complete_fn=complete_fn)
     exps = cv_select.select_experiences(profile, cfg)
-    scv = cv_select.build_structured_cv(profile, exps, lang)
+    scv = cv_select.build_structured_cv(profile, exps, lang, cfg)
     return cfg, scv
 
 

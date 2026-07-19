@@ -233,6 +233,106 @@ def test_certifications_bilingual_resolved():
     assert cv_select.build_structured_cv(prof, [], "en")["certifications"] == ["Cert EN"]
 
 
+# ── Largeur des compétences : groupes libellés pilotés par cfg ────────────────
+
+def _skills_profile():
+    prof = _profile()
+    prof["skills"] = {
+        "programming": [{"name": "Python"}, {"name": "SQL"}, {"name": "Java"}],
+        "finance": [{"name": "Pricing"}, {"name": "Risk"}],
+        "engineering": [{"name": "Kubernetes"}, {"name": "GitOps"}],
+        "radar_scores": {"Quant": 0.9},  # dict, PAS une liste de compétences
+    }
+    prof["skills_labels"] = {
+        "programming": {"fr": "Langages", "en": "Languages"},
+        "finance": {"fr": "Finance", "en": "Finance"},
+        "engineering": {"fr": "Ingénierie", "en": "Engineering"},
+    }
+    return prof
+
+
+def test_skills_categories_cfg_controls_selection_and_order():
+    cfg = {**_FULL_CFG, "skills_categories": ["engineering", "finance"]}
+    scv = cv_select.build_structured_cv(_skills_profile(), [], "fr", cfg)
+    assert [g["label"] for g in scv["skills_groups"]] == ["Ingénierie", "Finance"]
+    assert scv["skills_groups"][0]["items"] == ["Kubernetes", "GitOps"]
+
+
+def test_skills_per_category_cap():
+    cfg = {**_FULL_CFG, "skills_categories": ["programming"], "skills_per_category": 2}
+    scv = cv_select.build_structured_cv(_skills_profile(), [], "fr", cfg)
+    assert scv["skills_groups"][0]["items"] == ["Python", "SQL"]
+
+
+def test_skills_top_is_flat_derivation_of_groups():
+    cfg = {**_FULL_CFG, "skills_categories": ["programming", "finance"]}
+    scv = cv_select.build_structured_cv(_skills_profile(), [], "fr", cfg)
+    assert scv["skills_top"] == ["Python", "SQL", "Java", "Pricing", "Risk"]
+
+
+def test_radar_scores_never_becomes_a_skill_group():
+    """`radar_scores` est un dict de scores, pas une liste de compétences."""
+    cfg = {**_FULL_CFG, "skills_categories": ["radar_scores", "finance"]}
+    scv = cv_select.build_structured_cv(_skills_profile(), [], "fr", cfg)
+    assert [g["label"] for g in scv["skills_groups"]] == ["Finance"]
+
+
+def test_default_without_cfg_uses_known_categories_in_canonical_order():
+    """Sans cfg (= chemin du NAVIGATEUR) : catégories connues DANS L'ORDRE canonique.
+
+    Assertion ORDONNÉE : un set ne témoignerait pas de l'ordre, qui est pourtant
+    exactement ce que _DEFAULT_SKILL_CATS décide.
+    """
+    scv = cv_select.build_structured_cv(_skills_profile(), [], "fr")
+    assert [g["label"] for g in scv["skills_groups"]] == ["Finance", "Langages", "Ingénierie"]
+
+
+def test_default_categories_stay_aligned_with_full_profile_cfg():
+    """Verrou de couplage. Le NAVIGATEUR compose sans cfg (→ _DEFAULT_SKILL_CATS)
+    tandis que le PDF préfab `full` lit cv_profiles.json. Si l'un des deux est
+    modifié seul, le CV composé en ligne diverge SILENCIEUSEMENT du PDF
+    téléchargé — aucun autre test ne le verrait (le navigateur n'a pas accès à
+    cv_profiles.json, c'est un fichier de build).
+    """
+    import json
+    import pathlib
+    cfgs = json.loads(
+        (pathlib.Path(__file__).resolve().parent / "cv_profiles.json").read_text(encoding="utf-8")
+    )["profiles"]
+    full = [c for c in cfgs if c["id"] == "full"][0]
+    assert list(cv_select._DEFAULT_SKILL_CATS) == full["skills_categories"]
+
+
+def test_skills_per_category_accepts_integral_float():
+    """JSON `2.0` = float côté Python mais entier côté JS : le cap doit s'appliquer
+    identiquement (miroir de Number.isInteger)."""
+    cfg = {**_FULL_CFG, "skills_categories": ["programming"], "skills_per_category": 2.0}
+    scv = cv_select.build_structured_cv(_skills_profile(), [], "fr", cfg)
+    assert scv["skills_groups"][0]["items"] == ["Python", "SQL"]
+
+
+def test_skills_per_category_rejects_non_integral_values():
+    """Valeurs non entières/négatives → cap illimité, identiquement des deux côtés."""
+    for bad in (1.5, True, "2", float("nan"), float("inf"), -1):
+        cfg = {**_FULL_CFG, "skills_categories": ["programming"], "skills_per_category": bad}
+        scv = cv_select.build_structured_cv(_skills_profile(), [], "fr", cfg)
+        assert scv["skills_groups"][0]["items"] == ["Python", "SQL", "Java"], f"cap={bad!r}"
+
+
+def test_render_one_labeled_line_per_group():
+    cfg = {**_FULL_CFG, "skills_categories": ["programming", "engineering"]}
+    out = cv_render.render_html(cv_select.build_structured_cv(_skills_profile(), [], "fr", cfg))
+    assert "Langages:</strong> Python · SQL · Java" in out
+    assert "Ingénierie:</strong> Kubernetes · GitOps" in out
+
+
+def test_render_falls_back_to_flat_list_without_groups():
+    """Rétro-compat : un structured_cv ancien (sans skills_groups) rend la ligne plate."""
+    out = cv_render.render_html({"lang": "fr", "identity": {"name": "N"}, "sections": [],
+                                 "skills_top": ["Python", "SQL"], "footer": {}})
+    assert "Compétences:</strong> Python · SQL" in out
+
+
 def test_string_instead_of_list_is_not_iterated_char_by_char():
     """Une chaîne au lieu d'une liste ne doit pas être explosée en caractères."""
     prof = _profile()

@@ -7,7 +7,8 @@
       "relevance_key": "quant",
       "min_relevance": 0.6,
       "domains_in": ["quant", "finance", "defi"],
-      "max_experiences": null
+      "max_experiences": null,
+      "skills_categories": ["finance", "data_ml", "programming", "domain"]
     },
     {
       "id": "dev",
@@ -15,7 +16,8 @@
       "relevance_key": "dev",
       "min_relevance": 0.5,
       "domains_in": ["dev", "data", "ai", "infra", "architecture"],
-      "max_experiences": null
+      "max_experiences": null,
+      "skills_categories": ["programming", "data_ml", "engineering"]
     },
     {
       "id": "risk",
@@ -23,7 +25,8 @@
       "relevance_key": "risk",
       "min_relevance": 0.5,
       "domains_in": ["risk", "finance"],
-      "max_experiences": null
+      "max_experiences": null,
+      "skills_categories": ["finance", "domain", "programming"]
     },
     {
       "id": "full",
@@ -32,7 +35,8 @@
       "min_relevance": 0.0,
       "domains_in": [],
       "max_experiences": null,
-      "sort_by": "date"
+      "sort_by": "date",
+      "skills_categories": ["finance", "programming", "data_ml", "domain", "engineering"]
     }
   ]
 }
