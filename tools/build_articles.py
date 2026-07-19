@@ -65,7 +65,7 @@ _CSS = """
         h2{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:-.02em;margin:48px 0 16px;padding-top:16px;border-top:1px solid var(--border)}
         h3{font-size:18px;font-weight:600;margin:32px 0 12px}
         p{color:var(--tx-2);margin-bottom:18px;line-height:1.8}
-        a{color:var(--accent);text-decoration:none}.a:hover{text-decoration:underline}
+        a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
         strong{color:var(--tx-1);font-weight:600}
 
         code{font-family:var(--mono);font-size:13px;background:var(--bg-2);border:1px solid var(--border);padding:2px 7px;border-radius:4px;color:var(--accent)}
@@ -138,44 +138,110 @@ def en_path_for(fr_url: str) -> str:
 
 
 def reading_minutes(body: str) -> int:
+    """Minutes de lecture, dérivées du corps Markdown (200 mots/min, plancher 1).
+
+    Le décompte porte sur les *tokens source* : les `##` et le contenu des blocs de
+    code y entrent. La valeur reste dérivée — donc incapable de mentir comme le
+    « 8 min » saisi à la main pour 509 mots — mais elle majore légèrement un article
+    riche en code."""
     return max(1, math.ceil(len(body.split()) / WORDS_PER_MINUTE))
 
 
 def parse_source(text: str) -> tuple[dict, str]:
     """'---\\nclé: valeur\\n---\\ncorps' -> ({clé: valeur}, corps). Fail-loud.
 
-    Le `tldr` n'a pas de valeur par défaut sensée : son absence est une erreur de
-    rédaction, pas un cas à combler silencieusement."""
+    Une ligne peut se poursuivre sur la suivante si celle-ci est indentée : le
+    `tldr` est de la prose, et le premier retour à la ligne d'un rédacteur amputait
+    silencieusement le résumé publié.
+
+    Toute autre ligne non parsable, et toute clé dupliquée, lèvent. Le `tldr` n'a
+    pas de valeur par défaut sensée : son absence est une erreur de rédaction, pas
+    un cas à combler."""
     m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.S)
     if not m:
         raise BuildError("source d'article sans frontmatter `---` (le `tldr` est requis)")
     fm: dict[str, str] = {}
-    for line in m.group(1).splitlines():
-        if ":" in line:
-            k, _, v = line.partition(":")
-            fm[k.strip()] = v.strip()
+    derniere: str | None = None
+    for num, line in enumerate(m.group(1).splitlines(), start=2):
+        if not line.strip():
+            continue
+        if line[:1].isspace():                      # continuation de la clé précédente
+            if derniere is None:
+                raise BuildError(f"frontmatter ligne {num} : continuation sans clé")
+            fm[derniere] = f"{fm[derniere]} {line.strip()}".strip()
+            continue
+        if ":" not in line:
+            raise BuildError(f"frontmatter ligne {num} illisible : {line!r} "
+                             "(attendu `clé: valeur`, ou une continuation indentée)")
+        k, _, v = line.partition(":")
+        k = k.strip()
+        if k in fm:
+            raise BuildError(f"frontmatter ligne {num} : clé `{k}` dupliquée")
+        fm[k], derniere = v.strip(), k
     if not fm.get("tldr"):
         raise BuildError("frontmatter sans `tldr`")
     return fm, m.group(2)
 
 
+# Sentinelle de travail pour extraire les formules du flux Markdown. Elle encadre
+# l'indice d'octets NUL : un rédacteur ne peut pas en saisir, alors qu'un jeton
+# textuel comme « FORMULAPLACEHOLDER0 » est typable — et un corps qui le contenait
+# voyait son texte remplacé par la formule. python-markdown emploie \x02/\x03 en
+# interne ; \x00 est donc libre.
+_SENTINELLE = "\x00FORMULA{}\x00"
+
+
 def md_to_html(body: str) -> str:
     """Markdown -> HTML, le bloc maison ::formula extrait AVANT conversion.
 
-    Le contenu d'une formule est une donnée : ses `*` et `_` ne sont pas de l'emphase.
-    Le sortir du flux avant de convertir est le même principe que les blocs de code
-    protégés."""
+    Le contenu d'une formule est une donnée : ses `*` et `_` ne sont pas de
+    l'emphase. Deux masquages successifs, dans cet ordre :
+
+    1. les blocs de code fencés, pour qu'un article documentant SA PROPRE syntaxe
+       garde son exemple littéral (sans quoi le préprocesseur l'avalait et la
+       sentinelle fuyait dans le HTML publié) ;
+    2. les blocs ::formula.
+
+    Puis un garde-fou : toute sentinelle survivante ou tout `::formula` resté dans
+    le flux fait lever. Un bloc mal fermé est une erreur de rédaction, comme un
+    `tldr` absent — pas du texte à publier tel quel."""
+    fences: list[str] = []
     formulas: list[str] = []
 
-    def _stash(m: re.Match) -> str:
-        formulas.append(m.group(1).strip())
-        return f"\n\nFORMULAPLACEHOLDER{len(formulas) - 1}\n\n"
+    def _stash_fence(m: re.Match) -> str:
+        fences.append(m.group(0))
+        return f"\x00FENCE{len(fences) - 1}\x00"
 
-    staged = re.sub(r"^::formula\n(.*?)\n^::$", _stash, body, flags=re.M | re.S)
+    def _stash_formula(m: re.Match) -> str:
+        formulas.append(m.group(1).strip())
+        return f"\n\n{_SENTINELLE.format(len(formulas) - 1)}\n\n"
+
+    masque = re.sub(r"^(```|~~~).*?^\1\s*$", _stash_fence, body, flags=re.M | re.S)
+    staged = re.sub(r"^::formula\n(.*?)\n^::$", _stash_formula, masque, flags=re.M | re.S)
+
+    if "::formula" in staged:
+        ligne = staged[: staged.index("::formula")].count("\n") + 1
+        raise BuildError(
+            f"bloc `::formula` mal formé vers la ligne {ligne} du corps : l'ouverture "
+            "doit être en début de ligne et la fermeture `::` seule sur sa ligne")
+
+    for i, f in enumerate(fences):                  # les fences reviennent AVANT la conversion
+        staged = staged.replace(f"\x00FENCE{i}\x00", f)
     out = _markdown().markdown(staged, extensions=["fenced_code"])
+
     for i, f in enumerate(formulas):
-        out = out.replace(f"<p>FORMULAPLACEHOLDER{i}</p>",
+        out = out.replace(f"<p>{_SENTINELLE.format(i)}</p>",
                           f'<div class="formula">{esc(f)}</div>')
+    if "\x00" in out:
+        # DÉFENSE EN PROFONDEUR, volontairement non couverte : aucune entrée connue
+        # ne l'atteint. La sentinelle est toujours insérée seule sur son paragraphe,
+        # donc toujours enveloppée d'un <p> et toujours substituée — testé sur
+        # formule en fin de document, formules adjacentes, en liste, en citation et
+        # fermeture orpheline. Le garde protège contre une évolution future du
+        # masquage ci-dessus, pas contre un défaut actuel. Son mutant survit, et
+        # c'est attendu.
+        raise BuildError("une sentinelle interne a survécu à la conversion Markdown "
+                         "— bloc `::formula` dans une position inattendue")
     return out
 
 
@@ -207,18 +273,26 @@ def _author_bio(profile: dict, lang: str) -> str:
     return f"{tagline} · {school}{suffix}" if school else tagline
 
 
-def render_article_page(profile: dict, article_id: str, lang: str) -> str:
-    articles = {a.get("id"): a for a in profile.get("articles", [])}
-    if article_id not in articles:
-        raise BuildError(f"article {article_id!r} absent de profile.json")
-    art = articles[article_id]
+_CHAMPS_REQUIS = ("title", "date", "url")
+
+
+def _exiger_champs(art: dict) -> None:
+    """Valide les champs du catalogue AVANT de rendre.
+
+    Sans ça, un article sans `date` levait un `KeyError` nu que build_site
+    enrobait en « génération des pages articles échouée : 'date' » — ni l'article
+    ni la nature du problème n'apparaissaient."""
+    manquants = [c for c in _CHAMPS_REQUIS if not art.get(c)]
+    if manquants:
+        raise BuildError(f"article {art.get('id')!r} : champ(s) requis manquant(s) : "
+                         + ", ".join(manquants))
+
+
+def _assemble(profile: dict, art: dict, lang: str, front: dict, body_md: str) -> str:
+    """Assemble la page. Séparé de la lecture disque pour que le rendu soit
+    testable sur un frontmatter arbitraire (l'échappement du `tldr` n'était
+    couvert par rien)."""
     lab = LABELS[lang]
-
-    src = SRC / f"{slug_of(art)}.{lang}.md"
-    if not src.exists():
-        raise BuildError(f"source absente : {src.relative_to(ROOT)}")
-    front, body_md = parse_source(src.read_text(encoding="utf-8"))
-
     title = _bi(art["title"], lang)
     meta_line = f'{fmt_date(art["date"], lang)} · {reading_minutes(body_md)} {lab["read"]}'
     tags = "\n".join(f'            <span class="article-tag">{esc(t)}</span>'
@@ -267,13 +341,57 @@ def render_article_page(profile: dict, article_id: str, lang: str) -> str:
 """
 
 
+def render_article_page(profile: dict, article_id: str, lang: str) -> str:
+    """Lit la source disque et rend la page. Fail-loud à chaque étape."""
+    articles = {a.get("id"): a for a in profile.get("articles", [])}
+    if article_id not in articles:
+        raise BuildError(f"article {article_id!r} absent de profile.json")
+    art = articles[article_id]
+    _exiger_champs(art)
+
+    src = SRC / f"{slug_of(art)}.{lang}.md"
+    if not src.exists():
+        raise BuildError(f"source absente : {src.relative_to(ROOT)}")
+    front, body_md = parse_source(src.read_text(encoding="utf-8"))
+    return _assemble(profile, art, lang, front, body_md)
+
+
+def en_url_or_fallback(fr_url: str) -> str:
+    """Chemin EN si la page existe sur disque, sinon le FR.
+
+    UNE seule implémentation pour les TROIS surfaces qui annoncent un article
+    (index #blog, explorer, highlights). La revue a montré que n'en câbler qu'une
+    laisse les deux autres traduire le titre puis envoyer l'anglophone sur la page
+    française. L'existence est vérifiée, jamais supposée : promettre une page
+    absente produirait un 404 sur un lien public."""
+    en_url = en_path_for(fr_url)
+    return en_url if (ROOT / en_url).exists() else fr_url
+
+
+def _chemin_confine(rel: str) -> pathlib.Path:
+    """Résout `rel` sous ROOT en exigeant qu'il reste dans `articles/`.
+
+    `slug_of` normalise via PurePosixPath().stem, mais le chemin d'ÉCRITURE
+    utilisait l'`url` brute de profile.json : une valeur comme
+    `articles/../index.html` écrasait un fichier arbitraire sans un mot. Le
+    fichier n'est pas hostile — il est dans le domaine de confiance — mais une
+    faute de frappe ne doit pas détruire en silence."""
+    cible = (ROOT / rel).resolve()
+    racine = (ROOT / "articles").resolve()
+    if not cible.is_relative_to(racine):
+        raise BuildError(f"chemin de sortie hors du dossier articles/ : {rel!r} "
+                         f"(résolu en {cible})")
+    return cible
+
+
 def build_articles(profile: dict | None = None,
                    write: bool = True) -> tuple[list[str], list[str]]:
     """Génère toutes les pages disponibles.
 
     Retourne (chemins produits, manques signalés). Un `.en.md` absent n'est PAS une
     erreur — la carte EN retombera sur le FR — mais il est rapporté à l'appelant :
-    un repli silencieux serait un masquage."""
+    un repli silencieux serait un masquage. `build_site` affiche ce retour ; sans
+    quoi la garantie n'existerait que dans un test."""
     if profile is None:
         profile = load_profile()
     produced: list[str] = []
@@ -281,16 +399,23 @@ def build_articles(profile: dict | None = None,
 
     for art in profile.get("articles", []):
         slug = slug_of(art) if art.get("url") else None
+        # Le confinement est validé PAR ARTICLE, avant la boucle des langues : une
+        # `url` malformée est une erreur de configuration, pas une traduction
+        # manquante. Placé dans la boucle, le garde était subordonné à l'existence
+        # d'une source — donc muet précisément sur un article mal déclaré.
+        if slug is not None:
+            _chemin_confine(art["url"])
+            _chemin_confine(en_path_for(art["url"]))
         for lang, rel in (("fr", art.get("url")),
                           ("en", en_path_for(art["url"]) if art.get("url") else None)):
             if slug is None or not (SRC / f"{slug}.{lang}.md").exists():
                 missing.append(f"{art.get('id')} [{lang}]")
                 continue
+            cible = _chemin_confine(rel)
             page = render_article_page(profile, art["id"], lang)
             if write:
-                out = ROOT / rel
-                out.parent.mkdir(parents=True, exist_ok=True)
-                out.write_text(page, encoding="utf-8")
+                cible.parent.mkdir(parents=True, exist_ok=True)
+                cible.write_text(page, encoding="utf-8")
             produced.append(rel)
     return produced, missing
 

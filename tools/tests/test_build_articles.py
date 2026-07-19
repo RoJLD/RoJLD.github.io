@@ -295,3 +295,160 @@ def test_build_n_ecrit_rien_en_mode_lecture(tmp_path):
     avant = page.read_bytes()
     build_articles.build_articles(build_articles.load_profile(), write=False)
     assert page.read_bytes() == avant
+
+
+# ══════════════════ Revue finale — findings I2/I3/I4/I6/I7 ═══════════════════
+
+def test_formula_dans_un_bloc_de_code_reste_litterale():
+    """I2. Le préprocesseur tourne avant Markdown, donc il ignorait les blocs
+    fencés : un article documentant sa PROPRE syntaxe voyait son exemple avalé, et
+    le jeton interne atterrissait dans le HTML publié — Zero Placeholder violé en
+    silence. Les blocs de code doivent être masqués AVANT le stash."""
+    import build_articles
+    out = build_articles.md_to_html("Exemple :\n\n```\n::formula\nE = mc2\n::\n```\n")
+    assert "::formula" in out and "E = mc2" in out
+    assert '<div class="formula">' not in out
+    assert "FORMULAPLACEHOLDER" not in out
+    assert "\x00" not in out
+
+
+def test_aucun_jeton_interne_ne_fuit():
+    """I2 bis. Quelle que soit l'entrée, aucun jeton de travail ne doit survivre."""
+    import build_articles
+    for src in ["::formula\nA\n::\n",
+                "texte\n\n::formula\nA\n::\n\ntexte\n",
+                "```\ntexte\n```\n\n::formula\nA\n::\n"]:
+        out = build_articles.md_to_html(src)
+        assert "FORMULAPLACEHOLDER" not in out and "\x00" not in out, src
+
+
+def test_jeton_litteral_ecrit_par_l_auteur_est_preserve():
+    """Minor. Un corps contenant le jeton seul sur son paragraphe était REMPLACÉ
+    par la formule : texte de l'auteur perdu, formule dupliquée."""
+    import build_articles
+    out = build_articles.md_to_html("::formula\nA\n::\n\nFORMULAPLACEHOLDER0\n")
+    assert out.count('<div class="formula">A</div>') == 1
+    assert "FORMULAPLACEHOLDER0" in out
+
+
+@pytest.mark.parametrize("src", [
+    "::formula\nE = mc2\n",            # jamais fermé
+    "::formula\nA\n:: \n",             # fermeture avec espace final
+    "  ::formula\nA\n::\n",            # ouverture indentée
+])
+def test_formula_mal_formee_fail_loud(src):
+    """I3. Trois variantes rendaient du texte littéral sans un mot. Un bloc mal
+    fermé est une erreur de rédaction, exactement comme un `tldr` absent."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError, match="formula"):
+        build_articles.md_to_html(src)
+
+
+def test_ecriture_confinee_au_dossier_articles(tmp_path):
+    """I4. `slug_of` normalise, mais le CHEMIN D'ÉCRITURE utilisait l'`url` brute.
+    Une url fautive comme `articles/../index.html` écrasait un fichier arbitraire
+    sans que rien ne le signale. Prouvé par la revue : fichier créé hors du dépôt."""
+    import build_articles
+    profile = build_articles.load_profile()
+    profile["articles"] = [{"id": "evade", "url": "articles/../../PWNED-traversal.html",
+                            "title": {"fr": "X", "en": "X"}, "date": "2026-01", "tags": []}]
+    cible = build_articles.ROOT.parent.parent / "PWNED-traversal.html"
+    avant = cible.exists()
+    with pytest.raises(build_articles.BuildError, match="hors du dossier|confin"):
+        build_articles.build_articles(profile, write=True)
+    assert cible.exists() == avant, "un fichier a été écrit hors du dépôt"
+
+
+def test_tldr_multiligne_conserve_sa_continuation():
+    """I6. Les lignes sans `:` étaient ignorées sans bruit : le premier retour à la
+    ligne d'un rédacteur amputait le résumé publié."""
+    import build_articles
+    fm, _ = build_articles.parse_source(
+        "---\ntldr: première ligne\n  suite de la phrase\n---\ncorps\n")
+    assert fm["tldr"] == "première ligne suite de la phrase"
+
+
+def test_frontmatter_illisible_fail_loud():
+    """I6 bis. Une ligne ni `clé: valeur` ni continuation indentée est une faute."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError, match="frontmatter"):
+        build_articles.parse_source("---\ntldr: x\nligne bancale\n---\ncorps\n")
+
+
+def test_frontmatter_cle_dupliquee_fail_loud():
+    """Minor. `tldr: PREMIER` puis `tldr: SECOND` gardait silencieusement le second."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError, match="dupliqu"):
+        build_articles.parse_source("---\ntldr: PREMIER\ntldr: SECOND\n---\ncorps\n")
+
+
+@pytest.mark.parametrize("champ", ["date", "title"])
+def test_champ_requis_manquant_message_actionnable(champ):
+    """I7. `fmt_date(art["date"], …)` levait un KeyError nu : ni l'article ni le
+    champ n'apparaissaient dans le message remonté par build_site."""
+    import build_articles
+    profile = build_articles.load_profile()
+    for a in profile["articles"]:
+        if a["id"] == "couverture_dynamique":
+            a.pop(champ, None)
+    with pytest.raises(build_articles.BuildError) as exc:
+        build_articles.render_article_page(profile, "couverture_dynamique", "fr")
+    assert "couverture_dynamique" in str(exc.value) and champ in str(exc.value)
+
+
+def test_en_url_or_fallback_partage():
+    """I5. Les trois surfaces qui annoncent l'article doivent partager UNE seule
+    implémentation du repli, sinon elles divergent (build_site l'avait, browse et
+    highlights non)."""
+    import build_articles
+    assert build_articles.en_url_or_fallback("articles/couverture-dynamique.html") \
+        == "articles/couverture-dynamique.en.html"
+    assert build_articles.en_url_or_fallback("articles/inexistant.html") \
+        == "articles/inexistant.html"
+
+
+# ── I8 : les deux tests vacants, refaits ──────────────────────────────────────
+
+def test_build_n_ecrit_rien_en_mode_lecture_v2():
+    """I8. La version précédente comparait les octets — mais la sortie est
+    déterministe, donc une réécriture produit des octets IDENTIQUES et le test
+    passait avec ET sans `if write:`. On compare la date de modification."""
+    import build_articles, time
+    page = build_articles.ROOT / "articles" / "couverture-dynamique.html"
+    avant = page.stat().st_mtime_ns
+    time.sleep(0.01)
+    build_articles.build_articles(build_articles.load_profile(), write=False)
+    assert page.stat().st_mtime_ns == avant, "write=False a réécrit le fichier"
+
+
+def test_tldr_echappe():
+    """I8 bis. `test_titre_echappe` couvre le titre (source profile.json) ; rien ne
+    couvrait le tldr (source .md) — trou symétrique, mutant survivant."""
+    import build_articles
+    profile = build_articles.load_profile()
+    art = next(a for a in profile["articles"] if a["id"] == "couverture_dynamique")
+    src = build_articles.SRC / f"{build_articles.slug_of(art)}.fr.md"
+    _, body = build_articles.parse_source(src.read_text(encoding="utf-8"))
+    page = build_articles._assemble(profile, art, "fr",
+                                    {"tldr": '<script>alert("x")</script>'}, body)
+    assert "<script>alert" not in page and "&lt;script&gt;" in page
+
+
+# ── Minors : chemins non couverts (5 mutants survivaient) ─────────────────────
+
+def test_bio_et_initiales_rendues(generated):
+    import build_articles
+    ident = build_articles.load_profile()["identity"]
+    assert f'>{ident["first_name"][0]}{ident["last_name"][0]}<'.upper() in generated.upper()
+    assert "ECE Paris" in generated and "Ingénierie" in generated
+
+
+def test_tags_echappes():
+    import build_articles
+    profile = build_articles.load_profile()
+    for a in profile["articles"]:
+        if a["id"] == "couverture_dynamique":
+            a["tags"] = ['<b>&"']
+    page = build_articles.render_article_page(profile, "couverture_dynamique", "fr")
+    assert "<b>&\"" not in page.split("</style>")[1]
+    assert "&lt;b&gt;&amp;" in page

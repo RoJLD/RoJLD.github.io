@@ -81,11 +81,12 @@ def _period(start, end, current):
     return (base, base)
 
 
-def _entry(type_, id_, title, desc, date_display, sort, tags, href, soon=False):
+def _entry(type_, id_, title, desc, date_display, sort, tags, href, soon=False,
+           href_en=None):
     return {
         "type": type_, "id": id_, "title": title, "desc": desc,
         "date_display": date_display, "sort": sort, "tags": list(tags or []),
-        "href": href, "soon": soon,
+        "href": href, "href_en": href_en or href, "soon": soon,
     }
 
 
@@ -108,6 +109,14 @@ def _norm_demo(d):
                   [cat] if cat else [], f'/demos/#{d.get("id", "")}')
 
 
+def _article_en_url(u):
+    """Repli partage (build_articles) : page EN si elle existe, sinon le FR."""
+    if not u:
+        return u
+    import build_articles
+    return build_articles.en_url_or_fallback(u)
+
+
 def _abs_url(u):
     """URL de profile.json -> absolue (résout depuis n'importe quelle page, ex. /explorer/).
     Ancre (#...), chemin absolu (/...) et externe (http) préservés tels quels."""
@@ -125,7 +134,8 @@ def _norm_article(a):
                   (one_line(dfr), one_line(den)),
                   (a.get("date", ""), a.get("date", "")),
                   _sortkey(a.get("date", "")), a.get("tags", []),
-                  _abs_url(a.get("url")) or "/#blog", soon=(a.get("status") == "soon"))
+                  _abs_url(a.get("url")) or "/#blog", soon=(a.get("status") == "soon"),
+                  href_en=_abs_url(_article_en_url(a.get("url"))) or "/#blog")
 
 
 def _norm_experience(x):
@@ -319,6 +329,11 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
     document.querySelectorAll('[data-fr][data-en]').forEach(function(el){
       el.textContent = lang === 'fr' ? el.dataset.fr : el.dataset.en;
     });
+    /* Les cartes d'article portent les deux chemins : traduire le titre puis
+       envoyer l'anglophone sur la page francaise serait incoherent. */
+    document.querySelectorAll('[data-href-fr][data-href-en]').forEach(function(el){
+      el.setAttribute('href', lang === 'fr' ? el.dataset.hrefFr : el.dataset.hrefEn);
+    });
     const ph = q.getAttribute(lang === 'fr' ? 'data-fr-ph' : 'data-en-ph');
     if (ph) q.setAttribute('placeholder', ph);
     root.setAttribute('data-lang', lang);
@@ -370,7 +385,10 @@ def render_card(en) -> str:
     date = (f'<span class="e-date" data-fr="{e(dtfr)}" data-en="{e(dten)}">{e(dtfr)}</span>'
             if (dtfr or dten) else "")
     return (
-        f'<a class="e-card" href="{e(en["href"])}" data-type="{e(en["type"])}" data-search="{search}">'
+        f'<a class="e-card" href="{e(en["href"])}"'
+        + (f' data-href-fr="{e(en["href"])}" data-href-en="{e(en["href_en"])}"'
+           if en.get("href_en") and en["href_en"] != en["href"] else "")
+        + f' data-type="{e(en["type"])}" data-search="{search}">'
         f'<div class="e-head">'
         f'<span class="e-badge {cls}" data-fr="{e(bfr)}" data-en="{e(ben)}">{e(bfr)}</span>'
         f'{soon}{date}</div>'

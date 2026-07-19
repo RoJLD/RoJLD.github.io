@@ -460,3 +460,43 @@ def test_echec_du_builder_articles_remonte(monkeypatch):
     monkeypatch.setattr(build_articles, "build_articles", _boum)
     with pytest.raises(bs.BuildError, match="articles"):
         bs.build(write=False)
+
+
+def test_sources_manquantes_signalees_en_production(capsys):
+    """I1. `build_articles` retourne les manques, une docstring l'exige et un test
+    le vérifie — mais le SEUL appelant de production jetait le retour. La garantie
+    Zero Masking n'existait que dans le test. Émettre n'est pas garder."""
+    bs.build(write=False)
+    sortie = capsys.readouterr().out
+    assert "source d'article absente" in sortie
+    assert "onchain_analytics" in sortie
+
+
+def test_les_trois_surfaces_portent_le_href_bilingue():
+    """I5. index #blog, explorer et highlights annoncent tous l'article et ont tous
+    une bascule FR/EN. N'en câbler qu'une laisse les deux autres traduire le titre
+    puis envoyer l'anglophone sur la page française."""
+    import build_browse, build_highlights
+    profile = bs.load_profile()
+
+    idx = bs.render_blog(profile)
+    assert 'data-article-en="articles/couverture-dynamique.en.html"' in idx
+
+    browse = build_browse.build_browse(profile, write=False)
+    assert 'data-href-en="/articles/couverture-dynamique.en.html"' in browse
+    assert "data-href-fr" in browse
+
+    hl = build_highlights.build_highlights(profile, write=False)
+    assert 'data-href-en="/articles/couverture-dynamique.en.html"' in hl
+
+
+def test_les_trois_bascules_reecrivent_le_href():
+    """Le marquage ne sert à rien sans le JS qui le consomme — la carte resterait
+    sur le FR. Vérifié sur les trois pages générées."""
+    import build_browse, build_highlights
+    profile = bs.load_profile()
+    idx = bs.build_html((bs.ROOT / "index.html").read_text(encoding="utf-8"), profile)
+    assert "querySelectorAll('[data-article-fr]')" in idx
+    for page in (build_browse.build_browse(profile, write=False),
+                 build_highlights.build_highlights(profile, write=False)):
+        assert "querySelectorAll('[data-href-fr][data-href-en]')" in page

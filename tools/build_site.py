@@ -106,15 +106,13 @@ def render_blog(profile):
 
 
 def _article_en_url(fr_url):
-    """'articles/x.html' -> 'articles/x.en.html' SI la page existe, sinon le FR.
+    """Délègue au helper partagé de build_articles.
 
-    L'existence est vérifiée sur disque et non supposée : promettre une page absente
-    produirait un 404 sur un lien public. Le fichier est écrit par build_articles,
-    qui tourne AVANT cette fonction dans build()."""
-    if not fr_url.endswith(".html"):
-        raise BuildError(f"URL d'article inattendue : {fr_url!r}")
-    en_url = fr_url[: -len(".html")] + ".en.html"
-    return en_url if (ROOT / en_url).exists() else fr_url
+    Trois pages annoncent un article (index #blog, explorer, highlights). La revue
+    a montré qu'une implémentation par surface en laisse deux derrière : elles
+    traduisaient le titre puis envoyaient l'anglophone sur la page française."""
+    import build_articles
+    return build_articles.en_url_or_fallback(fr_url)
 
 
 def gen_i18n_blog(profile, lang):
@@ -573,9 +571,15 @@ def build(profile_path=None, index_path=None, write=True):
     # construction corrigerait — une sortie dépendante de l'ordre d'exécution.
     try:
         import build_articles
-        build_articles.build_articles(profile, write=write)
+        _, missing = build_articles.build_articles(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération des pages articles échouée : {exc}")
+    # Le retour DOIT être affiché ici. `build_articles` documente que le repli est
+    # rapporté à l'appelant et un test verrouille ce contrat — mais la revue a
+    # montré que le seul appelant de production jetait la valeur : la garantie
+    # Zero Masking n'existait alors que dans le test. Émettre n'est pas garder.
+    for m in missing:
+        print(f"[build_site] ! source d'article absente : {m}")
     out = build_html(html, profile)
     if write:
         idx_path.write_text(out, encoding="utf-8")

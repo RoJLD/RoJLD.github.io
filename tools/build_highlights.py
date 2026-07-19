@@ -315,6 +315,10 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
     document.querySelectorAll('[data-fr][data-en]').forEach(function(el){
       el.textContent = lang === 'fr' ? el.dataset.fr : el.dataset.en;
     });
+    /* Cartes d'article : le lien suit la langue, comme le titre. */
+    document.querySelectorAll('[data-href-fr][data-href-en]').forEach(function(el){
+      el.setAttribute('href', lang === 'fr' ? el.dataset.hrefFr : el.dataset.hrefEn);
+    });
     root.setAttribute('data-lang', lang); root.setAttribute('lang', lang);
     document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
     updateBanner();
@@ -402,8 +406,14 @@ def render_article(profile, lenses, a, idx):
     dfr, den = _pair(a.get("desc", ""))
     la = lens_attrs(profile, lenses, a, score_article)
     href = _abs_url(a.get("url")) or "/#blog"
+    # Troisième surface qui annonce l'article. Elle traduit déjà titre et
+    # description ; sans le href bilingue, l'anglophone atterrit en français.
+    import build_articles
+    href_en = _abs_url(build_articles.en_url_or_fallback(a["url"])) if a.get("url") else href
+    bi = (f' data-href-fr="{e(href)}" data-href-en="{e(href_en)}"'
+          if href_en and href_en != href else "")
     return (
-        f'<a class="h-card" href="{e(href)}" data-idx="{idx}" data-gen="{_fmt(gen_article(a))}"{la}>'
+        f'<a class="h-card" href="{e(href)}"{bi} data-idx="{idx}" data-gen="{_fmt(gen_article(a))}"{la}>'
         f'<h3 data-fr="{e(tfr)}" data-en="{e(ten)}">{e(tfr)}</h3>'
         f'<p data-fr="{e(one_line(dfr))}" data-en="{e(one_line(den))}">{e(one_line(dfr))}</p></a>'
     )
