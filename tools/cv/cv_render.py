@@ -12,29 +12,29 @@ import html
 from typing import Any
 
 CV_CSS = """\
-@page { size: A4; margin: 18mm 16mm; }
+@page { size: A4; margin: 12mm 14mm; }
 * { box-sizing: border-box; }
 body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a2e;
-       font-size: 10.5pt; line-height: 1.45; margin: 0; }
-.cv-header { border-bottom: 2px solid #4361ee; padding-bottom: 8px; margin-bottom: 14px; }
-.cv-name { font-size: 20pt; font-weight: 700; margin: 0; }
-.cv-title { font-size: 11pt; color: #4361ee; margin: 2px 0 0; }
-.cv-contact { font-size: 9pt; color: #555; margin-top: 4px; }
-.cv-section { margin-bottom: 12px; page-break-inside: avoid; }
+       font-size: 9.8pt; line-height: 1.3; margin: 0; }
+.cv-header { border-bottom: 2px solid #4361ee; padding-bottom: 5px; margin-bottom: 9px; }
+.cv-name { font-size: 17pt; font-weight: 700; margin: 0; }
+.cv-title { font-size: 10.5pt; color: #4361ee; margin: 1px 0 0; }
+.cv-contact { font-size: 8.5pt; color: #555; margin-top: 3px; }
+.cv-section { margin-bottom: 7px; page-break-inside: avoid; }
 .cv-exp-head { display: flex; justify-content: space-between; font-weight: 600; }
 .cv-exp-company { color: #16213e; }
-.cv-exp-dates { color: #777; font-size: 9pt; font-weight: 400; white-space: nowrap; }
-.cv-exp-title { font-style: italic; color: #444; font-size: 9.5pt; margin-bottom: 3px; }
-ul.cv-bullets { margin: 3px 0 0; padding-left: 16px; }
-ul.cv-bullets li { margin-bottom: 2px; }
-.cv-skills { margin-top: 10px; font-size: 9.5pt; }
+.cv-exp-dates { color: #777; font-size: 8.5pt; font-weight: 400; white-space: nowrap; }
+.cv-exp-title { font-style: italic; color: #444; font-size: 9pt; margin-bottom: 2px; }
+ul.cv-bullets { margin: 2px 0 0; padding-left: 15px; }
+ul.cv-bullets li { margin-bottom: 1px; }
+.cv-skills { margin-top: 4px; font-size: 9pt; }
 .cv-skills strong { color: #4361ee; }
-.cv-footer { margin-top: 16px; font-size: 8pt; color: #999; text-align: right; }
-.cv-h2 { font-size: 11pt; color: #4361ee; margin: 0 0 6px; border-bottom: 1px solid #dde; padding-bottom: 2px; }
+.cv-footer { margin-top: 8px; font-size: 8pt; color: #999; text-align: right; }
+.cv-h2 { font-size: 10.5pt; color: #4361ee; margin: 0 0 4px; border-bottom: 1px solid #dde; padding-bottom: 2px; }
 .cv-edu-head { display: flex; justify-content: space-between; font-weight: 600; }
 .cv-edu-school { color: #16213e; }
-.cv-edu-meta { font-size: 9.5pt; color: #444; margin-top: 2px; }
-.cv-extra { margin-top: 6px; font-size: 9.5pt; }
+.cv-edu-meta { font-size: 9pt; color: #444; margin-top: 1px; }
+.cv-extra { margin-top: 3px; font-size: 9pt; }
 .cv-extra strong { color: #4361ee; }
 """
 
@@ -127,13 +127,27 @@ def render_html(structured_cv: dict[str, Any]) -> str:
                     parts.append(f'<div class="cv-edu-meta">{_esc(cap_txt)}</div>')
         parts.append("</section>")
 
-    # Skills
-    skills = structured_cv.get("skills_top", [])
-    if skills:
-        parts.append(
-            f'<p class="cv-skills"><strong>{_esc(lab["skills"])}:</strong> '
-            f'{_esc(" · ".join(str(s) for s in skills))}</p>'
-        )
+    # Compétences : une ligne LIBELLÉE par catégorie (lisibilité + structure ATS,
+    # comme le CV de référence). Repli sur la liste plate historique si un
+    # structured_cv ancien (sans skills_groups) est rendu.
+    groups = structured_cv.get("skills_groups")
+    if isinstance(groups, list) and groups:
+        for g in groups:
+            items = g.get("items")
+            items = items if isinstance(items, list) else []
+            if not items:
+                continue
+            parts.append(
+                f'<p class="cv-skills"><strong>{_esc(g.get("label", ""))}:</strong> '
+                f'{_esc(" · ".join(str(i) for i in items))}</p>'
+            )
+    else:
+        skills = structured_cv.get("skills_top", [])
+        if skills:
+            parts.append(
+                f'<p class="cv-skills"><strong>{_esc(lab["skills"])}:</strong> '
+                f'{_esc(" · ".join(str(s) for s in skills))}</p>'
+            )
 
     # Compléments : certifications · langues · centres d'intérêt (ordre du CV ATS)
     certs = structured_cv.get("certifications", [])

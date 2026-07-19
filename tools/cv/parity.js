@@ -45,11 +45,13 @@ for (const c of data.render) {
   check(`render:${c.name}`, c.html_py, renderHtml(c.cv));
 }
 
-const prof = data.pipeline.profile;
 for (const c of data.pipeline.cases) {
-  const exps = CVSelect.selectExperiences(prof, c.cfg);
+  // un cas peut porter son PROPRE profil (variantes adversariales) ; build_cfg
+  // peut être null — c'est le chemin du navigateur (appel sans cfg).
+  const prof = c.profile || data.pipeline.profile;
+  const exps = CVSelect.selectExperiences(prof, c.sel_cfg);
   check(`order:${c.name}`, ss(c.order_py), ss(exps.map((e) => (e.id === undefined ? null : e.id))));
-  const scv = CVSelect.buildStructuredCv(prof, exps, c.lang);
+  const scv = CVSelect.buildStructuredCv(prof, exps, c.lang, c.build_cfg);
   check(`scv:${c.name}`, ss(c.scv_py), ss(scv));
   check(`html:${c.name}`, c.html_py, renderHtml(scv));
 }

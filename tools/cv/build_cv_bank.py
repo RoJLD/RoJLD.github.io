@@ -42,7 +42,7 @@ def build(profile: dict, cfgs: list[dict]) -> list[dict]:
         for cfg in cfgs:
             for lang in _LANGS:
                 exps = cv_select.select_experiences(profile, cfg)
-                scv = cv_select.build_structured_cv(profile, exps, lang)
+                scv = cv_select.build_structured_cv(profile, exps, lang, cfg)
                 html = cv_render.render_html(scv)
                 page.set_content(html, wait_until="load")
                 fname = f"{cfg['id']}_{lang}.pdf"

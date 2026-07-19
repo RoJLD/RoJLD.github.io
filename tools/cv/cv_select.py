@@ -11,6 +11,7 @@ sélection humaine explicite. Fonctions PURES et déterministes (testables sans 
 """
 from __future__ import annotations
 
+import math
 from typing import Any
 
 
@@ -116,6 +117,14 @@ def _loc(value: Any, lang: str) -> str:
     return str(value) if value is not None else ""
 
 
+# Ordre de rendu par DÉFAUT des catégories de compétences (cfg absent). Liste
+# EXPLICITE — et non « toutes les clés de profile.skills » — pour trois raisons :
+# rester déterministe et identique côté JS (l'ordre des clés d'un dict ne doit pas
+# décider du contenu d'un CV), exclure `radar_scores` qui n'est pas une liste de
+# compétences, et garder le contrôle éditorial de l'ordre.
+_DEFAULT_SKILL_CATS = ("finance", "programming", "data_ml", "domain", "engineering")
+
+
 def _as_list(value: Any) -> list:
     """Liste STRICTE. Sans ce garde, une chaîne au lieu d'une liste serait itérée
     caractère par caractère côté Python (corruption silencieuse) alors que le
@@ -170,6 +179,45 @@ def _education(profile: dict[str, Any], lang: str) -> list[dict[str, Any]]:
     return out
 
 
+def _skills_groups(profile: dict[str, Any], lang: str,
+                   cfg: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Compétences GROUPÉES par catégorie : [{label, items}], ordre = cfg.
+
+    `cfg.skills_categories` fixe les catégories retenues ET leur ordre de rendu
+    (un CV quant n'affiche pas Kubernetes) ; `cfg.skills_per_category` plafonne
+    (absent = illimité). Sans cfg : toutes les catégories connues.
+    Seules des chaînes non vides entrent — jamais un dict (fuite des champs
+    internes weight/level/used_in dans un PDF public).
+    """
+    cfg = cfg or {}
+    cats = cfg.get("skills_categories")
+    cats = cats if isinstance(cats, list) and cats else list(_DEFAULT_SKILL_CATS)
+    # Miroir de Number.isInteger : JSON `2.0` devient un float côté Python mais
+    # l'entier 2 côté JS — un prédicat `isinstance(int)` rendait donc le cap
+    # illimité d'un côté et actif de l'autre. On accepte tout nombre INTÉGRAL.
+    cap = cfg.get("skills_per_category")
+    if (isinstance(cap, (int, float)) and not isinstance(cap, bool)
+            and math.isfinite(cap) and cap == int(cap) and cap >= 0):
+        cap = int(cap)   # math.isfinite : NaN/Infinity feraient lever int()
+    else:
+        cap = None
+    labels = profile.get("skills_labels") or {}
+    skills = profile.get("skills") or {}
+
+    groups: list[dict[str, Any]] = []
+    for cat in cats:
+        items = []
+        for s in _as_list(skills.get(cat)):
+            n = s.get("name") if isinstance(s, dict) else s
+            if isinstance(n, str) and n:
+                items.append(n)
+        if cap is not None:
+            items = items[:cap]
+        if items:
+            groups.append({"label": _loc(labels.get(cat), lang) or str(cat), "items": items})
+    return groups
+
+
 def _languages(profile: dict[str, Any], lang: str) -> list[dict[str, str]]:
     return [
         {"name": _loc(lg.get("name"), lang), "level": _loc(lg.get("level"), lang)}
@@ -177,7 +225,8 @@ def _languages(profile: dict[str, Any], lang: str) -> list[dict[str, str]]:
     ]
 
 
-def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any]], lang: str) -> dict[str, Any]:
+def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any]],
+                        lang: str, cfg: dict[str, Any] | None = None) -> dict[str, Any]:
     """Construit le dict de rendu neutre depuis profile + une sélection d'expériences.
 
     `experiences` = sortie de select_experiences OU select_manual. `lang` ∈ {fr,en}.
@@ -200,17 +249,10 @@ def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any
             "bullets": _as_list((exp.get("bullets") or {}).get(lang)),
         })
 
-    # Projection défensive : SEULES des chaînes non vides entrent dans skills_top.
-    # Avant, une entrée dict sans `name` exploitable retombait sur l'objet et
-    # `str(dict)` exposait les champs INTERNES (weight, level, last_used, used_in)
-    # dans un PDF servi publiquement — et JS affichait « [object Object] ».
-    skills = profile.get("skills") or {}
-    skills_top = []
-    for cat in ("programming", "finance", "data_ml"):
-        for s in _as_list(skills.get(cat))[:3]:
-            n = s.get("name") if isinstance(s, dict) else s
-            if isinstance(n, str) and n:
-                skills_top.append(n)
+    # Compétences groupées par catégorie (pilotées par cfg) ; `skills_top` reste
+    # la liste PLATE dérivée, pour les consommateurs historiques du schéma.
+    skills_groups = _skills_groups(profile, lang, cfg)
+    skills_top = [n for g in skills_groups for n in g["items"]]
 
     links = identity.get("links") or {}
     return {
@@ -227,6 +269,7 @@ def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any
             "github": _link_display(links.get("github")),
         },
         "sections": sections,
+        "skills_groups": skills_groups,
         "skills_top": skills_top,
         "education": _education(profile, lang),
         "languages": _languages(profile, lang),
