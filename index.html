@@ -211,7 +211,7 @@
     <div class="pills">
         <a class="pill" href="https://www.linkedin.com/in/robin-denis-finance/" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a>
         <a class="pill" href="https://github.com/RoJLD" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>GitHub</a>
-        <a class="pill" href="cv/ATS_FR_RobinDENIS_8.pdf" target="_blank" data-cv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span data-i18n="pill_cv">CV</span></a>
+        <a class="pill" href="cv/prefab/full_fr.pdf" target="_blank" data-cv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span data-i18n="pill_cv">CV</span></a>
         <a class="pill" href="mailto:robin.denis1207@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>Email</a>
     </div>
 </div></div>
@@ -327,7 +327,7 @@
 </div>
 
 <!-- FAB -->
-<a class="fab" href="cv/ATS_FR_RobinDENIS_8.pdf" target="_blank" data-cv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="fab-tip" data-i18n="fab_tip">Télécharger mon CV</span></a>
+<a class="fab" href="cv/prefab/full_fr.pdf" target="_blank" data-cv><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="fab-tip" data-i18n="fab_tip">Télécharger mon CV</span></a>
 
 <script src="assets/js/cv-render.js"></script>
 <script src="assets/js/cv-select.js"></script>
@@ -571,8 +571,9 @@ function applyLang(lang) {
     document.documentElement.setAttribute('data-lang', lang);
     document.documentElement.setAttribute('lang', lang);
     document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
-    // Language-aware CV download (Track 0 interim; Track 2 = complete/specific chooser)
-    const cvPdf = {fr:'cv/ATS_FR_RobinDENIS_8.pdf', en:'cv/ATS_english_RobinDENIS_7.pdf'}[lang];
+    // CV complet = préfabriqué GÉNÉRÉ depuis profile.json (Σ-CV-ATELIER B1), plus
+    // le PDF hand-made : tout le CV public est fonction pure de la source de vérité.
+    const cvPdf = {fr:'cv/prefab/full_fr.pdf', en:'cv/prefab/full_en.pdf'}[lang];
     document.querySelectorAll('[data-cv]').forEach(a => a.setAttribute('href', cvPdf));
     // Redraw radar with translated labels
     initRadar();
@@ -657,7 +658,7 @@ el.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){el.scr
   if(!window.CVExport)return;
   window.CVExport.init({
     getLang:function(){return document.documentElement.getAttribute('data-lang')||'fr';},
-    fullPdf:{fr:'cv/ATS_FR_RobinDENIS_8.pdf',en:'cv/ATS_english_RobinDENIS_7.pdf'}
+    fullPdf:{fr:'cv/prefab/full_fr.pdf',en:'cv/prefab/full_en.pdf'}
   }).then(function(){
     document.querySelectorAll('[data-cv]').forEach(function(a){
       a.addEventListener('click',function(e){e.preventDefault();window.CVExport.open();});
