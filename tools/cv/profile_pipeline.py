@@ -224,8 +224,16 @@ def govern_save(raw_json, profile_path, history_dir, graph_path, ts_str,
     write_profile_graph(graph, graph_path)
     stages["graph"] = graph["summary"]
     if do_rebuild:
-        _rebuild()
-        stages["rebuild"] = {"ok": True}
+        # Le rebuild est POST-écriture : s'il échoue, le profil est DÉJÀ sur disque.
+        # Laisser l'exception remonter ferait afficher « Refusé » à l'appelant alors
+        # que le fichier a changé — l'exact inverse du contrat reject-loud, et le
+        # pire message possible (l'utilisateur croit son édition annulée). On rapporte
+        # donc un échec d'étape explicite, sans mentir sur l'écriture qui, elle, a eu lieu.
+        try:
+            _rebuild()
+            stages["rebuild"] = {"ok": True}
+        except Exception as exc:
+            stages["rebuild"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
     else:
         stages["rebuild"] = {"skipped": True}
     return {"ok": True, "errors": [], "stages": stages}

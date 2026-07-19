@@ -74,3 +74,63 @@ def test_save_rejects_non_dict(tmp_path):
     p.write_text("{}", encoding="utf-8")
     res = atelier.save_profile_edit("[1,2,3]", p, validate_fn=lambda d: [])
     assert not res["ok"]
+
+
+# ── Sous-projet D : routes du CMS (édition structurée) ────────────────────────
+
+import contextlib
+import http.server
+import threading
+import urllib.error
+import urllib.request
+
+
+@contextlib.contextmanager
+def _server():
+    """Lance le Handler de l'atelier sur un port éphémère, le temps du test."""
+    srv = http.server.HTTPServer(("127.0.0.1", 0), atelier.Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        yield f"http://127.0.0.1:{srv.server_address[1]}"
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def _get(base, path):
+    try:
+        with urllib.request.urlopen(base + path, timeout=10) as r:
+            return r.status, r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, ""
+
+
+def test_cms_route_serves_page_with_real_profile_embedded():
+    """Le CMS charge le profil ENTIER : c'est ce qui permet de le resoumettre
+    entier et de ne perdre aucune clé non modélisée."""
+    with _server() as base:
+        code, body = _get(base, "/cms")
+    assert code == 200
+    assert "CMS" in body
+    assert "experiences" in body and "ALTEN" in body   # vrai profile.json embarqué
+
+
+def test_cms_model_asset_is_served():
+    with _server() as base:
+        code, body = _get(base, "/assets/js/cms-model.js")
+    assert code == 200 and "CMSModel" in body
+
+
+def test_static_allowlist_refuses_everything_else():
+    """Allowlist stricte : aucun chemin arbitraire n'atteint le disque."""
+    with _server() as base:
+        for path in ("/assets/js/../../profile.json", "/profile.json",
+                     "/assets/js/cv-render.js", "/../atelier.py"):
+            code, _ = _get(base, path)
+            assert code == 404, path
+
+
+def test_home_links_to_cms():
+    with _server() as base:
+        code, body = _get(base, "/")
+    assert code == 200 and "/cms" in body

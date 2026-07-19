@@ -14,6 +14,7 @@ from __future__ import annotations
 import http.server
 import json
 import pathlib
+import urllib.parse
 from typing import Any, Callable, Optional
 
 import cv_pdf
@@ -80,7 +81,7 @@ button{background:#4361ee;color:#fff;border:none;cursor:pointer}button:disabled{
 #status{color:#666;font-size:13px;margin-left:8px}
 </style></head><body>
 <h1>Atelier CV ciblé</h1>
-<p style="font-size:13px"><a href="/edit" style="color:#4361ee">✎ Éditer le profil (profile.json)</a></p>
+<p style="font-size:13px"><a href="/cms" style="color:#4361ee">✎ CMS — édition structurée</a> · <a href="/edit" style="color:#4361ee">JSON brut</a></p>
 <p class="sub">Colle une fiche de poste : le CV est filtré vers les expériences les plus pertinentes puis rendu en PDF (texte réel, ATS-safe).</p>
 <textarea id="job" placeholder="Colle la fiche de poste ici..."></textarea>
 <div class="row">
@@ -149,7 +150,7 @@ async function save(){
       if(s.history)parts.push('snapshot '+(s.history.snapshot||'—'));
       if(s.review)parts.push(s.review.available?('revue '+(s.review.notes.length?s.review.notes.length+' note(s)':'RAS')):'revue LLM indispo');
       if(s.graph)parts.push('graphe '+s.graph.nodes+'n/'+s.graph.edges+'a');
-      if(s.rebuild)parts.push(s.rebuild.ok?'rebuild ok':'rebuild sauté');
+      if(s.rebuild)parts.push(s.rebuild.skipped?'rebuild sauté':(s.rebuild.ok?'rebuild ok':'REBUILD ÉCHOUÉ'));
       st.textContent=res.ok?('Gouverné \u2713 — '+parts.join(' · ')):'Refusé';st.className=res.ok?'ok':'';
       if(!res.ok)er.textContent=(res.errors||[]).join(String.fromCharCode(10));
       else if(s.review&&s.review.notes&&s.review.notes.length)er.textContent='Revue LLM:'+String.fromCharCode(10)+'- '+s.review.notes.join(String.fromCharCode(10)+'- ');
@@ -159,6 +160,203 @@ async function save(){
   btn.disabled=false;
 }
 </script></body></html>"""
+
+
+# Sous-projet D — CMS : édition STRUCTURÉE (formulaires) du même profile.json.
+# La page charge le profil ENTIER, mute un sous-arbre via CMSModel (pur, immuable)
+# et resoumet l'ENTIER à /save → govern_save. Aucun second chemin d'écriture, et
+# aucune clé non modélisée n'est perdue (cf. assets/js/cms-model.js).
+_CMS = """<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<title>CMS — Atelier</title><style>
+body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;max-width:1100px;margin:24px auto;padding:0 20px;color:#1a1a2e}
+h1{font-size:20px;margin:0 0 4px}a{color:#4361ee}
+.sub{color:#666;font-size:13px;margin:0 0 16px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{padding:7px 13px;border:1px solid #ccd;border-radius:8px;background:#fff;cursor:pointer;font-size:14px}
+.tab.on{background:#4361ee;color:#fff;border-color:#4361ee}
+.cols{display:grid;grid-template-columns:270px 1fr;gap:18px;align-items:start}
+.list{border:1px solid #e3e6f0;border-radius:10px;overflow:hidden}
+.row{padding:9px 11px;border-bottom:1px solid #eef;cursor:pointer;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.row:last-child{border-bottom:0}
+.row.on{background:#eef2ff;font-weight:600}
+.row .ord{color:#99a;font-size:12px;white-space:nowrap}
+.form{border:1px solid #e3e6f0;border-radius:10px;padding:16px}
+label{display:block;font-size:12.5px;color:#556;margin:11px 0 3px;font-weight:600}
+input[type=text],textarea{width:100%;border:1px solid #ccd;border-radius:7px;padding:8px;font-size:13.5px;font-family:inherit}
+textarea{min-height:76px;resize:vertical}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pair .lg{font-size:11px;color:#89a;text-transform:uppercase;letter-spacing:.4px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:16px 0 0}
+button{padding:8px 13px;border-radius:8px;border:1px solid #ccd;background:#fff;cursor:pointer;font-size:13.5px}
+button.primary{background:#4361ee;color:#fff;border-color:#4361ee}
+button.danger{color:#c0392b;border-color:#f0c4bd}
+#status{font-size:13px;color:#666}#status.ok{color:#159957}#status.err{color:#c0392b}
+#errs{color:#c0392b;font-size:12.5px;white-space:pre-wrap;margin-top:8px}
+.hint{background:#f6f8ff;border:1px solid #e3e6f0;border-radius:8px;padding:9px 11px;font-size:12.5px;color:#556;margin-bottom:14px}
+</style></head><body>
+<p><a href="/">← Atelier</a> · <a href="/edit">JSON brut</a></p>
+<h1>CMS — édition structurée</h1>
+<p class="sub">Les modifications passent par le <b>pipeline gouverné</b> (historique · validation · revue LLM · écriture atomique · graphe · rebuild), exactement comme l'éditeur JSON.</p>
+<div class="hint">Le profil est chargé <b>entier</b> et resoumis <b>entier</b> : les sections non éditables ici (parcours, ikigai, méta…) sont préservées à l'identique.</div>
+<div class="tabs" id="tabs"></div>
+<div class="cols">
+  <div><div class="list" id="list"></div>
+    <div class="bar"><button id="add">+ Ajouter</button></div></div>
+  <div class="form" id="form"></div>
+</div>
+<div class="bar">
+  <button class="primary" id="save">Enregistrer (pipeline gouverné)</button>
+  <span id="status"></span>
+</div>
+<div id="errs"></div>
+<script src="/assets/js/cms-model.js"></script>
+<script>
+var profile = JSON.parse(__PROFILE__);
+var M = window.CMSModel, type = "experiences", group = null, idx = 0, dirty = false;
+var $ = function (id) { return document.getElementById(id); };
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function lab(o){ return (o && (o.fr || o.en)) || ""; }
+
+function renderTabs() {
+  var h = Object.keys(M.TYPES).map(function (t) {
+    return '<button class="tab' + (t === type ? " on" : "") + '" data-t="' + t + '">' + esc(lab(M.TYPES[t].label)) + "</button>";
+  }).join("");
+  var gs = M.groupsOf(profile, type);
+  if (gs.length) {
+    if (group === null || gs.indexOf(group) < 0) group = gs[0];
+    h += ' <span style="width:14px"></span>' + gs.map(function (g) {
+      return '<button class="tab' + (g === group ? " on" : "") + '" data-g="' + esc(g) + '">' + esc(g) + "</button>";
+    }).join("");
+  } else { group = null; }
+  $("tabs").innerHTML = h;
+  Array.prototype.forEach.call($("tabs").querySelectorAll("[data-t]"), function (b) {
+    b.onclick = function () { type = b.dataset.t; group = null; idx = 0; renderAll(); };
+  });
+  Array.prototype.forEach.call($("tabs").querySelectorAll("[data-g]"), function (b) {
+    b.onclick = function () { group = b.dataset.g; idx = 0; renderAll(); };
+  });
+}
+
+function renderList() {
+  var items = M.listItems(profile, type, group), tf = M.TYPES[type].titleField;
+  if (idx >= items.length) idx = Math.max(0, items.length - 1);
+  $("list").innerHTML = items.map(function (it, i) {
+    var t = it && it[tf]; t = (t && typeof t === "object") ? lab(t) : (t || "(sans titre)");
+    return '<div class="row' + (i === idx ? " on" : "") + '" data-i="' + i + '"><span>' + esc(t) +
+           '</span><span class="ord">' + (i + 1) + "/" + items.length + "</span></div>";
+  }).join("") || '<div class="row">(vide)</div>';
+  Array.prototype.forEach.call($("list").querySelectorAll("[data-i]"), function (r) {
+    r.onclick = function () { idx = +r.dataset.i; renderAll(); };
+  });
+}
+
+/* La FORME est lue sur la valeur réelle (M.fieldShape), jamais supposée : dans
+   profile.json `projects.name` est bilingue sur 2 entrées et une chaîne simple sur
+   15. Un rendu piloté par la déclaration afficherait un champ VIDE sur ces 15 et
+   remplacerait la vraie valeur à la première frappe. */
+function langsFor(f, item) {
+  var s = M.fieldShape(item, f);
+  return (s === "bi" || s === "biLines" || s === "biList") ? ["fr", "en"] : [null];
+}
+
+function fieldHtml(f, item) {
+  var h = "<label>" + esc(lab(f.label)) + "</label>";
+  var multi = (f.type === "lines" || f.type === "textarea");
+  function one(lg) {
+    var id = "f_" + f.name + (lg ? "_" + lg : ""), val = M.readField(item, f, lg);
+    if (f.type === "bool") return '<input type="checkbox" id="' + id + '"' + (val ? " checked" : "") + ">";
+    if (multi) return '<textarea id="' + id + '">' + esc(val) + "</textarea>";
+    return '<input type="text" id="' + id + '" value="' + esc(val) + '">';
+  }
+  var lgs = langsFor(f, item);
+  if (lgs.length === 2) {
+    return h + '<div class="pair"><div><div class="lg">fr</div>' + one("fr") +
+           '</div><div><div class="lg">en</div>' + one("en") + "</div></div>";
+  }
+  return h + one(null);
+}
+
+function renderForm() {
+  var items = M.listItems(profile, type, group), item = items[idx];
+  if (!item) { $("form").innerHTML = "<p style='color:#889'>Aucun élément. Utilisez « + Ajouter ».</p>"; return; }
+  $("form").innerHTML = M.TYPES[type].fields.map(function (f) { return fieldHtml(f, item); }).join("") +
+    '<div class="bar"><button id="up">↑ Monter</button><button id="down">↓ Descendre</button>' +
+    '<button class="danger" id="del">Supprimer</button></div>';
+  M.TYPES[type].fields.forEach(function (f) {
+    langsFor(f, item).forEach(function (lg) {
+      var el = $("f_" + f.name + (lg ? "_" + lg : ""));
+      if (el) el.oninput = el.onchange = function () { commitField(f, lg, el); };
+    });
+  });
+  $("up").onclick = function () { profile = M.moveItem(profile, type, idx, -1, group); if (idx > 0) idx--; touch(); };
+  $("down").onclick = function () { profile = M.moveItem(profile, type, idx, 1, group); idx++; touch(); };
+  $("del").onclick = function () {
+    if (!confirm("Supprimer cet élément ?")) return;
+    profile = M.removeItem(profile, type, idx, group); touch();
+  };
+}
+
+function commitField(f, lg, el) {
+  var raw = (f.type === "bool") ? el.checked : el.value;
+  var item = M.listItems(profile, type, group)[idx];
+  var patch = M.writeField(item, f, lg, raw);   // réécrit DANS LA FORME COURANTE
+  if (!patch) {   // ex. texte saisi dans un champ numérique : refus explicite
+    setStatus("Valeur numérique invalide — non enregistrée", "err");
+    return;
+  }
+  profile = M.updateItem(profile, type, idx, patch, group);
+  dirty = true; setStatus("Modifié (non enregistré)", "");
+  renderList();   // le titre de la liste suit l'édition
+}
+
+function touch() { dirty = true; renderAll(); setStatus("Modifié (non enregistré)", ""); }
+function setStatus(msg, cls) { var s = $("status"); s.textContent = msg; s.className = cls || ""; }
+function renderAll() { renderTabs(); renderList(); renderForm(); }
+
+$("add").onclick = function () {
+  profile = M.addItem(profile, type, group);
+  idx = M.listItems(profile, type, group).length - 1; touch();
+};
+
+$("save").onclick = function () {
+  var b = $("save"); b.disabled = true; $("errs").textContent = ""; setStatus("Enregistrement…", "");
+  fetch("/save", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ json: JSON.stringify(profile, null, 2), govern: true }) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (res.ok) {
+        dirty = false;
+        var s = res.stages || {}, parts = [];
+        if (s.history) parts.push("snapshot " + (s.history.snapshot || "—"));
+        if (s.review) parts.push(s.review.available ? ("revue " + (s.review.notes.length ? s.review.notes.length + " note(s)" : "RAS")) : "revue LLM indispo");
+        if (s.graph) parts.push("graphe " + s.graph.nodes + "n/" + s.graph.edges + "a");
+        if (s.rebuild) parts.push(s.rebuild.skipped ? "rebuild sauté"
+                                  : (s.rebuild.ok ? "rebuild ok" : "REBUILD ÉCHOUÉ"));
+        // Le rebuild est POST-écriture : son échec ne annule pas l'enregistrement,
+        // mais doit être dit franchement plutôt que confondu avec « sauté ».
+        setStatus("Enregistré ✓ — " + parts.join(" · "), s.rebuild && s.rebuild.ok === false ? "err" : "ok");
+        var notes = [];
+        if (s.rebuild && s.rebuild.ok === false)
+          notes.push("Rebuild du site ÉCHOUÉ (profil bien enregistré) : " + s.rebuild.error);
+        if (s.review && s.review.notes && s.review.notes.length)
+          notes.push("Revue LLM:\\n- " + s.review.notes.join("\\n- "));
+        $("errs").textContent = notes.join("\\n\\n");
+      } else {
+        setStatus("Refusé (" + (res.errors || []).length + " erreur(s))", "err");
+        $("errs").textContent = (res.errors || []).join("\\n");
+      }
+    })
+    .catch(function (e) { setStatus("Erreur: " + e.message, "err"); })
+    .then(function () { b.disabled = false; });
+};
+
+window.onbeforeunload = function () { if (dirty) return "Modifications non enregistrées."; };
+renderAll();
+</script></body></html>"""
+
+# Fichiers statiques servis à la page CMS : ALLOWLIST stricte (aucun chemin
+# arbitraire ne remonte jusqu'au disque — pas de traversée possible).
+_STATIC_ALLOW = {"/assets/js/cms-model.js": "application/javascript; charset=utf-8"}
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -181,6 +379,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             raw = _PROFILE.read_text(encoding="utf-8")
             page = _EDIT.replace("__PROFILE__", json.dumps(raw).replace("<", "\\u003c"))
             self._send(200, "text/html; charset=utf-8", page.encode("utf-8"))
+        elif self.path == "/cms":
+            raw = _PROFILE.read_text(encoding="utf-8")
+            page = _CMS.replace("__PROFILE__", json.dumps(raw).replace("<", "\\u003c"))
+            self._send(200, "text/html; charset=utf-8", page.encode("utf-8"))
+        elif urllib.parse.urlsplit(self.path).path in _STATIC_ALLOW:
+            # urlsplit : `?v=1` (cache-busting) ne doit pas faire échouer l'allowlist
+            p = urllib.parse.urlsplit(self.path).path
+            self._send(200, _STATIC_ALLOW[p], (_ROOT / p.lstrip("/")).read_bytes())
         else:
             self._send(404, "text/plain", b"not found")
 
