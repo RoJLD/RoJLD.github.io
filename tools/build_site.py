@@ -93,8 +93,28 @@ def render_blog(profile):
         if soon:
             cards.append(f'<div class="blog-card" style="opacity:.55;cursor:default">{inner}</div>')
         else:
-            cards.append(f'<a class="blog-card" href="{esc(a["url"])}">{inner}</a>')
+            # La carte porte les DEUX chemins ; `applyLang` bascule le href, comme il
+            # le fait déjà pour le PDF du CV via [data-cv]. Repli : si la traduction
+            # n'existe pas, les deux attributs pointent le FR — un lecteur anglophone
+            # atterrit sur du français plutôt que sur un 404.
+            fr_url = a["url"]
+            en_url = _article_en_url(fr_url)
+            cards.append(f'<a class="blog-card" href="{esc(fr_url)}" '
+                         f'data-article-fr="{esc(fr_url)}" data-article-en="{esc(en_url)}">'
+                         f'{inner}</a>')
     return "\n    " + "\n    ".join(cards) + "\n"
+
+
+def _article_en_url(fr_url):
+    """'articles/x.html' -> 'articles/x.en.html' SI la page existe, sinon le FR.
+
+    L'existence est vérifiée sur disque et non supposée : promettre une page absente
+    produirait un 404 sur un lien public. Le fichier est écrit par build_articles,
+    qui tourne AVANT cette fonction dans build()."""
+    if not fr_url.endswith(".html"):
+        raise BuildError(f"URL d'article inattendue : {fr_url!r}")
+    en_url = fr_url[: -len(".html")] + ".en.html"
+    return en_url if (ROOT / en_url).exists() else fr_url
 
 
 def gen_i18n_blog(profile, lang):
@@ -546,6 +566,16 @@ def build(profile_path=None, index_path=None, write=True):
             raise BuildError("profile.json invalide : " + " ; ".join(errs[:5]))
     idx_path = Path(index_path) if index_path else ROOT / "index.html"
     html = idx_path.read_text(encoding="utf-8")
+    # Les pages d'articles sont générées AVANT index.html, et non après comme les
+    # autres builders : `render_blog` teste l'existence de la version anglaise sur
+    # disque pour décider si la carte peut y pointer. Dans l'ordre inverse, une
+    # construction sur clone frais figerait des liens FR que seule une SECONDE
+    # construction corrigerait — une sortie dépendante de l'ordre d'exécution.
+    try:
+        import build_articles
+        build_articles.build_articles(profile, write=write)
+    except Exception as exc:
+        raise BuildError(f"génération des pages articles échouée : {exc}")
     out = build_html(html, profile)
     if write:
         idx_path.write_text(out, encoding="utf-8")

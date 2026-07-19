@@ -291,7 +291,7 @@
 
 <!-- BLOG -->
 <section id="blog" class="rv"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">✍️</div><h2 class="st" data-i18n="sec_blog">Articles & Notes</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in"><div class="blog-grid"><!-- BUILD:blog -->
-    <a class="blog-card" href="articles/couverture-dynamique.html"><div class="blog-date" data-i18n="blog1_date">Mars 2026</div><h4 data-i18n="blog1_title">Couverture dynamique : théorie vs pratique en assurance</h4><p data-i18n="blog1_desc">Retour d'expérience sur mon PFE avec EY : comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.</p><div class="blog-tags"><span class="blog-tag">Finance</span><span class="blog-tag">Hedging</span><span class="blog-tag">PFE</span><span class="blog-tag">EY</span></div></a>
+    <a class="blog-card" href="articles/couverture-dynamique.html" data-article-fr="articles/couverture-dynamique.html" data-article-en="articles/couverture-dynamique.en.html"><div class="blog-date" data-i18n="blog1_date">Mars 2026</div><h4 data-i18n="blog1_title">Couverture dynamique : théorie vs pratique en assurance</h4><p data-i18n="blog1_desc">Retour d'expérience sur mon PFE avec EY : comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.</p><div class="blog-tags"><span class="blog-tag">Finance</span><span class="blog-tag">Hedging</span><span class="blog-tag">PFE</span><span class="blog-tag">EY</span></div></a>
     <div class="blog-card" style="opacity:.55;cursor:default"><div class="blog-date" data-i18n="blog2_date">Avril 2026</div><h4 data-i18n="blog2_title">Analyse on-chain : détecter les signaux faibles en DeFi</h4><p data-i18n="blog2_desc">Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.</p><div class="blog-tags"><span class="blog-tag">DeFi</span><span class="blog-tag">Data</span><span class="blog-tag">Python</span><span class="blog-tag">ML</span><span class="blog-tag" data-i18n="blog_soon" style="background:var(--warm-g);color:var(--warm)">À venir</span></div></div>
 <!-- /BUILD:blog --></div></div></div></section>
 
@@ -575,6 +575,13 @@ function applyLang(lang) {
     // le PDF hand-made : tout le CV public est fonction pure de la source de vérité.
     const cvPdf = {fr:'cv/prefab/full_fr.pdf', en:'cv/prefab/full_en.pdf'}[lang];
     document.querySelectorAll('[data-cv]').forEach(a => a.setAttribute('href', cvPdf));
+    // Articles : même mécanisme que le CV. Chaque carte porte les deux chemins ;
+    // quand la traduction n'existe pas, build_site y a mis le FR des deux côtés,
+    // donc le lecteur anglophone tombe sur du français et jamais sur un 404.
+    document.querySelectorAll('[data-article-fr]').forEach(a => {
+        const href = a.getAttribute('data-article-' + lang);
+        if (href) a.setAttribute('href', href);
+    });
     // Redraw radar with translated labels
     initRadar();
     if(typeof renderSkillsFromProfile==='function')renderSkillsFromProfile();

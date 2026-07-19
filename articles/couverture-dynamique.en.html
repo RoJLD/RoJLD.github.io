@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Hedging: Theory vs Practice in Insurance, by Robin Denis</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--ease:cubic-bezier(.4,0,.2,1)}
+        [data-theme="dark"]{--bg:#060a12;--bg-2:#111a2e;--border:#1a2847;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--accent-g:rgba(59,130,246,.1);--glass:rgba(10,16,32,.75)}
+        [data-theme="light"]{--bg:#f5f7fa;--bg-2:#fff;--border:#d8dfe9;--tx-1:#1a2035;--tx-2:#546178;--tx-3:#8594ad;--accent:#2563eb;--accent-g:rgba(37,99,235,.06);--glass:rgba(245,247,250,.8)}
+        *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+        body{font-family:var(--sans);background:var(--bg);color:var(--tx-1);line-height:1.8;font-size:16px;-webkit-font-smoothing:antialiased;transition:background .5s var(--ease),color .5s var(--ease)}
+        nav{position:fixed;top:0;width:100%;z-index:100;padding:14px 0;background:var(--glass);backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
+        .nav-i{max-width:720px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
+        .nav-brand{font-family:var(--serif);font-size:18px;color:var(--tx-1);text-decoration:none;letter-spacing:-.03em}.nav-brand b{color:var(--accent)}
+        .nav-back{color:var(--tx-3);text-decoration:none;font-size:13px;font-weight:500;transition:color .3s var(--ease)}.nav-back:hover{color:var(--accent)}
+        .theme-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;font-size:15px;display:grid;place-items:center;transition:all .3s var(--ease)}.theme-btn:hover{border-color:var(--accent);transform:rotate(30deg)}
+
+        article{max-width:720px;margin:0 auto;padding:120px 32px 80px}
+        .article-meta{margin-bottom:40px}
+        .article-date{font-size:12px;color:var(--tx-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+        .article-tags{display:flex;gap:6px;margin-bottom:20px}.article-tag{font-size:11px;padding:3px 10px;border-radius:100px;background:var(--accent-g);color:var(--accent);font-weight:500}
+        h1{font-family:var(--serif);font-size:clamp(32px,5vw,48px);font-weight:400;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px}
+        .article-tldr{font-size:15px;color:var(--tx-2);border-left:3px solid var(--accent);padding:14px 20px;background:var(--accent-g);border-radius:0 8px 8px 0;margin-bottom:40px;line-height:1.7}
+
+        h2{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:-.02em;margin:48px 0 16px;padding-top:16px;border-top:1px solid var(--border)}
+        h3{font-size:18px;font-weight:600;margin:32px 0 12px}
+        p{color:var(--tx-2);margin-bottom:18px;line-height:1.8}
+        a{color:var(--accent);text-decoration:none}.a:hover{text-decoration:underline}
+        strong{color:var(--tx-1);font-weight:600}
+
+        code{font-family:var(--mono);font-size:13px;background:var(--bg-2);border:1px solid var(--border);padding:2px 7px;border-radius:4px;color:var(--accent)}
+        pre{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:20px;overflow-x:auto;margin:20px 0 28px}
+        pre code{border:none;padding:0;background:none;font-size:13px;line-height:1.7;color:var(--tx-2)}
+
+        blockquote{border-left:3px solid var(--accent);padding:12px 20px;margin:24px 0;color:var(--tx-2);font-style:italic;background:var(--accent-g);border-radius:0 8px 8px 0}
+        ul,ol{color:var(--tx-2);margin:12px 0 20px 24px}li{margin-bottom:6px;line-height:1.7}
+
+        .formula{text-align:center;padding:20px;margin:24px 0;font-family:var(--mono);font-size:14px;color:var(--accent);background:var(--bg-2);border:1px solid var(--border);border-radius:10px}
+
+        .article-footer{margin-top:60px;padding-top:32px;border-top:1px solid var(--border);display:flex;align-items:center;gap:16px}
+        .af-avatar{width:48px;height:48px;border-radius:50%;background:var(--accent-g);border:1px solid var(--border);display:grid;place-items:center;font-weight:700;color:var(--accent);font-size:18px}
+        .af-name{font-weight:600;font-size:15px}.af-bio{font-size:13px;color:var(--tx-3)}
+        .af-back{display:inline-block;margin-top:24px;padding:10px 24px;border:1px solid var(--border);border-radius:100px;color:var(--tx-2);text-decoration:none;font-size:13px;font-weight:500;transition:all .3s var(--ease)}.af-back:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-g)}
+
+        @media(max-width:640px){article{padding:100px 18px 60px}h1{font-size:28px}h2{font-size:22px}}
+    </style>
+</head>
+<body>
+
+<nav><div class="nav-i">
+    <a href="../index.html" class="nav-brand">R<b>.</b> Denis</a>
+    <div style="display:flex;align-items:center;gap:16px">
+        <a href="../index.html" class="nav-back">← Back</a>
+        <button class="theme-btn" onclick="const h=document.documentElement;if(h.getAttribute('data-theme')==='dark'){h.setAttribute('data-theme','light');this.textContent='☀️'}else{h.setAttribute('data-theme','dark');this.textContent='🌙'}">🌙</button>
+    </div>
+</div></nav>
+
+<article>
+    <div class="article-meta">
+        <div class="article-date">March 2026 · 3 min read</div>
+        <div class="article-tags">
+            <span class="article-tag">Finance</span>
+            <span class="article-tag">Hedging</span>
+            <span class="article-tag">PFE</span>
+            <span class="article-tag">EY</span>
+        </div>
+    </div>
+
+    <h1>Dynamic Hedging: Theory vs Practice in Insurance</h1>
+
+    <div class="article-tldr">
+        <strong>TL;DR:</strong> delta hedging works well in theory, but transaction costs, stochastic volatility and rebalancing constraints make it far more complex in practice. Here is what I learned during my capstone project with EY.
+    </div>
+
+<h2>Introduction</h2>
+<p>As part of my final-year project at ECE Paris, carried out in collaboration with EY, I worked on the <strong>modelling and steering of dynamic hedging strategies</strong> applied to insurance and banking portfolios.</p>
+<p>The goal: compare theoretical hedging models (Black-Scholes, local volatility models) against real operational constraints — transaction costs, rebalancing frequency, and basis risk management.</p>
+<h2>The theoretical framework</h2>
+<p>Delta hedging rests on a simple idea: at every instant, you adjust the quantity of the underlying asset held so as to neutralise the portfolio's sensitivity to price movements.</p>
+<div class="formula">Δ = ∂V/∂S = N(d₁)   where   d₁ = [ln(S/K) + (r + σ²/2)T] / (σ√T)</div>
+<p>In theory, with continuous rebalancing and no transaction costs, the P&amp;L of the hedging strategy converges to zero. In practice, it is another story.</p>
+<h3>The model's key assumptions</h3>
+<ul>
+<li><strong>Constant volatility</strong> (rarely the case in reality)</li>
+<li><strong>Continuous rebalancing</strong> (impossible in practice)</li>
+<li><strong>No transaction costs</strong> (significant on real markets)</li>
+<li><strong>Perfect liquidity</strong> (not always available)</li>
+</ul>
+<h2>Experimental results</h2>
+<p>We simulated several rebalancing strategies (daily, weekly, delta-threshold based) on both historical and synthetic data. The main observations:</p>
+<h3>1. The impact of rebalancing frequency</h3>
+<p>Daily rebalancing cuts hedging error by roughly <strong>60%</strong> compared with weekly rebalancing, but raises transaction costs by <strong>400%</strong>. The sweet spot depends heavily on the volatility profile and the bid-ask spread.</p>
+<h3>2. Stochastic vs implied volatility</h3>
+<p>Using implied rather than historical volatility to compute the delta significantly reduces tracking error. During periods of market stress, however, no approach performs well — hence the interest in stochastic volatility models (Heston, SABR).</p>
+<h3>3. The delta-threshold approach</h3>
+<p>"Smart" rebalancing — triggered by a threshold on delta variation rather than a fixed frequency — offers the best cost/efficiency trade-off. We found a threshold of <strong>Δ ± 0.05</strong> to be optimal in our simulations.</p>
+<pre><code># Simplified threshold-based rebalancing
+def should_rebalance(current_delta, target_delta, threshold=0.05):
+    return abs(current_delta - target_delta) &gt; threshold
+
+# Hedging loop
+for t in range(1, T):
+    new_delta = bs_delta(S[t], K, sigma, T-t, r)
+    if should_rebalance(portfolio_delta, new_delta):
+        trade_quantity = new_delta - portfolio_delta
+        execute_trade(trade_quantity)
+        portfolio_delta = new_delta
+        transaction_costs += abs(trade_quantity) * spread
+</code></pre>
+<h2>Lessons learned</h2>
+<blockquote>
+<p>The perfect model does not exist: a quant's real skill is understanding where and how their model will break.</p>
+</blockquote>
+<p>This project taught me that moving from theory to practice in quantitative finance is not a matter of implementing a formula. You have to understand the operational constraints, the hidden costs, and above all be able to quantify the uncertainty of your own models.</p>
+<p>If this topic interests you, feel free to reach out — I am always up for a conversation about it.</p>
+
+    <div class="article-footer">
+        <div class="af-avatar">RD</div>
+        <div>
+            <div class="af-name">Robin Denis</div>
+            <div class="af-bio">Financial &amp; Quantitative Engineering · ECE Paris 2026</div>
+        </div>
+    </div>
+    <a href="../index.html#blog" class="af-back">← Back to articles</a>
+</article>
+</body>
+</html>

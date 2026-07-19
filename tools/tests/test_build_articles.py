@@ -248,3 +248,50 @@ def test_source_absente_fail_loud():
                             "title": {"fr": "F", "en": "F"}, "date": "2026-01", "tags": []}]
     with pytest.raises(build_articles.BuildError, match="source absente"):
         build_articles.render_article_page(profile, "fantome", "fr")
+
+
+# ── Bilinguisme et repli ──────────────────────────────────────────────────────
+
+def test_page_en_porte_la_bonne_langue():
+    import build_articles
+    page = build_articles.render_article_page(build_articles.load_profile(),
+                                              "couverture_dynamique", "en")
+    assert '<html lang="en"' in page
+    assert "← Retour" not in page and "min de lecture" not in page
+    assert "← Back" in page and "min read" in page
+
+
+def test_titre_et_tldr_suivent_la_langue():
+    """Le titre vient de profile.json, le TL;DR du .md : deux sources distinctes
+    qui doivent basculer ensemble. Une page anglaise au TL;DR français serait le
+    symptôme d'un `.md` lu dans la mauvaise langue."""
+    import build_articles
+    profile = build_articles.load_profile()
+    fr = build_articles.render_article_page(profile, "couverture_dynamique", "fr")
+    en = build_articles.render_article_page(profile, "couverture_dynamique", "en")
+    assert "théorie vs pratique en assurance" in fr and "delta-hedging fonctionne" in fr
+    assert "Theory vs Practice in Insurance" in en and "delta hedging works" in en
+    assert "fonctionne bien en théorie" not in en
+
+
+def test_repli_est_signale_pas_tu():
+    """Un `.md` manquant n'est pas une erreur — la carte retombera sur l'autre
+    langue — mais il DOIT remonter à l'appelant. Un repli silencieux est un
+    masquage : rien ne dirait qu'un article n'a jamais été traduit."""
+    import build_articles
+    produced, missing = build_articles.build_articles(build_articles.load_profile(),
+                                                      write=False)
+    assert "articles/couverture-dynamique.html" in produced
+    assert "articles/couverture-dynamique.en.html" in produced
+    assert any("onchain_analytics" in m for m in missing), \
+        "l'article sans source doit être signalé"
+
+
+def test_build_n_ecrit_rien_en_mode_lecture(tmp_path):
+    """`write=False` doit être réellement inerte : la fonction sert aussi de sonde
+    (tests, appelants qui veulent juste la liste des manques)."""
+    import build_articles
+    page = build_articles.ROOT / "articles" / "couverture-dynamique.html"
+    avant = page.read_bytes()
+    build_articles.build_articles(build_articles.load_profile(), write=False)
+    assert page.read_bytes() == avant

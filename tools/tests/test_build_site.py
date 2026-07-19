@@ -402,3 +402,61 @@ def test_nav_has_graph_link():
     assert 'href="/graph/"' in bh.render_highlights_page(p)
     assert 'href="/graph/"' in bac.render_academy_page(bac.load_academy())
     assert 'href="/graph/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
+
+
+# ── Articles : cartes bilingues + ordre de génération ─────────────────────────
+
+def test_carte_article_porte_les_deux_langues():
+    import build_site
+    markup = build_site.render_blog(build_site.load_profile())
+    assert 'data-article-fr="articles/couverture-dynamique.html"' in markup
+    assert 'data-article-en="articles/couverture-dynamique.en.html"' in markup
+
+
+def test_carte_replie_sur_le_fr_si_traduction_absente(monkeypatch):
+    """Quand la page anglaise n'existe pas, les deux attributs pointent le FR.
+    Promettre une page absente produirait un 404 sur un lien public."""
+    import build_site, pathlib
+    vrai_exists = pathlib.Path.exists
+    monkeypatch.setattr(pathlib.Path, "exists",
+                        lambda self: False if self.name.endswith(".en.html") else vrai_exists(self))
+    markup = build_site.render_blog(build_site.load_profile())
+    assert 'data-article-en="articles/couverture-dynamique.html"' in markup
+    assert ".en.html" not in markup
+
+
+def test_articles_generes_avant_index():
+    """`render_blog` teste l'existence de la page EN sur disque : si les articles
+    étaient générés APRÈS index.html (comme les six autres builders), une
+    construction sur clone frais figerait des liens FR que seule une seconde
+    construction corrigerait. L'ordre est donc une contrainte, pas un détail."""
+    import inspect, build_site
+    src = inspect.getsource(build_site.build)
+    assert src.index("import build_articles") < src.index("out = build_html("), \
+        "build_articles doit précéder build_html"
+
+
+def test_carte_soon_reste_non_cliquable():
+    """L'article `soon` n'a pas d'URL : il ne doit porter aucun attribut de lien."""
+    import build_site
+    markup = build_site.render_blog(build_site.load_profile())
+    soon = [c for c in markup.split("<") if "opacity:.55" in c]
+    assert soon, "la carte `soon` a disparu"
+    assert markup.count("data-article-fr") == 1
+
+
+def test_echec_du_builder_articles_remonte(monkeypatch):
+    """Zero Masking : si la génération des articles échoue, build() doit s'arrêter.
+
+    Un mutant remplaçant le `raise BuildError` par `pass` survivait à toute la
+    suite : la construction se serait poursuivie en vert avec des pages d'articles
+    périmées ou absentes, et rien ne l'aurait dit."""
+    import pytest
+    import build_articles
+
+    def _boum(*a, **k):
+        raise RuntimeError("boum")
+
+    monkeypatch.setattr(build_articles, "build_articles", _boum)
+    with pytest.raises(bs.BuildError, match="articles"):
+        bs.build(write=False)
