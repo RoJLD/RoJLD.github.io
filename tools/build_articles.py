@@ -384,6 +384,20 @@ def _chemin_confine(rel: str) -> pathlib.Path:
     return cible
 
 
+PUBLIE = "published"
+
+
+def est_publie(art: dict) -> bool:
+    """Un article non publié n'a pas à posséder de source.
+
+    Le défaut est `published` : un `status` absent doit CRIER, pas se taire.
+    Traiter l'inconnu comme non publié rendrait le garde muet exactement sur le
+    cas qu'on n'a pas prévu — un article ajouté sans statut passerait sous le
+    radar au lieu d'être signalé.
+    """
+    return art.get("status", PUBLIE) == PUBLIE
+
+
 def build_articles(profile: dict | None = None,
                    write: bool = True) -> tuple[list[str], list[str]]:
     """Génère toutes les pages disponibles.
@@ -406,6 +420,14 @@ def build_articles(profile: dict | None = None,
         if slug is not None:
             _chemin_confine(art["url"])
             _chemin_confine(en_path_for(art["url"]))
+        # Le confinement ci-dessus vaut pour TOUS les articles — une `url`
+        # malformée reste une erreur de configuration même non publiée. Le
+        # signalement de source manquante, lui, ne concerne que le publié :
+        # annoncer un manque sur un `status: soon` ferait crier le canal
+        # fail-loud à chaque build sur un état sain, et au troisième build
+        # plus personne ne lit la ligne qui signalera le vrai défaut.
+        if not est_publie(art):
+            continue
         for lang, rel in (("fr", art.get("url")),
                           ("en", en_path_for(art["url"]) if art.get("url") else None)):
             if slug is None or not (SRC / f"{slug}.{lang}.md").exists():
