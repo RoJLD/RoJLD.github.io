@@ -1,0 +1,454 @@
+"""Non-régression de la migration : la page générée doit porter le même texte que la
+page écrite à la main.
+
+L'égalité octet pour octet n'est PAS exigée — Markdown normalise le balisage, et
+l'exiger ferait entrer dans le générateur les particularités d'une page manuelle.
+Ce qui est comparé : le texte dépouillé, la structure des titres, et le contenu
+littéral des blocs de données (formules, code).
+
+Exception assumée : le temps de lecture. L'original annonçait « 8 min » pour 509
+mots — une valeur fabriquée qu'aucune source ne contredisait. La génération la
+corrige, donc un test qui exigerait l'identité défendrait l'erreur.
+"""
+from __future__ import annotations
+
+import html as _html
+import pathlib
+import re
+import sys
+
+import pytest
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools"))
+
+LEGACY = pathlib.Path(__file__).resolve().parent / "fixtures" / "couverture-dynamique.legacy.html"
+
+
+def _body(page: str) -> str:
+    """Corps rédactionnel seul : entre le TL;DR et le pied d'auteur, APRÈS le CSS.
+
+    Le découpage part de `</style>` : les noms de classe apparaissent d'abord dans la
+    feuille de style, et un `find` naïf y découpe deux règles CSS au lieu de deux
+    éléments — l'erreur a réellement été commise pendant la conception (elle donnait
+    un corps de 46 mots au lieu de 509).
+    """
+    after_css = page[page.find("</style>") + len("</style>"):]
+    i, j = after_css.find("article-tldr"), after_css.find("article-footer")
+    assert i != -1 and j != -1, "bornes du corps introuvables"
+    return after_css[i:j]
+
+
+def _text(fragment: str) -> str:
+    """Texte nu. Les balises tombent AVANT le déséchappement : dans l'autre ordre,
+    un `&lt;script&gt;` littéral redeviendrait une balise et serait supprimé."""
+    return " ".join(_html.unescape(re.sub(r"<[^>]+>", " ", fragment)).split())
+
+
+def _headings(fragment: str) -> list[str]:
+    return [f"{m.group(1)}:{_text(m.group(2))}"
+            for m in re.finditer(r"<(h2|h3)[^>]*>(.*?)</\1>", fragment, re.S)]
+
+
+def _blocks(fragment: str, cls: str) -> list[str]:
+    return [_text(m) for m in re.findall(rf'<div class="{cls}"[^>]*>(.*?)</div>', fragment, re.S)]
+
+
+def _code(fragment: str) -> list[str]:
+    return [_html.unescape(m).strip()
+            for m in re.findall(r"<pre[^>]*><code[^>]*>(.*?)</code></pre>", fragment, re.S)]
+
+
+@pytest.fixture(scope="module")
+def legacy() -> str:
+    return LEGACY.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
+def generated() -> str:
+    import build_articles
+    return build_articles.render_article_page(build_articles.load_profile(),
+                                              "couverture_dynamique", "fr")
+
+
+# ── Non-régression de la migration ────────────────────────────────────────────
+
+def test_titres_identiques(generated, legacy):
+    assert _headings(_body(generated)) == _headings(_body(legacy))
+
+
+def test_formules_identiques(generated, legacy):
+    """La formule porte des espaces insécables. Écrites `&nbsp;` dans l'original et
+    en caractères U+00A0 dans le Markdown, elles ne se comparent qu'après
+    déséchappement — sinon le test échoue sur une différence qui n'en est pas une."""
+    assert _blocks(_body(generated), "formula") == _blocks(_body(legacy), "formula")
+    assert _blocks(_body(generated), "formula") != []
+
+
+def test_bloc_de_code_identique(generated, legacy):
+    """Le code est une donnée, pas de la mise en forme : identité exigée."""
+    assert _code(_body(generated)) == _code(_body(legacy))
+
+
+def test_texte_integralement_preserve(generated, legacy):
+    """Chaque phrase substantielle de l'original se retrouve dans la page générée.
+
+    Comparaison par phrase plutôt qu'égalité globale : l'espacement diffère
+    légitimement (Markdown normalise), mais aucune phrase ne doit disparaître."""
+    legacy_text, gen_text = _text(_body(legacy)), _text(_body(generated))
+    manquantes = [p.strip() for p in re.split(r"(?<=[.!?]) ", legacy_text)
+                  if len(p.strip()) > 40 and p.strip() not in gen_text]
+    assert manquantes == [], f"phrases perdues : {manquantes[:3]}"
+
+
+def test_temps_de_lecture_corrige(generated, legacy):
+    """L'écart assumé, verrouillé dans les deux sens : la valeur fabriquée disparaît
+    et la valeur dérivée apparaît. Sans ce test, la correction pourrait régresser
+    sans que rien ne l'attrape."""
+    assert "8 min" in _text(_body(legacy)) or "8 min" in legacy
+    assert "8 min" not in generated
+    assert "3 min de lecture" in generated
+
+
+# ── Chrome : hors du corps comparé, donc à couvrir explicitement ──────────────
+#
+# `_body()` découpe entre le TL;DR et le pied d'auteur : les tags et le <h1> sont
+# hors de son champ par construction. Deux mutants l'ont prouvé en survivant à la
+# suite de non-régression (tags non rendus, titre non échappé). Ces tests-là sont
+# leur filet.
+
+def test_tags_tous_rendus(generated):
+    """La page écrite à la main n'affichait que 3 des 4 tags déclarés — `EY` avait
+    été oublié. Rien ne pouvait le dire : aucune source ne contredisait le HTML."""
+    import build_articles
+    art = next(a for a in build_articles.load_profile()["articles"]
+               if a["id"] == "couverture_dynamique")
+    rendus = re.findall(r'class="article-tag">([^<]+)<', generated)
+    assert rendus == art["tags"]
+    assert len(rendus) == 4
+
+
+def test_titre_echappe(tmp_path, monkeypatch):
+    """Le titre vient de profile.json et transite par <title> ET <h1>."""
+    import build_articles
+    profile = build_articles.load_profile()
+    for a in profile["articles"]:
+        if a["id"] == "couverture_dynamique":
+            a["title"] = {"fr": 'X <script>alert("i")</script>', "en": "X"}
+    page = build_articles.render_article_page(profile, "couverture_dynamique", "fr")
+    assert "<script>alert" not in page
+    assert "&lt;script&gt;" in page
+
+
+# ── Fonctions pures ───────────────────────────────────────────────────────────
+
+def test_slug_vient_de_url_pas_de_id():
+    """Cas DISCRIMINANT : id et url ne se correspondent pas.
+
+    Sur le seul article réel, `couverture_dynamique` → `couverture-dynamique` par
+    simple `_`→`-` : un test bâti sur lui passe aussi bien avec l'implémentation
+    correcte qu'avec la fausse. Un mutant remplaçant `url` par `id.replace('_','-')`
+    y survivait. Il faut un couple où les deux divergent."""
+    import build_articles
+    assert build_articles.slug_of({"id": "un_identifiant",
+                                   "url": "articles/tout-autre-chose.html"}) == "tout-autre-chose"
+    # et le cas réel, pour que la correspondance publique reste verrouillée
+    assert build_articles.slug_of({"id": "couverture_dynamique",
+                                   "url": "articles/couverture-dynamique.html"}) == "couverture-dynamique"
+
+
+def test_slug_absent_fail_loud():
+    import build_articles
+    with pytest.raises(build_articles.BuildError):
+        build_articles.slug_of({"id": "x"})
+
+
+def test_chemin_en_derive_du_fr():
+    import build_articles
+    assert build_articles.en_path_for("articles/couverture-dynamique.html") \
+        == "articles/couverture-dynamique.en.html"
+
+
+def test_chemin_en_refuse_une_url_inattendue():
+    import build_articles
+    with pytest.raises(build_articles.BuildError):
+        build_articles.en_path_for("articles/x.php")
+
+
+@pytest.mark.parametrize("mots,attendu", [(0, 1), (1, 1), (200, 1), (201, 2), (509, 3)])
+def test_temps_de_lecture(mots, attendu):
+    """200 mots/min, arrondi au supérieur, plancher à 1."""
+    import build_articles
+    assert build_articles.reading_minutes(" ".join(["mot"] * mots)) == attendu
+
+
+def test_frontmatter_separe_du_corps():
+    import build_articles
+    fm, body = build_articles.parse_source("---\ntldr: Résumé\n---\n\n## Titre\n\nTexte.\n")
+    assert fm["tldr"] == "Résumé"
+    assert body.lstrip().startswith("## Titre")
+
+
+def test_tldr_avec_deux_points_preserve():
+    """Le `partition(':')` coupe au PREMIER deux-points : la valeur peut en contenir."""
+    import build_articles
+    fm, _ = build_articles.parse_source("---\ntldr: a : b : c\n---\ncorps\n")
+    assert fm["tldr"] == "a : b : c"
+
+
+@pytest.mark.parametrize("source", ["## Titre\n\nTexte.\n", "---\nautre: x\n---\ncorps\n"])
+def test_source_invalide_fail_loud(source):
+    """Le TL;DR n'a pas de valeur par défaut sensée : son absence est une erreur de
+    rédaction, pas un cas à combler silencieusement."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError):
+        build_articles.parse_source(source)
+
+
+def test_formula_non_interpretee_comme_markdown():
+    """Le contenu d'une formule est une donnée : ses `*` et `_` ne sont pas de
+    l'emphase Markdown."""
+    import build_articles
+    out = build_articles.md_to_html("::formula\na*b*c_d_e\n::\n")
+    assert '<div class="formula">a*b*c_d_e</div>' in out
+    assert "<em>" not in out
+
+
+def test_formula_echappee():
+    import build_articles
+    out = build_articles.md_to_html("::formula\na < b & c\n::\n")
+    assert "a &lt; b &amp; c" in out
+
+
+def test_article_inconnu_fail_loud():
+    import build_articles
+    with pytest.raises(build_articles.BuildError):
+        build_articles.render_article_page(build_articles.load_profile(), "nexistepas", "fr")
+
+
+def test_url_absente_fail_loud():
+    """`onchain_analytics` n'a pas d'`url` (statut `soon`) : la génération s'arrête
+    dans `slug_of`, avant même de chercher une source."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError):
+        build_articles.render_article_page(build_articles.load_profile(),
+                                           "onchain_analytics", "fr")
+
+
+def test_source_absente_fail_loud():
+    """Une source manquante ne doit jamais produire une page au corps vide.
+
+    Distinct du test précédent : ici l'`url` EXISTE, donc `slug_of` passe et c'est
+    bien le contrôle de présence du fichier qui doit lever. Rédigé d'abord avec
+    `onchain_analytics`, ce test passait pour la mauvaise raison — un mutant
+    remplaçant la levée par `return ""` y survivait."""
+    import build_articles
+    profile = build_articles.load_profile()
+    profile["articles"] = [{"id": "fantome", "url": "articles/fantome.html",
+                            "title": {"fr": "F", "en": "F"}, "date": "2026-01", "tags": []}]
+    with pytest.raises(build_articles.BuildError, match="source absente"):
+        build_articles.render_article_page(profile, "fantome", "fr")
+
+
+# ── Bilinguisme et repli ──────────────────────────────────────────────────────
+
+def test_page_en_porte_la_bonne_langue():
+    import build_articles
+    page = build_articles.render_article_page(build_articles.load_profile(),
+                                              "couverture_dynamique", "en")
+    assert '<html lang="en"' in page
+    assert "← Retour" not in page and "min de lecture" not in page
+    assert "← Back" in page and "min read" in page
+
+
+def test_titre_et_tldr_suivent_la_langue():
+    """Le titre vient de profile.json, le TL;DR du .md : deux sources distinctes
+    qui doivent basculer ensemble. Une page anglaise au TL;DR français serait le
+    symptôme d'un `.md` lu dans la mauvaise langue."""
+    import build_articles
+    profile = build_articles.load_profile()
+    fr = build_articles.render_article_page(profile, "couverture_dynamique", "fr")
+    en = build_articles.render_article_page(profile, "couverture_dynamique", "en")
+    assert "théorie vs pratique en assurance" in fr and "delta-hedging fonctionne" in fr
+    assert "Theory vs Practice in Insurance" in en and "delta hedging works" in en
+    assert "fonctionne bien en théorie" not in en
+
+
+def test_repli_est_signale_pas_tu():
+    """Un `.md` manquant n'est pas une erreur — la carte retombera sur l'autre
+    langue — mais il DOIT remonter à l'appelant. Un repli silencieux est un
+    masquage : rien ne dirait qu'un article n'a jamais été traduit."""
+    import build_articles
+    produced, missing = build_articles.build_articles(build_articles.load_profile(),
+                                                      write=False)
+    assert "articles/couverture-dynamique.html" in produced
+    assert "articles/couverture-dynamique.en.html" in produced
+    assert any("onchain_analytics" in m for m in missing), \
+        "l'article sans source doit être signalé"
+
+
+def test_build_n_ecrit_rien_en_mode_lecture(tmp_path):
+    """`write=False` doit être réellement inerte : la fonction sert aussi de sonde
+    (tests, appelants qui veulent juste la liste des manques)."""
+    import build_articles
+    page = build_articles.ROOT / "articles" / "couverture-dynamique.html"
+    avant = page.read_bytes()
+    build_articles.build_articles(build_articles.load_profile(), write=False)
+    assert page.read_bytes() == avant
+
+
+# ══════════════════ Revue finale — findings I2/I3/I4/I6/I7 ═══════════════════
+
+def test_formula_dans_un_bloc_de_code_reste_litterale():
+    """I2. Le préprocesseur tourne avant Markdown, donc il ignorait les blocs
+    fencés : un article documentant sa PROPRE syntaxe voyait son exemple avalé, et
+    le jeton interne atterrissait dans le HTML publié — Zero Placeholder violé en
+    silence. Les blocs de code doivent être masqués AVANT le stash."""
+    import build_articles
+    out = build_articles.md_to_html("Exemple :\n\n```\n::formula\nE = mc2\n::\n```\n")
+    assert "::formula" in out and "E = mc2" in out
+    assert '<div class="formula">' not in out
+    assert "FORMULAPLACEHOLDER" not in out
+    assert "\x00" not in out
+
+
+def test_aucun_jeton_interne_ne_fuit():
+    """I2 bis. Quelle que soit l'entrée, aucun jeton de travail ne doit survivre."""
+    import build_articles
+    for src in ["::formula\nA\n::\n",
+                "texte\n\n::formula\nA\n::\n\ntexte\n",
+                "```\ntexte\n```\n\n::formula\nA\n::\n"]:
+        out = build_articles.md_to_html(src)
+        assert "FORMULAPLACEHOLDER" not in out and "\x00" not in out, src
+
+
+def test_jeton_litteral_ecrit_par_l_auteur_est_preserve():
+    """Minor. Un corps contenant le jeton seul sur son paragraphe était REMPLACÉ
+    par la formule : texte de l'auteur perdu, formule dupliquée."""
+    import build_articles
+    out = build_articles.md_to_html("::formula\nA\n::\n\nFORMULAPLACEHOLDER0\n")
+    assert out.count('<div class="formula">A</div>') == 1
+    assert "FORMULAPLACEHOLDER0" in out
+
+
+@pytest.mark.parametrize("src", [
+    "::formula\nE = mc2\n",            # jamais fermé
+    "::formula\nA\n:: \n",             # fermeture avec espace final
+    "  ::formula\nA\n::\n",            # ouverture indentée
+])
+def test_formula_mal_formee_fail_loud(src):
+    """I3. Trois variantes rendaient du texte littéral sans un mot. Un bloc mal
+    fermé est une erreur de rédaction, exactement comme un `tldr` absent."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError, match="formula"):
+        build_articles.md_to_html(src)
+
+
+def test_ecriture_confinee_au_dossier_articles(tmp_path):
+    """I4. `slug_of` normalise, mais le CHEMIN D'ÉCRITURE utilisait l'`url` brute.
+    Une url fautive comme `articles/../index.html` écrasait un fichier arbitraire
+    sans que rien ne le signale. Prouvé par la revue : fichier créé hors du dépôt."""
+    import build_articles
+    profile = build_articles.load_profile()
+    profile["articles"] = [{"id": "evade", "url": "articles/../../PWNED-traversal.html",
+                            "title": {"fr": "X", "en": "X"}, "date": "2026-01", "tags": []}]
+    cible = build_articles.ROOT.parent.parent / "PWNED-traversal.html"
+    avant = cible.exists()
+    with pytest.raises(build_articles.BuildError, match="hors du dossier|confin"):
+        build_articles.build_articles(profile, write=True)
+    assert cible.exists() == avant, "un fichier a été écrit hors du dépôt"
+
+
+def test_tldr_multiligne_conserve_sa_continuation():
+    """I6. Les lignes sans `:` étaient ignorées sans bruit : le premier retour à la
+    ligne d'un rédacteur amputait le résumé publié."""
+    import build_articles
+    fm, _ = build_articles.parse_source(
+        "---\ntldr: première ligne\n  suite de la phrase\n---\ncorps\n")
+    assert fm["tldr"] == "première ligne suite de la phrase"
+
+
+def test_frontmatter_illisible_fail_loud():
+    """I6 bis. Une ligne ni `clé: valeur` ni continuation indentée est une faute."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError, match="frontmatter"):
+        build_articles.parse_source("---\ntldr: x\nligne bancale\n---\ncorps\n")
+
+
+def test_frontmatter_cle_dupliquee_fail_loud():
+    """Minor. `tldr: PREMIER` puis `tldr: SECOND` gardait silencieusement le second."""
+    import build_articles
+    with pytest.raises(build_articles.BuildError, match="dupliqu"):
+        build_articles.parse_source("---\ntldr: PREMIER\ntldr: SECOND\n---\ncorps\n")
+
+
+@pytest.mark.parametrize("champ", ["date", "title"])
+def test_champ_requis_manquant_message_actionnable(champ):
+    """I7. `fmt_date(art["date"], …)` levait un KeyError nu : ni l'article ni le
+    champ n'apparaissaient dans le message remonté par build_site."""
+    import build_articles
+    profile = build_articles.load_profile()
+    for a in profile["articles"]:
+        if a["id"] == "couverture_dynamique":
+            a.pop(champ, None)
+    with pytest.raises(build_articles.BuildError) as exc:
+        build_articles.render_article_page(profile, "couverture_dynamique", "fr")
+    assert "couverture_dynamique" in str(exc.value) and champ in str(exc.value)
+
+
+def test_en_url_or_fallback_partage():
+    """I5. Les trois surfaces qui annoncent l'article doivent partager UNE seule
+    implémentation du repli, sinon elles divergent (build_site l'avait, browse et
+    highlights non)."""
+    import build_articles
+    assert build_articles.en_url_or_fallback("articles/couverture-dynamique.html") \
+        == "articles/couverture-dynamique.en.html"
+    assert build_articles.en_url_or_fallback("articles/inexistant.html") \
+        == "articles/inexistant.html"
+
+
+# ── I8 : les deux tests vacants, refaits ──────────────────────────────────────
+
+def test_build_n_ecrit_rien_en_mode_lecture_v2():
+    """I8. La version précédente comparait les octets — mais la sortie est
+    déterministe, donc une réécriture produit des octets IDENTIQUES et le test
+    passait avec ET sans `if write:`. On compare la date de modification."""
+    import build_articles, time
+    page = build_articles.ROOT / "articles" / "couverture-dynamique.html"
+    avant = page.stat().st_mtime_ns
+    time.sleep(0.01)
+    build_articles.build_articles(build_articles.load_profile(), write=False)
+    assert page.stat().st_mtime_ns == avant, "write=False a réécrit le fichier"
+
+
+def test_tldr_echappe():
+    """I8 bis. `test_titre_echappe` couvre le titre (source profile.json) ; rien ne
+    couvrait le tldr (source .md) — trou symétrique, mutant survivant."""
+    import build_articles
+    profile = build_articles.load_profile()
+    art = next(a for a in profile["articles"] if a["id"] == "couverture_dynamique")
+    src = build_articles.SRC / f"{build_articles.slug_of(art)}.fr.md"
+    _, body = build_articles.parse_source(src.read_text(encoding="utf-8"))
+    page = build_articles._assemble(profile, art, "fr",
+                                    {"tldr": '<script>alert("x")</script>'}, body)
+    assert "<script>alert" not in page and "&lt;script&gt;" in page
+
+
+# ── Minors : chemins non couverts (5 mutants survivaient) ─────────────────────
+
+def test_bio_et_initiales_rendues(generated):
+    import build_articles
+    ident = build_articles.load_profile()["identity"]
+    assert f'>{ident["first_name"][0]}{ident["last_name"][0]}<'.upper() in generated.upper()
+    assert "ECE Paris" in generated and "Ingénierie" in generated
+
+
+def test_tags_echappes():
+    import build_articles
+    profile = build_articles.load_profile()
+    for a in profile["articles"]:
+        if a["id"] == "couverture_dynamique":
+            a["tags"] = ['<b>&"']
+    page = build_articles.render_article_page(profile, "couverture_dynamique", "fr")
+    assert "<b>&\"" not in page.split("</style>")[1]
+    assert "&lt;b&gt;&amp;" in page

@@ -1,0 +1,3 @@
+# Seul tools/build_articles.py en dépend (conversion Markdown des articles).
+# Les six autres builders sont stdlib-only — garder cette liste minimale.
+markdown>=3.5

@@ -402,3 +402,112 @@ def test_nav_has_graph_link():
     assert 'href="/graph/"' in bh.render_highlights_page(p)
     assert 'href="/graph/"' in bac.render_academy_page(bac.load_academy())
     assert 'href="/graph/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
+
+
+# ── Articles : cartes bilingues + ordre de génération ─────────────────────────
+
+def test_carte_article_porte_les_deux_langues():
+    import build_site
+    markup = build_site.render_blog(build_site.load_profile())
+    assert 'data-article-fr="articles/couverture-dynamique.html"' in markup
+    assert 'data-article-en="articles/couverture-dynamique.en.html"' in markup
+
+
+def test_carte_replie_sur_le_fr_si_traduction_absente(monkeypatch):
+    """Quand la page anglaise n'existe pas, les deux attributs pointent le FR.
+    Promettre une page absente produirait un 404 sur un lien public."""
+    import build_site, pathlib
+    vrai_exists = pathlib.Path.exists
+    monkeypatch.setattr(pathlib.Path, "exists",
+                        lambda self: False if self.name.endswith(".en.html") else vrai_exists(self))
+    markup = build_site.render_blog(build_site.load_profile())
+    assert 'data-article-en="articles/couverture-dynamique.html"' in markup
+    assert ".en.html" not in markup
+
+
+def test_articles_generes_avant_index():
+    """`render_blog` teste l'existence de la page EN sur disque : si les articles
+    étaient générés APRÈS index.html (comme les six autres builders), une
+    construction sur clone frais figerait des liens FR que seule une seconde
+    construction corrigerait. L'ordre est donc une contrainte, pas un détail."""
+    import inspect, build_site
+    src = inspect.getsource(build_site.build)
+    assert src.index("import build_articles") < src.index("out = build_html("), \
+        "build_articles doit précéder build_html"
+
+
+def test_carte_soon_reste_non_cliquable():
+    """L'article `soon` n'a pas d'URL : il ne doit porter aucun attribut de lien."""
+    import build_site
+    markup = build_site.render_blog(build_site.load_profile())
+    soon = [c for c in markup.split("<") if "opacity:.55" in c]
+    assert soon, "la carte `soon` a disparu"
+    assert markup.count("data-article-fr") == 1
+
+
+def test_echec_du_builder_articles_remonte(monkeypatch):
+    """Zero Masking : si la génération des articles échoue, build() doit s'arrêter.
+
+    Un mutant remplaçant le `raise BuildError` par `pass` survivait à toute la
+    suite : la construction se serait poursuivie en vert avec des pages d'articles
+    périmées ou absentes, et rien ne l'aurait dit."""
+    import pytest
+    import build_articles
+
+    def _boum(*a, **k):
+        raise RuntimeError("boum")
+
+    monkeypatch.setattr(build_articles, "build_articles", _boum)
+    with pytest.raises(bs.BuildError, match="articles"):
+        bs.build(write=False)
+
+
+def test_sources_manquantes_signalees_en_production(capsys):
+    """I1. `build_articles` retourne les manques, une docstring l'exige et un test
+    le vérifie — mais le SEUL appelant de production jetait le retour. La garantie
+    Zero Masking n'existait que dans le test. Émettre n'est pas garder."""
+    bs.build(write=False)
+    sortie = capsys.readouterr().out
+    assert "source d'article absente" in sortie
+    assert "onchain_analytics" in sortie
+
+
+def test_les_trois_surfaces_portent_le_href_bilingue():
+    """I5. index #blog, explorer et highlights annoncent tous l'article et ont tous
+    une bascule FR/EN. N'en câbler qu'une laisse les deux autres traduire le titre
+    puis envoyer l'anglophone sur la page française."""
+    import build_browse, build_highlights
+    profile = bs.load_profile()
+
+    idx = bs.render_blog(profile)
+    assert 'data-article-en="articles/couverture-dynamique.en.html"' in idx
+
+    browse = build_browse.build_browse(profile, write=False)
+    assert 'data-href-en="/articles/couverture-dynamique.en.html"' in browse
+    assert "data-href-fr" in browse
+
+    hl = build_highlights.build_highlights(profile, write=False)
+    assert 'data-href-en="/articles/couverture-dynamique.en.html"' in hl
+
+
+def test_les_trois_bascules_reecrivent_le_href():
+    """Le marquage ne sert à rien sans le JS qui le consomme — la carte resterait
+    sur le FR. Vérifié sur les trois pages générées.
+
+    On épingle l'expression de mapping, pas seulement la présence du sélecteur :
+    une bascule qui lit systématiquement le FR, ou qui intervertit les deux
+    langues, laisse le sélecteur intact et passerait un test de présence.
+    """
+    import build_browse, build_highlights
+    profile = bs.load_profile()
+    idx = bs.build_html((bs.ROOT / "index.html").read_text(encoding="utf-8"), profile)
+    assert "querySelectorAll('[data-article-fr]')" in idx
+    # L'attribut lu doit dépendre de `lang` — figer sur 'data-article-fr' enverrait
+    # l'anglophone sur la page française.
+    assert "'data-article-' + lang" in idx
+    for page in (build_browse.build_browse(profile, write=False),
+                 build_highlights.build_highlights(profile, write=False)):
+        assert "querySelectorAll('[data-href-fr][data-href-en]')" in page
+        # L'ordre des deux branches porte tout le sens : interverti, le lecteur
+        # français atterrit sur l'anglais et réciproquement.
+        assert "lang === 'fr' ? el.dataset.hrefFr : el.dataset.hrefEn" in page

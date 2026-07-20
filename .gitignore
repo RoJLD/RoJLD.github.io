@@ -1,2 +1,11 @@
 # Historique local de l'atelier d'édition (audit, croît sans borne) — SP6
 data/profile_history/
+
+# Bytecode Python — jamais versionné (37 fichiers y avaient été ajoutés par un
+# `git add -A tools/` trop large).
+__pycache__/
+*.py[cod]
+
+# Journaux et artefacts locaux de l atelier
+tools/cv/atelier*.log
+tools/cv/parity_cases.json

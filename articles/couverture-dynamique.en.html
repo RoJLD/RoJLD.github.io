@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Couverture dynamique : théorie vs pratique en assurance, par Robin Denis</title>
+    <title>Dynamic Hedging: Theory vs Practice in Insurance, by Robin Denis</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,14 +55,14 @@
 <nav><div class="nav-i">
     <a href="../index.html" class="nav-brand">R<b>.</b> Denis</a>
     <div style="display:flex;align-items:center;gap:16px">
-        <a href="../index.html" class="nav-back">← Retour</a>
+        <a href="../index.html" class="nav-back">← Back</a>
         <button class="theme-btn" onclick="const h=document.documentElement;if(h.getAttribute('data-theme')==='dark'){h.setAttribute('data-theme','light');this.textContent='☀️'}else{h.setAttribute('data-theme','dark');this.textContent='🌙'}">🌙</button>
     </div>
 </div></nav>
 
 <article>
     <div class="article-meta">
-        <div class="article-date">Mars 2026 · 3 min de lecture</div>
+        <div class="article-date">March 2026 · 3 min read</div>
         <div class="article-tags">
             <span class="article-tag">Finance</span>
             <span class="article-tag">Hedging</span>
@@ -71,39 +71,39 @@
         </div>
     </div>
 
-    <h1>Couverture dynamique : théorie vs pratique en assurance</h1>
+    <h1>Dynamic Hedging: Theory vs Practice in Insurance</h1>
 
     <div class="article-tldr">
-        <strong>TL;DR :</strong> la couverture dynamique en delta-hedging fonctionne bien en théorie, mais les coûts de transaction, la volatilité stochastique et les contraintes de rebalancement la rendent bien plus complexe en pratique. Voici ce que j'ai appris pendant mon PFE avec EY.
+        <strong>TL;DR:</strong> delta hedging works well in theory, but transaction costs, stochastic volatility and rebalancing constraints make it far more complex in practice. Here is what I learned during my capstone project with EY.
     </div>
 
 <h2>Introduction</h2>
-<p>Dans le cadre de mon projet de fin d'études à l'ECE Paris, réalisé en collaboration avec EY, j'ai travaillé sur la <strong>modélisation et le pilotage de stratégies de couverture dynamique</strong> appliquées aux portefeuilles d'assurance et bancaires.</p>
-<p>L'objectif : comparer les modèles théoriques de hedging (Black-Scholes, modèles à volatilité locale) avec les contraintes opérationnelles réelles : coûts de transaction, fréquence de rebalancement, et gestion du basis risk.</p>
-<h2>Le cadre théorique</h2>
-<p>Le delta-hedging repose sur une idée simple : à chaque instant, on ajuste la quantité d'actif sous-jacent détenue pour neutraliser la sensibilité du portefeuille aux mouvements de prix.</p>
-<div class="formula">Δ = ∂V/∂S = N(d₁)   où   d₁ = [ln(S/K) + (r + σ²/2)T] / (σ√T)</div>
-<p>En théorie, avec un rebalancement continu et sans coûts de transaction, le P&amp;L de la stratégie de couverture converge vers zéro. En pratique, c'est une autre histoire.</p>
-<h3>Hypothèses clés du modèle</h3>
+<p>As part of my final-year project at ECE Paris, carried out in collaboration with EY, I worked on the <strong>modelling and steering of dynamic hedging strategies</strong> applied to insurance and banking portfolios.</p>
+<p>The goal: compare theoretical hedging models (Black-Scholes, local volatility models) against real operational constraints — transaction costs, rebalancing frequency, and basis risk management.</p>
+<h2>The theoretical framework</h2>
+<p>Delta hedging rests on a simple idea: at every instant, you adjust the quantity of the underlying asset held so as to neutralise the portfolio's sensitivity to price movements.</p>
+<div class="formula">Δ = ∂V/∂S = N(d₁)   where   d₁ = [ln(S/K) + (r + σ²/2)T] / (σ√T)</div>
+<p>In theory, with continuous rebalancing and no transaction costs, the P&amp;L of the hedging strategy converges to zero. In practice, it is another story.</p>
+<h3>The model's key assumptions</h3>
 <ul>
-<li><strong>Volatilité constante</strong> (rarement le cas en réalité)</li>
-<li><strong>Rebalancement continu</strong> (impossible en pratique)</li>
-<li><strong>Pas de coûts de transaction</strong> (significatifs sur les marchés réels)</li>
-<li><strong>Liquidité parfaite</strong> (pas toujours disponible)</li>
+<li><strong>Constant volatility</strong> (rarely the case in reality)</li>
+<li><strong>Continuous rebalancing</strong> (impossible in practice)</li>
+<li><strong>No transaction costs</strong> (significant on real markets)</li>
+<li><strong>Perfect liquidity</strong> (not always available)</li>
 </ul>
-<h2>Résultats expérimentaux</h2>
-<p>Nous avons simulé plusieurs stratégies de rebalancement (quotidien, hebdomadaire, basé sur un seuil de delta) sur des données historiques et synthétiques. Voici les principales observations :</p>
-<h3>1. L'impact de la fréquence de rebalancement</h3>
-<p>Un rebalancement quotidien réduit l'erreur de hedging d'environ <strong>60%</strong> par rapport à un rebalancement hebdomadaire, mais augmente les coûts de transaction de <strong>400%</strong>. Le sweet spot dépend fortement du profil de volatilité et du spread bid-ask.</p>
-<h3>2. Volatilité stochastique vs implicite</h3>
-<p>Utiliser la volatilité implicite pour calculer le delta plutôt que la volatilité historique réduit significativement le tracking error. Cependant, dans les périodes de stress de marché, aucune approche ne performe bien, d'où l'intérêt des modèles à volatilité stochastique (Heston, SABR).</p>
-<h3>3. Approche par seuil de delta</h3>
-<p>Le rebalancement « intelligent » (basé sur un seuil de variation du delta plutôt qu'une fréquence fixe) offre le meilleur compromis coût/efficacité. Nous avons trouvé qu'un seuil de <strong>Δ ± 0.05</strong> était optimal dans nos simulations.</p>
-<pre><code># Exemple simplifié de rebalancement par seuil
+<h2>Experimental results</h2>
+<p>We simulated several rebalancing strategies (daily, weekly, delta-threshold based) on both historical and synthetic data. The main observations:</p>
+<h3>1. The impact of rebalancing frequency</h3>
+<p>Daily rebalancing cuts hedging error by roughly <strong>60%</strong> compared with weekly rebalancing, but raises transaction costs by <strong>400%</strong>. The sweet spot depends heavily on the volatility profile and the bid-ask spread.</p>
+<h3>2. Stochastic vs implied volatility</h3>
+<p>Using implied rather than historical volatility to compute the delta significantly reduces tracking error. During periods of market stress, however, no approach performs well — hence the interest in stochastic volatility models (Heston, SABR).</p>
+<h3>3. The delta-threshold approach</h3>
+<p>"Smart" rebalancing — triggered by a threshold on delta variation rather than a fixed frequency — offers the best cost/efficiency trade-off. We found a threshold of <strong>Δ ± 0.05</strong> to be optimal in our simulations.</p>
+<pre><code># Simplified threshold-based rebalancing
 def should_rebalance(current_delta, target_delta, threshold=0.05):
     return abs(current_delta - target_delta) &gt; threshold
 
-# Boucle de hedging
+# Hedging loop
 for t in range(1, T):
     new_delta = bs_delta(S[t], K, sigma, T-t, r)
     if should_rebalance(portfolio_delta, new_delta):
@@ -112,21 +112,21 @@ for t in range(1, T):
         portfolio_delta = new_delta
         transaction_costs += abs(trade_quantity) * spread
 </code></pre>
-<h2>Leçons tirées</h2>
+<h2>Lessons learned</h2>
 <blockquote>
-<p>Le modèle parfait n'existe pas : le vrai skill d'un quant, c'est de comprendre où et comment son modèle va casser.</p>
+<p>The perfect model does not exist: a quant's real skill is understanding where and how their model will break.</p>
 </blockquote>
-<p>Ce projet m'a appris que le passage de la théorie à la pratique en finance quantitative ne se résume pas à implémenter une formule. Il faut comprendre les contraintes opérationnelles, les coûts cachés, et surtout être capable de quantifier l'incertitude de ses propres modèles.</p>
-<p>Si ce sujet vous intéresse, n'hésitez pas à me contacter, je suis toujours partant pour en discuter !</p>
+<p>This project taught me that moving from theory to practice in quantitative finance is not a matter of implementing a formula. You have to understand the operational constraints, the hidden costs, and above all be able to quantify the uncertainty of your own models.</p>
+<p>If this topic interests you, feel free to reach out — I am always up for a conversation about it.</p>
 
     <div class="article-footer">
         <div class="af-avatar">RD</div>
         <div>
             <div class="af-name">Robin Denis</div>
-            <div class="af-bio">Ingénierie Financière &amp; Quantitative · ECE Paris 2026</div>
+            <div class="af-bio">Financial &amp; Quantitative Engineering · ECE Paris 2026</div>
         </div>
     </div>
-    <a href="../index.html#blog" class="af-back">← Retour aux articles</a>
+    <a href="../index.html#blog" class="af-back">← Back to articles</a>
 </article>
 </body>
 </html>
