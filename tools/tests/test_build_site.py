@@ -492,11 +492,22 @@ def test_les_trois_surfaces_portent_le_href_bilingue():
 
 def test_les_trois_bascules_reecrivent_le_href():
     """Le marquage ne sert à rien sans le JS qui le consomme — la carte resterait
-    sur le FR. Vérifié sur les trois pages générées."""
+    sur le FR. Vérifié sur les trois pages générées.
+
+    On épingle l'expression de mapping, pas seulement la présence du sélecteur :
+    une bascule qui lit systématiquement le FR, ou qui intervertit les deux
+    langues, laisse le sélecteur intact et passerait un test de présence.
+    """
     import build_browse, build_highlights
     profile = bs.load_profile()
     idx = bs.build_html((bs.ROOT / "index.html").read_text(encoding="utf-8"), profile)
     assert "querySelectorAll('[data-article-fr]')" in idx
+    # L'attribut lu doit dépendre de `lang` — figer sur 'data-article-fr' enverrait
+    # l'anglophone sur la page française.
+    assert "'data-article-' + lang" in idx
     for page in (build_browse.build_browse(profile, write=False),
                  build_highlights.build_highlights(profile, write=False)):
         assert "querySelectorAll('[data-href-fr][data-href-en]')" in page
+        # L'ordre des deux branches porte tout le sens : interverti, le lecteur
+        # français atterrit sur l'anglais et réciproquement.
+        assert "lang === 'fr' ? el.dataset.hrefFr : el.dataset.hrefEn" in page
