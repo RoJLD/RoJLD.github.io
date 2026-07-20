@@ -462,14 +462,23 @@ def test_echec_du_builder_articles_remonte(monkeypatch):
         bs.build(write=False)
 
 
-def test_sources_manquantes_signalees_en_production(capsys):
+def test_sources_manquantes_signalees_en_production(capsys, monkeypatch):
     """I1. `build_articles` retourne les manques, une docstring l'exige et un test
     le vérifie — mais le SEUL appelant de production jetait le retour. La garantie
-    Zero Masking n'existait que dans le test. Émettre n'est pas garder."""
+    Zero Masking n'existait que dans le test. Émettre n'est pas garder.
+
+    Le manque est injecté plutôt que prélevé dans profile.json : c'est le CÂBLAGE
+    qu'on garde, pas le contenu. Adossé aux données réelles, ce test cassait dès
+    qu'un article changeait de statut — et surtout il serait devenu vert par
+    disparition du spécimen, sans que le câblage soit retesté.
+    """
+    import build_articles
+    monkeypatch.setattr(build_articles, "build_articles",
+                        lambda *a, **k: ([], ["fantome [en]"]))
     bs.build(write=False)
     sortie = capsys.readouterr().out
     assert "source d'article absente" in sortie
-    assert "onchain_analytics" in sortie
+    assert "fantome [en]" in sortie
 
 
 def test_les_trois_surfaces_portent_le_href_bilingue():

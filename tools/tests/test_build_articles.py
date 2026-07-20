@@ -274,17 +274,65 @@ def test_titre_et_tldr_suivent_la_langue():
     assert "fonctionne bien en théorie" not in en
 
 
+def _profil_avec(article: dict) -> dict:
+    """Profil réel dont on remplace la liste d'articles — le rendu dépend des
+    autres clés (i18n, chrome), qu'on ne veut pas réinventer ici."""
+    import build_articles
+    profile = dict(build_articles.load_profile())
+    profile["articles"] = [article]
+    return profile
+
+
 def test_repli_est_signale_pas_tu():
-    """Un `.md` manquant n'est pas une erreur — la carte retombera sur l'autre
-    langue — mais il DOIT remonter à l'appelant. Un repli silencieux est un
-    masquage : rien ne dirait qu'un article n'a jamais été traduit."""
+    """Un `.en.md` manquant sur un article PUBLIÉ n'est pas une erreur — la carte
+    retombera sur le FR — mais il DOIT remonter à l'appelant. Un repli silencieux
+    est un masquage : rien ne dirait qu'un article n'a jamais été traduit.
+
+    Le spécimen est un article publié dont seule la traduction manque. La version
+    précédente de ce test s'appuyait sur `onchain_analytics`, qui n'est pas un
+    repli mais un article jamais publié : le cas réellement visé — publié, FR
+    présent, EN absent — n'était couvert par rien.
+    """
     import build_articles
     produced, missing = build_articles.build_articles(build_articles.load_profile(),
                                                       write=False)
     assert "articles/couverture-dynamique.html" in produced
     assert "articles/couverture-dynamique.en.html" in produced
-    assert any("onchain_analytics" in m for m in missing), \
-        "l'article sans source doit être signalé"
+
+    # Article publié dont l'EN n'existe pas : le manque doit être rapporté.
+    art = {"id": "sans_traduction", "status": "published",
+           "url": "articles/sans-traduction.html",
+           "title": {"fr": "Sans traduction", "en": "Untranslated"},
+           "date": "2026-05", "tags": [], "desc": {"fr": "x", "en": "x"}}
+    _, manques = build_articles.build_articles(_profil_avec(art), write=False)
+    assert any("sans_traduction" in m for m in manques), \
+        "un article publié sans source doit être signalé"
+
+
+def test_un_article_non_publie_ne_fait_pas_crier_le_canal():
+    """`status: soon` décrit un article annoncé, pas encore écrit : ne pas avoir
+    de source EST son état normal. Le signaler ferait crier le canal fail-loud à
+    chaque build, et une alerte permanente cesse d'être lue."""
+    import build_articles
+    art = {"id": "a_venir", "status": "soon",
+           "title": {"fr": "À venir", "en": "Soon"},
+           "date": "2026-06", "tags": [], "desc": {"fr": "x", "en": "x"}}
+    produced, manques = build_articles.build_articles(_profil_avec(art), write=False)
+    assert produced == []
+    assert manques == [], f"un article non publié ne doit rien signaler, reçu {manques}"
+
+
+def test_un_statut_absent_est_traite_comme_publie():
+    """Le défaut penche vers le bruit, jamais vers le silence : un article ajouté
+    sans `status` doit être signalé s'il n'a pas de source. Le défaut inverse
+    rendrait le garde muet précisément sur le cas non prévu."""
+    import build_articles
+    art = {"id": "sans_statut",
+           "title": {"fr": "Sans statut", "en": "No status"},
+           "date": "2026-06", "tags": [], "desc": {"fr": "x", "en": "x"}}
+    _, manques = build_articles.build_articles(_profil_avec(art), write=False)
+    assert any("sans_statut" in m for m in manques), \
+        "un statut absent doit être traité comme publié, donc signalé"
 
 
 def test_build_n_ecrit_rien_en_mode_lecture(tmp_path):
