@@ -52,15 +52,38 @@ def _esc(s: Any) -> str:
     return html.escape(str(s), quote=True)
 
 
-def render_html(structured_cv: dict[str, Any]) -> str:
-    """Retourne le document HTML complet (doctype + <style> inline)."""
+def _css_du_template(template: "dict | str | None") -> str:
+    """CSS du template demande.
+
+    `None` = le defaut `sobre`. Dans ce SEUL cas, l'absence de la banque de donnees
+    (clone partiel du depot) retombe sur `CV_CSS`. Un template EXPLICITEMENT demande
+    et introuvable leve : un repli silencieux rendrait un CV au mauvais design sans
+    rien signaler, et le PDF sortirait quand meme.
+    """
+    import cv_templates
+
+    if isinstance(template, dict):
+        return cv_templates.build_css(template["style"])
+    if template is not None:
+        return cv_templates.build_css(cv_templates.charger(template)["style"])
+    if not cv_templates.TEMPLATES.is_dir():
+        return CV_CSS
+    return cv_templates.build_css(cv_templates.charger(cv_templates.DEFAUT)["style"])
+
+
+def render_html(structured_cv: dict[str, Any],
+                template: "dict | str | None" = None) -> str:
+    """Retourne le document HTML complet (doctype + <style> inline).
+
+    `template` : identifiant (`"ats"`), template deja charge, ou `None` pour `sobre`.
+    """
     lang = structured_cv.get("lang", "fr")
     lab = _LABELS.get(lang, _LABELS["fr"])
     idy = structured_cv.get("identity", {})
 
     parts: list[str] = []
     parts.append(f'<!doctype html><html lang="{_esc(lang)}"><head><meta charset="utf-8">')
-    parts.append(f"<style>{CV_CSS}</style></head><body>")
+    parts.append(f"<style>{_css_du_template(template)}</style></head><body>")
 
     # Header
     parts.append('<header class="cv-header">')
