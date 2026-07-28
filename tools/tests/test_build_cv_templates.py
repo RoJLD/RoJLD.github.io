@@ -58,6 +58,24 @@ def test_bundle_sur_disque_est_a_jour():
     assert disque == bct.build_cv_templates(write=False)
 
 
+def test_les_pages_qui_rendent_un_cv_chargent_le_bundle():
+    """Un bundle généré que personne ne charge est un artefact mort.
+
+    Sans ce témoin, tout reste vert : le builder produit un bundle correct, l'atelier
+    est bien câblé — et en production `cssPour()` ne trouve aucun registre, retombe
+    sur CV_CSS, et `buildCss` côté navigateur ne s'exécute jamais. Aucun test des
+    tâches 3 ou 4 ne pouvait le voir : ils vérifient que le bundle est juste, pas
+    qu'il est branché.
+
+    La FORME du chemin diffère par fichier (relatif à la racine, absolu dans les
+    sous-répertoires) : on vérifie la référence, pas une écriture unique.
+    """
+    for page in (ROOT / "index.html", ROOT / "graph" / "index.html"):
+        html = page.read_text(encoding="utf-8")
+        assert "cv-render.js" in html, f"{page.name} : prémisse fausse, pas de cv-render"
+        assert "cv-templates.js" in html, f"{page.name} : bundle des templates non chargé"
+
+
 def test_echec_du_builder_templates_remonte(monkeypatch):
     """Zero Masking, même leçon que pour les articles : un builder dont l'échec est
     avalé laisse la construction verte avec un artefact périmé."""
