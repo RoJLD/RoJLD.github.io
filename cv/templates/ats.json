@@ -1,0 +1,21 @@
+{
+  "id": "ats",
+  "label": { "fr": "ATS", "en": "ATS" },
+  "meta": {
+    "pages": 1,
+    "market": ["FR", "EU", "US"],
+    "tone": "neutral",
+    "ats_safe": true,
+    "sections": ["identity", "experience", "education", "skills", "languages",
+                 "certifications", "interests"]
+  },
+  "style": {
+    "page":    { "size": "A4", "margin": "15mm 15mm" },
+    "palette": { "ink": "#000000", "ink_2": "#000000", "accent": "#000000",
+                 "body": "#000000", "muted": "#333333", "faint": "#333333",
+                 "faint_2": "#333333", "rule": "#000000" },
+    "type":    { "h1": "16pt", "h2": "11pt", "base": "10pt", "small": "9.5pt",
+                 "tiny": "9pt", "micro": "8.5pt" },
+    "density": { "line": 1.35, "section_gap": "8px", "bullet_gap": "2px" }
+  }
+}

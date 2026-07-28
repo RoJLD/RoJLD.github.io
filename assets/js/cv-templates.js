@@ -12,6 +12,115 @@
   var DEFAUT = "sobre";
   var ALL = [
   {
+    "id": "ats",
+    "label": {
+      "en": "ATS",
+      "fr": "ATS"
+    },
+    "meta": {
+      "ats_safe": true,
+      "market": [
+        "FR",
+        "EU",
+        "US"
+      ],
+      "pages": 1,
+      "sections": [
+        "identity",
+        "experience",
+        "education",
+        "skills",
+        "languages",
+        "certifications",
+        "interests"
+      ],
+      "tone": "neutral"
+    },
+    "style": {
+      "density": {
+        "bullet_gap": "2px",
+        "line": 1.35,
+        "section_gap": "8px"
+      },
+      "page": {
+        "margin": "15mm 15mm",
+        "size": "A4"
+      },
+      "palette": {
+        "accent": "#000000",
+        "body": "#000000",
+        "faint": "#333333",
+        "faint_2": "#333333",
+        "ink": "#000000",
+        "ink_2": "#000000",
+        "muted": "#333333",
+        "rule": "#000000"
+      },
+      "type": {
+        "base": "10pt",
+        "h1": "16pt",
+        "h2": "11pt",
+        "micro": "8.5pt",
+        "small": "9.5pt",
+        "tiny": "9pt"
+      }
+    }
+  },
+  {
+    "id": "dense",
+    "label": {
+      "en": "Compact",
+      "fr": "Dense"
+    },
+    "meta": {
+      "ats_safe": true,
+      "market": [
+        "FR",
+        "EU"
+      ],
+      "pages": 1,
+      "sections": [
+        "identity",
+        "experience",
+        "education",
+        "skills",
+        "languages",
+        "certifications",
+        "interests"
+      ],
+      "tone": "corporate"
+    },
+    "style": {
+      "density": {
+        "bullet_gap": "0px",
+        "line": 1.2,
+        "section_gap": "5px"
+      },
+      "page": {
+        "margin": "10mm 12mm",
+        "size": "A4"
+      },
+      "palette": {
+        "accent": "#4361ee",
+        "body": "#444",
+        "faint": "#777",
+        "faint_2": "#999",
+        "ink": "#1a1a2e",
+        "ink_2": "#16213e",
+        "muted": "#555",
+        "rule": "#dde"
+      },
+      "type": {
+        "base": "9pt",
+        "h1": "16pt",
+        "h2": "10pt",
+        "micro": "7.5pt",
+        "small": "8.5pt",
+        "tiny": "8pt"
+      }
+    }
+  },
+  {
     "id": "sobre",
     "label": {
       "en": "Plain",

@@ -28,6 +28,11 @@ def _charge(tid: str) -> dict:
     return json.loads((TEMPLATES / f"{tid}.json").read_text(encoding="utf-8"))
 
 
+def _px(v: str) -> float:
+    """Valeur numérique d'une longueur CSS, unité ignorée (comparaisons homogènes)."""
+    return float(v.rstrip("abcdefghijklmnopqrstuvwxyz%"))
+
+
 def test_sobre_regenere_le_css_a_l_octet():
     import cv_templates
     assert cv_templates.build_css(_charge("sobre")["style"]) == LEGACY_CSS
@@ -94,6 +99,48 @@ def test_meta_declare_les_champs_attendus():
         assert isinstance(t["meta"]["sections"], list) and t["meta"]["sections"]
 
 
+@pytest.mark.parametrize("tid", ["sobre", "dense", "ats"])
+def test_chaque_template_produit_un_css_valide(tid):
+    import cv_templates
+    css = cv_templates.build_css(_charge(tid)["style"])
+    assert css.count("{") == css.count("}")
+    assert "@page" in css and "None" not in css
+
+
+def test_les_templates_different_vraiment():
+    """Trois fichiers produisant le même CSS seraient une banque en trompe-l'œil."""
+    import cv_templates
+    css = {t: cv_templates.build_css(_charge(t)["style"]) for t in ("sobre", "dense", "ats")}
+    assert len(set(css.values())) == 3
+
+
+def test_ats_na_aucune_couleur_chromatique():
+    """`meta.ats_safe` est lu par le ciblage : il doit décrire le fichier, pas le
+    flatter. Un template ATS est en niveaux de gris — aucune teinte, donc les trois
+    composantes RVB égales sur chaque couleur de la palette."""
+    import cv_templates
+    t = _charge("ats")
+    assert t["meta"]["ats_safe"] is True
+    for nom, valeur in t["style"]["palette"].items():
+        h = valeur.lstrip("#")
+        h = "".join(c * 2 for c in h) if len(h) == 3 else h
+        r, v, b = h[0:2], h[2:4], h[4:6]
+        assert r == v == b, f"palette.{nom} = {valeur} porte une teinte"
+
+
+def test_dense_est_reellement_plus_dense_que_sobre():
+    """`dense` doit gagner de la place, pas seulement porter le nom. Chaque levier
+    vertical doit être strictement inférieur à celui de `sobre` — sinon le template
+    ne tient pas la promesse que `meta` fait au ciblage."""
+    import cv_templates
+    s, d = _charge("sobre")["style"], _charge("dense")["style"]
+    assert float(d["density"]["line"]) < float(s["density"]["line"])
+    for cle in ("section_gap", "bullet_gap"):
+        assert _px(d["density"][cle]) < _px(s["density"][cle]), cle
+    assert _px(d["type"]["base"]) < _px(s["type"]["base"])
+    assert _px(d["page"]["margin"].split()[0]) < _px(s["page"]["margin"].split()[0])
+
+
 def test_lister_rejette_un_template_malforme(tmp_path, monkeypatch):
     """`lister()` doit VALIDER, pas seulement lire.
 
@@ -133,6 +180,38 @@ def test_template_explicite_introuvable_ne_retombe_pas_en_silence():
     import cv_templates
     with pytest.raises(cv_templates.TemplateError):
         cv_render.render_html(_SCV_MINIMAL, template="nexistepas")
+
+
+def test_atelier_expose_les_templates():
+    """Le sélecteur est alimenté par la banque, pas par une liste écrite en dur :
+    déposer un fichier dans cv/templates/ doit suffire à le rendre choisissable."""
+    import atelier
+    page = atelier._page()
+    for tid in ("sobre", "dense", "ats"):
+        assert f'value="{tid}"' in page
+    assert "Sobre" in page and "Dense" in page
+
+
+def test_generate_pdf_transmet_le_template(monkeypatch):
+    """Le choix du sélecteur doit atteindre le rendu.
+
+    Sans ce témoin, l'atelier afficherait un menu parfaitement fonctionnel dont
+    aucune option ne changerait le PDF — un menu inerte. C'est la classe
+    Σ-A-FAKE-AT-THE-SEAM-NEVER-EXERCISES-THE-WIRING : tout est vert, rien n'est câblé.
+    """
+    import atelier
+    vu = {}
+
+    def _faux_render(scv, template=None):
+        vu["template"] = template
+        return "<html></html>"
+
+    monkeypatch.setattr(atelier.cv_target, "targeted_structured_cv",
+                        lambda *a, **k: ({}, {"lang": "fr"}))
+    monkeypatch.setattr(atelier.cv_render, "render_html", _faux_render)
+    monkeypatch.setattr(atelier.cv_pdf, "html_to_pdf_bytes", lambda h: b"%PDF-")
+    atelier.generate_pdf("fiche", {}, "fr", template="ats")
+    assert vu["template"] == "ats"
 
 
 def test_render_html_accepte_un_template_charge():

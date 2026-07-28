@@ -1,0 +1,21 @@
+{
+  "id": "dense",
+  "label": { "fr": "Dense", "en": "Compact" },
+  "meta": {
+    "pages": 1,
+    "market": ["FR", "EU"],
+    "tone": "corporate",
+    "ats_safe": true,
+    "sections": ["identity", "experience", "education", "skills", "languages",
+                 "certifications", "interests"]
+  },
+  "style": {
+    "page":    { "size": "A4", "margin": "10mm 12mm" },
+    "palette": { "ink": "#1a1a2e", "ink_2": "#16213e", "accent": "#4361ee",
+                 "body": "#444", "muted": "#555", "faint": "#777", "faint_2": "#999",
+                 "rule": "#dde" },
+    "type":    { "h1": "16pt", "h2": "10pt", "base": "9pt", "small": "8.5pt",
+                 "tiny": "8pt", "micro": "7.5pt" },
+    "density": { "line": 1.2, "section_gap": "5px", "bullet_gap": "0px" }
+  }
+}
