@@ -1,0 +1,21 @@
+{
+  "id": "sobre",
+  "label": { "fr": "Sobre", "en": "Plain" },
+  "meta": {
+    "pages": 1,
+    "market": ["FR", "EU"],
+    "tone": "corporate",
+    "ats_safe": true,
+    "sections": ["identity", "experience", "education", "skills", "languages",
+                 "certifications", "interests"]
+  },
+  "style": {
+    "page":    { "size": "A4", "margin": "12mm 14mm" },
+    "palette": { "ink": "#1a1a2e", "ink_2": "#16213e", "accent": "#4361ee",
+                 "body": "#444", "muted": "#555", "faint": "#777", "faint_2": "#999",
+                 "rule": "#dde" },
+    "type":    { "h1": "17pt", "h2": "10.5pt", "base": "9.8pt", "small": "9pt",
+                 "tiny": "8.5pt", "micro": "8pt" },
+    "density": { "line": 1.3, "section_gap": "7px", "bullet_gap": "1px" }
+  }
+}
