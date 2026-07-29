@@ -140,6 +140,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
 </div>
 
 <script src="/assets/js/cv-select.js"></script>
+<script src="/assets/js/cv-templates.js"></script>
 <script src="/assets/js/cv-render.js"></script>
 <script id="graph-data" type="application/json">@@DATA@@</script>
 <script>

@@ -121,6 +121,34 @@ for c in pipeline:
     c["scv_py"] = scv
     c["html_py"] = cv_render.render_html(scv)
 
-out = {"render": render_cases, "pipeline": {"profile": prof, "cases": pipeline}}
+# 3 : un cas CSS par TEMPLATE, ÉNUMÉRÉ depuis la donnée. Une liste écrite à la main
+#     prendrait du retard dès le premier template ajouté — et un template non couvert
+#     est précisément celui dont la divergence Python/JS passerait inaperçue.
+import cv_templates  # noqa: E402
+
+templates = [{"id": t["id"], "style": t["style"],
+              "css_py": cv_templates.build_css(t["style"])}
+             for t in cv_templates.lister()]
+
+# Cas de STRESS : un `style` dont CHAQUE valeur diffère de celles de `sobre`.
+# Sans lui, l'oracle est aveugle au moteur qui IGNORE un champ et recopie la valeur
+# du seul template existant — une mutation l'a démontré (section_gap figé à "7px"
+# survivait à la parité). Un oracle différentiel ne discrimine que si les entrées
+# varient : tant que la banque ne porte qu'un fichier, c'est ce cas qui la fait varier.
+_stress = {
+    "page":    {"size": "Letter", "margin": "9mm 11mm"},
+    "palette": {"ink": "#101010", "ink_2": "#202020", "accent": "#303030",
+                "body": "#404040", "muted": "#505050", "faint": "#606060",
+                "faint_2": "#707070", "rule": "#808080"},
+    "type":    {"h1": "20pt", "h2": "12pt", "base": "8.4pt", "small": "7.7pt",
+                "tiny": "7.1pt", "micro": "6.6pt"},
+    "density": {"line": 1.45, "section_gap": "13px", "bullet_gap": "4px"},
+}
+templates.append({"id": "stress", "style": _stress,
+                  "css_py": cv_templates.build_css(_stress)})
+
+out = {"render": render_cases, "pipeline": {"profile": prof, "cases": pipeline},
+       "templates": templates}
 (_HERE / "parity_cases.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
-print(f"{len(render_cases)} cas rendu + {len(pipeline)} cas pipeline générés")
+print(f"{len(render_cases)} cas rendu + {len(pipeline)} cas pipeline "
+      f"+ {len(templates)} cas template générés")

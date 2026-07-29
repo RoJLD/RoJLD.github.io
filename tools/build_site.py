@@ -619,6 +619,12 @@ def build(profile_path=None, index_path=None, write=True):
         build_graph.build_graph(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération page graphe échouée : {exc}")
+    # Régénère le bundle des templates CV (donnée inlinée pour le navigateur).
+    try:
+        import build_cv_templates
+        build_cv_templates.build_cv_templates(write=write)
+    except Exception as exc:
+        raise BuildError(f"génération du bundle templates CV échouée : {exc}")
     return out
 
 

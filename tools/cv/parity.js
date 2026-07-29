@@ -7,7 +7,7 @@
  */
 const fs = require("fs");
 const path = require("path");
-const { renderHtml } = require("../../assets/js/cv-render.js");
+const { renderHtml, buildCss } = require("../../assets/js/cv-render.js");
 const CVSelect = require("../../assets/js/cv-select.js");
 
 const data = JSON.parse(fs.readFileSync(path.join(__dirname, "parity_cases.json"), "utf-8"));
@@ -54,6 +54,13 @@ for (const c of data.pipeline.cases) {
   const scv = CVSelect.buildStructuredCv(prof, exps, c.lang, c.build_cfg);
   check(`scv:${c.name}`, ss(c.scv_py), ss(scv));
   check(`html:${c.name}`, c.html_py, renderHtml(scv));
+}
+
+/* Un cas par template, énuméré depuis la donnée : le moteur CSS des deux côtés du
+   miroir doit produire la même chaîne pour le même `style`. C'est ce qui rend le
+   bundle sûr — sans lui, la banque pourrait diverger sans que rien ne rougisse. */
+for (const t of (data.templates || [])) {
+  check(`css:${t.id}`, t.css_py, buildCss(t.style));
 }
 
 console.log(`\n${ok} PASS / ${fail} FAIL`);

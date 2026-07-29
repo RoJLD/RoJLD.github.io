@@ -27,11 +27,37 @@ _PROFILE = _ROOT / "profile.json"
 
 
 def generate_pdf(job_posting: str, profile: dict, lang: str = "fr",
-                 complete_fn: Optional[Callable[[str], str]] = None) -> tuple[dict, bytes]:
-    """Pipeline ciblé complet → (cfg, pdf_bytes). Testable via complete_fn factice."""
+                 complete_fn: Optional[Callable[[str], str]] = None,
+                 template: Optional[str] = None) -> tuple[dict, bytes]:
+    """Pipeline ciblé complet → (cfg, pdf_bytes). Testable via complete_fn factice.
+
+    `template` : identifiant de la banque (`cv/templates/<id>.json`), ou None pour
+    le défaut. Il traverse jusqu'à `render_html` — un sélecteur qui n'atteindrait
+    pas le rendu serait un menu inerte.
+    """
     cfg, scv = cv_target.targeted_structured_cv(job_posting, profile, lang, complete_fn=complete_fn)
-    pdf = cv_pdf.html_to_pdf_bytes(cv_render.render_html(scv))
+    pdf = cv_pdf.html_to_pdf_bytes(cv_render.render_html(scv, template))
     return cfg, pdf
+
+
+def _options_templates() -> str:
+    """<option> du sélecteur, ÉNUMÉRÉS depuis la banque.
+
+    Une liste écrite en dur prendrait du retard au premier template déposé, et le
+    fichier existerait sans être choisissable.
+    """
+    import cv_templates
+    parts = []
+    for t in cv_templates.lister():
+        lab = t.get("label", {}).get("fr") or t["id"]
+        sel = " selected" if t["id"] == cv_templates.DEFAUT else ""
+        parts.append(f'<option value="{t["id"]}"{sel}>{lab}</option>')
+    return "".join(parts)
+
+
+def _page() -> str:
+    """Le formulaire, sélecteur de template injecté (patron de _EDIT / _CMS)."""
+    return _FORM.replace("__TEMPLATES__", _options_templates())
 
 
 def _load_validate() -> Callable[[dict], list]:
@@ -86,6 +112,7 @@ button{background:#4361ee;color:#fff;border:none;cursor:pointer}button:disabled{
 <textarea id="job" placeholder="Colle la fiche de poste ici..."></textarea>
 <div class="row">
   <select id="lang"><option value="fr">Français</option><option value="en">English</option></select>
+  <select id="template" title="Gabarit de mise en forme">__TEMPLATES__</select>
   <button id="go" onclick="gen()">Générer le CV ciblé (PDF)</button>
   <span id="status"></span>
 </div>
@@ -97,7 +124,8 @@ async function gen(){
   btn.disabled=true;st.textContent='Génération...';
   try{
     const r=await fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({job:job,lang:document.getElementById('lang').value})});
+      body:JSON.stringify({job:job,lang:document.getElementById('lang').value,
+        template:document.getElementById('template').value})});
     if(!r.ok)throw new Error('HTTP '+r.status);
     const blob=await r.blob();
     const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -374,7 +402,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/" or self.path.startswith("/?"):
-            self._send(200, "text/html; charset=utf-8", _FORM.encode("utf-8"))
+            self._send(200, "text/html; charset=utf-8", _page().encode("utf-8"))
         elif self.path == "/edit":
             raw = _PROFILE.read_text(encoding="utf-8")
             page = _EDIT.replace("__PROFILE__", json.dumps(raw).replace("<", "\\u003c"))
@@ -406,8 +434,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _handle_generate(self, data):
         try:
             job = str(data.get("job", "")); lang = "en" if data.get("lang") == "en" else "fr"
+            template = data.get("template") or None
             profile = json.loads(_PROFILE.read_text(encoding="utf-8"))
-            cfg, pdf = generate_pdf(job, profile, lang)
+            cfg, pdf = generate_pdf(job, profile, lang, template=template)
             tag = f"{cfg.get('relevance_key')}~{cfg.get('min_relevance')}"
             self._send(200, "application/pdf", pdf, {
                 "Content-Disposition": 'attachment; filename="cv_cible.pdf"',
