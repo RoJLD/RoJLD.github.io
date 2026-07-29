@@ -10,6 +10,19 @@ def _p():
     return json.loads((bb.ROOT / "profile.json").read_text(encoding="utf-8"))
 
 
+def _article_soon():
+    """Article `à venir` SYNTHÉTIQUE (sans `url`, comme un article non publié).
+
+    Ces cas se servaient auparavant dans le corpus réel (`next(a for a in
+    articles if a.get("status") == "soon")`), qui n'en contient qu'un seul.
+    Publier cet article — la tâche H17 — vidait le générateur et faisait
+    remonter un `StopIteration` sans rapport avec la règle testée.
+    """
+    return {"id": "a_venir", "domains": [], "title": {"fr": "T", "en": "T"},
+            "desc": {"fr": "D", "en": "D"}, "date": "2026-08",
+            "tags": [], "status": "soon"}
+
+
 # ── helpers ──
 def test_sortkey():
     assert bb._sortkey("2026-03") == "2026-03"
@@ -56,8 +69,7 @@ def test_norm_demo_pinned():
 
 def test_norm_article_soon_and_href():
     arts = _p()["articles"]
-    soon = next(a for a in arts if a.get("status") == "soon")
-    en = bb._norm_article(soon)
+    en = bb._norm_article(_article_soon())
     assert en["soon"] is True
     assert en["href"] == "/#blog"  # pas d'url -> ancre blog
     published = next(a for a in arts if a.get("url"))
@@ -111,8 +123,7 @@ def test_render_card_attrs_and_bilingual():
 
 
 def test_render_card_soon_pill():
-    soon = next(a for a in _p()["articles"] if a.get("status") == "soon")
-    card = bb.render_card(bb._norm_article(soon))
+    card = bb.render_card(bb._norm_article(_article_soon()))
     assert 'e-soon' in card and 'à venir' in card
 
 

@@ -70,7 +70,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
   <a class="nav-brand" href="/">R<b>.</b> Denis</a>
   <div class="nav-r">
     <a href="/#experience">Expérience</a>
-    <a href="/#demos">Démos</a>
+    <a href="/demos/">Démos</a>
     <a class="nav-projects on" href="/projects/">Projets</a>
     <a href="/explorer/">Explorer</a>
     <a href="/highlights/">Highlights</a>
@@ -118,7 +118,7 @@ def sage_layer(H, A, W_self, W_neigh):
   <p class="p-summary">Projet de fin d&#x27;études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l&#x27;art, prototype, soutenance).</p>
   <div class="p-tags"><span class="p-tag" data-tag="finance">Finance</span><span class="p-tag" data-tag="hedging">Hedging</span><span class="p-tag" data-tag="derivatives">Dérivés</span><span class="p-tag" data-tag="quant">Quant Finance</span></div>
   
-  <div class="p-links"><a class="p-link" href="articles/couverture-dynamique.html" target="_blank" rel="noopener">Article</a></div>
+  <div class="p-links"><a class="p-link" href="/articles/couverture-dynamique.html" target="_blank" rel="noopener">Article</a></div>
 </article>
 <article id="anthropos" class="p-card" data-tags="python,architecture" data-type="personal">
   <div class="p-head">
@@ -162,7 +162,7 @@ def black_scholes(S, K, T, r, sigma):
     put = K * exp(-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1)
     return {"call": call, "put": put, "delta": norm_cdf(d1)}
 </code></pre></details>
-  <div class="p-links"><a class="p-link" href="index.html#demos" target="_blank" rel="noopener">Démo</a></div>
+  <div class="p-links"><a class="p-link" href="/demos/#bs" target="_blank" rel="noopener">Démo</a></div>
 </article>
 <article id="monte-carlo-gbm" class="p-card" data-tags="quant,finance,python,simulation" data-type="academic">
   <div class="p-head">
@@ -180,7 +180,7 @@ def gbm_paths(S0, mu, sigma, T, steps, n):
     incr = (mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * Z
     return S0 * np.exp(np.cumsum(incr, axis=1))
 </code></pre></details>
-  <div class="p-links"><a class="p-link" href="index.html#demos" target="_blank" rel="noopener">Démo</a></div>
+  <div class="p-links"><a class="p-link" href="/demos/#mc" target="_blank" rel="noopener">Démo</a></div>
 </article>
 <article id="sudoku-cnn" class="p-card" data-tags="ml,cnn,python" data-type="academic">
   <div class="p-head">

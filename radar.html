@@ -162,31 +162,62 @@
 
 <script>
 // ── Taxonomy ──────────────────────────────────────────────────────────────────
-const DEFAULT_SKILLS = [
-  { id:"python",    label:"Python",           yourLevel:4, reqLevel:3 },
-  { id:"vba_excel", label:"Excel / VBA",       yourLevel:3, reqLevel:3 },
-  { id:"cpp",       label:"C++",               yourLevel:2, reqLevel:2 },
-  { id:"sql",       label:"SQL",               yourLevel:3, reqLevel:2 },
-  { id:"bloomberg", label:"Bloomberg",         yourLevel:3, reqLevel:3 },
-  { id:"derivs",    label:"Dérivés & Pricing", yourLevel:4, reqLevel:4 },
-  { id:"risk",      label:"Risque de marché",  yourLevel:4, reqLevel:4 },
-  { id:"fi",        label:"Fixed Income",      yourLevel:3, reqLevel:3 },
-  { id:"ml",        label:"Machine Learning",  yourLevel:3, reqLevel:2 },
-  { id:"stats",     label:"Statistiques",      yourLevel:4, reqLevel:3 },
-];
+// Source unique : profile.json (comme analyzer.html). La liste en dur d'avant
+// décrivait 10 compétences dont 2 non déclarées (Bloomberg, Fixed Income) et
+// ignorait les 6 compétences `engineering` : elle dérivait sans bruit du corpus.
+const SKILL_ID = name => String(name).toLowerCase()
+  .normalize("NFD").replace(/\p{Diacritic}/gu, "")
+  .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 
+// Niveau déclaré -> échelle 0–5 du radar ; à défaut, le poids (0–1).
+const LEVEL_SCALE = { expert: 5, advanced: 4, intermediate: 3, beginner: 2 };
+
+// Mots-clés de détection JD, indexés par SKILL_ID(nom de profile.json).
+// `base` = niveau requis par défaut quand l'offre mentionne la compétence.
 const SKILL_KEYWORDS = {
-  python:    { patterns:["python","pandas","numpy","scipy","sklearn","scikit"], base:3 },
-  vba_excel: { patterns:["excel","vba","tableur","spreadsheet"], base:3 },
-  cpp:       { patterns:["c\\+\\+","cpp","c\\/c\\+\\+"], base:3 },
-  sql:       { patterns:["sql","postgresql","mysql","sqlite","oracle"], base:2 },
-  bloomberg: { patterns:["bloomberg","reuters","eikon","refinitiv"], base:3 },
-  derivs:    { patterns:["dérivés","derivat","pricing","option","swap","futures","black","exotique"], base:4 },
-  risk:      { patterns:["risque de march","market risk","var","cvar","stress test","greeks","delta","gamma","vega"], base:3 },
-  fi:        { patterns:["fixed income","taux","obligat","bond","duration","yield curve","courbe des taux"], base:3 },
-  ml:        { patterns:["machine learning","deep learning","neural","xgboost","random forest","nlp"], base:2 },
-  stats:     { patterns:["stochast","monte.carlo","régression","statistique","probabilit","bayesian","time series"], base:3 },
+  python:               { patterns:["python","pandas","numpy","scipy","sklearn","scikit"], base:3 },
+  sql:                  { patterns:["sql","postgre","mysql","sqlite","oracle"], base:2 },
+  vba:                  { patterns:["vba","excel","macro","tableur","spreadsheet"], base:3 },
+  java:                 { patterns:["\\bjava\\b","spring","\\bjvm\\b"], base:3 },
+  c_c:                  { patterns:["c\\+\\+","cpp","c\\/c\\+\\+"], base:3 },
+  c:                    { patterns:["c#","\\.net","dotnet"], base:3 },
+  finance_quantitative: { patterns:["finance quantitative","quantitative finance","\\bquant\\b","front office"], base:3 },
+  calcul_stochastique:  { patterns:["stochast","brownien","brownian","martingale","itô","monte.carlo"], base:3 },
+  pricing_derives:      { patterns:["dérivé","derivat","pricing","option","swap","futures","black","exotique","exotic"], base:4 },
+  risk_management:      { patterns:["risk management","gestion des risques","risque de march","market risk","\\bvar\\b","cvar","stress test","greeks","delta","gamma","vega"], base:3 },
+  tresorerie_d_entreprise: { patterns:["trésorerie","treasury","cash management","liquidit"], base:3 },
+  couverture_dynamique: { patterns:["couverture dynamique","dynamic hedg","hedging","\\bhedge\\b"], base:3 },
+  machine_learning:     { patterns:["machine learning","deep learning","neural","xgboost","random forest","\\bnlp\\b","\\bml\\b"], base:2 },
+  statistics:           { patterns:["statistiq","statistics","régression","regression","probabilit","bayes","time series","séries temporelles"], base:3 },
+  etl_data_pipelines:   { patterns:["\\betl\\b","data pipeline","airflow","\\bdbt\\b","ingestion","data engineering"], base:3 },
+  bigquery:             { patterns:["bigquery","big query","data.?warehouse","snowflake","redshift"], base:2 },
+  dataiku:              { patterns:["dataiku","alteryx","knime"], base:2 },
+  defi_blockchain:      { patterns:["defi","blockchain","on.?chain","crypto","ethereum","solidity","web3"], base:2 },
+  compliance:           { patterns:["compliance","conformité","\\bkyc\\b","\\baml\\b","réglementaire","regulatory","bâle","basel"], base:2 },
+  actuariat:            { patterns:["actuari","assurance","insurance","solvency","solvab","provisionnement"], base:2 },
+  kubernetes_k3s:       { patterns:["kubernetes","k8s","k3s","helm","docker","container","openshift"], base:3 },
+  llm_orchestration:    { patterns:["\\bllm\\b","large language model","langchain","\\brag\\b","prompt","openai","genai","ia générative","generative ai"], base:3 },
+  knowledge_graphs:     { patterns:["knowledge graph","graphe de connaissance","neo4j","kuzu","sparql","ontolog","\\brdf\\b"], base:2 },
+  multi_agent_systems:  { patterns:["multi.?agent","agentic","agent autonome","orchestrat"], base:2 },
+  devops_gitops:        { patterns:["devops","gitops","ci\\/cd","argocd","terraform","jenkins","github actions"], base:3 },
+  tdd_testing:          { patterns:["\\btdd\\b","test.driven","pytest","unit test","tests unitaires","couverture de test"], base:3 },
 };
+
+// Rempli au boot depuis profile.json — plus aucune valeur de niveau en dur.
+let DEFAULT_SKILLS = [];
+
+function skillsFromProfile(data) {
+  const all = Object.values(data.skills || {}).filter(Array.isArray).flat();
+  return all.map(s => {
+    const id = SKILL_ID(s.name);
+    return {
+      id,
+      label: s.name,
+      yourLevel: LEVEL_SCALE[s.level] ?? Math.round((s.weight ?? 0) * 5),
+      reqLevel: SKILL_KEYWORDS[id] ? SKILL_KEYWORDS[id].base : 3,
+    };
+  });
+}
 
 const INTENSITY_UP   = ["expert","maîtrise","approfondi","solide","confirmé","senior","requis","impératif","indispensable","required","strong"];
 const INTENSITY_DOWN = ["notions","bases","souhait","appréci","atout","plus","idéalement","nice.to.have","optional","knowledge of"];
@@ -216,7 +247,24 @@ function getJDPercentile(pct) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-function init() {
+async function init() {
+  // Même source que analyzer.html : profile.json, jamais une copie locale.
+  try {
+    const res = await fetch("profile.json");
+    if (!res.ok) throw new Error("profile.json introuvable (status " + res.status + ")");
+    DEFAULT_SKILLS = skillsFromProfile(await res.json());
+    if (!DEFAULT_SKILLS.length) throw new Error("profile.json ne déclare aucune compétence");
+  } catch (e) {
+    // Fail-loud : mieux vaut une page qui dit pourquoi qu'un profil inventé.
+    const list = document.getElementById("skill-list");
+    if (list) {
+      list.textContent = "";
+      list.appendChild(mkEl("div", { style: "color:var(--red);padding:12px 0;font-size:13px" },
+                            "Profil indisponible — " + e.message));
+    }
+    console.error(e);
+    return;
+  }
   const saved = localStorage.getItem(PROFILE_KEY);
   skills = DEFAULT_SKILLS.map(s => ({ ...s }));
   if (saved) {

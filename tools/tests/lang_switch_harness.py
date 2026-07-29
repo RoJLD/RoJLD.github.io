@@ -17,8 +17,12 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import oracle_node  # noqa: E402
 
 # Le bloc de script porteur de la bascule est reconnu par la fonction qu'il
 # définit ; les pages en contiennent plusieurs (analytics, thème, filtres).
@@ -46,6 +50,7 @@ def run_lang_switch(page: str, *, entry: str, lang: str, cards: list[dict]) -> l
 
     Rend la même liste, `attrs` mis à jour par le JS réel.
     """
+    oracle_node.porte()   # le seul chemin vers node passe par la porte
     program = _DOM_STUB + "\n" + extract_script(page, entry) + f"""
 ;(function () {{
   {entry}({json.dumps(lang)});

@@ -1056,7 +1056,7 @@
         "finance"
       ],
       "links": {
-        "demo": "index.html#demos"
+        "demo": "demos/#bs"
       },
       "snippet": {
         "lang": "python",
@@ -1082,7 +1082,7 @@
         "data"
       ],
       "links": {
-        "demo": "index.html#demos"
+        "demo": "demos/#mc"
       },
       "snippet": {
         "lang": "python",

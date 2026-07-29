@@ -1,8 +1,11 @@
 """Tests SP0 keystone. Modèle réframé : PAS de parité byte (les copies avaient dérivé) —
 on teste que le rendu vient de profile.json, que l'i18n contenu est bilingue, que le build
 est idempotent et fail-loud, et que les clés-chrome i18n sont préservées."""
+import re
 import sys
 from pathlib import Path
+
+import pytest
 
 TOOLS = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(TOOLS))
@@ -437,9 +440,23 @@ def test_articles_generes_avant_index():
 
 
 def test_carte_soon_reste_non_cliquable():
-    """L'article `soon` n'a pas d'URL : il ne doit porter aucun attribut de lien."""
+    """Un article `soon` n'a pas d'URL : il ne doit porter aucun attribut de lien.
+
+    Corpus SYNTHÉTIQUE (un `soon` + un publié). Le test lisait auparavant le
+    corpus réel, qui ne contient qu'un seul article `soon` : le publier — ce
+    que demande la tâche H17 — faisait disparaître la carte observée et rendait
+    ce test rouge pour une raison sans rapport avec la règle qu'il défend.
+    """
     import build_site
-    markup = build_site.render_blog(build_site.load_profile())
+    p = build_site.load_profile()
+    p["articles"] = [
+        {"id": "a_venir", "title": {"fr": "T", "en": "T"}, "desc": {"fr": "D", "en": "D"},
+         "date": "2026-08", "tags": [], "status": "soon"},
+        {"id": "publie", "title": {"fr": "P", "en": "P"}, "desc": {"fr": "D", "en": "D"},
+         "date": "2026-03", "tags": [], "status": "published",
+         "url": "articles/couverture-dynamique.html"},
+    ]
+    markup = build_site.render_blog(p)
     soon = [c for c in markup.split("<") if "opacity:.55" in c]
     assert soon, "la carte `soon` a disparu"
     assert markup.count("data-article-fr") == 1
@@ -520,3 +537,95 @@ def test_les_trois_bascules_reecrivent_le_href():
         # L'ordre des deux branches porte tout le sens : interverti, le lecteur
         # français atterrit sur l'anglais et réciproquement.
         assert "lang === 'fr' ? el.dataset.hrefFr : el.dataset.hrefEn" in page
+
+
+# ── Le registre des sections est-il BRANCHÉ ? ─────────────────────────────────
+#
+# Mesuré par mutation : retirer n'importe quelle entrée de `HTML_SECTIONS` ou de
+# `I18N_SECTIONS` — `footer`, mais aussi `demos` ou `experience` — laissait la
+# suite entière verte (458 passed). Rien ne reliait « la section est enregistrée »
+# à « le build entretient réellement cette zone ».
+#
+# Ce n'est pas une subtilité : c'est le mécanisme exact du défaut que H5 a
+# corrigé. La date du pied de page vivait HORS zone BUILD, donc hors d'atteinte
+# du build, et elle est restée figée quatre mois sans que rien ne la signale.
+# Une section désenregistrée retombe précisément dans cet état — l'artefact
+# publié reste juste le jour de la mutation (les tests qui comparent l'artefact
+# à sa source passent), puis dérive en silence à la première donnée modifiée.
+#
+# L'oracle : périmer la zone dans une COPIE en mémoire d'index.html, rebâtir, et
+# exiger que le build l'ait réécrite avec ce que la source produit aujourd'hui.
+#
+# ATTENTION — première version de ces tests, écrite puis RÉFUTÉE par la mesure :
+# ils bouclaient sur `sorted(bs.HTML_SECTIONS)`. Retirer une entrée du registre
+# retirait donc AUSSI le cas de test correspondant, et la suite passait de 458 à
+# 486 verts sans jamais rougir. Un test dont l'énumération vient de l'objet muté
+# ne peut pas détecter sa disparition : il faut l'ancrer sur un témoin
+# INDÉPENDANT. Ici, `index.html` — les marqueurs `<!-- BUILD:x -->` de l'artefact
+# publié disent quelles zones existent, et le registre doit toutes les couvrir.
+
+_PERIME = "ZONE-PERIMEE-PAR-LE-TEST"
+
+_MARQ_HTML = re.compile(r"<!-- BUILD:([a-z_]+) -->")
+_MARQ_I18N = re.compile(r"/\* BUILD:i18n_([a-z_]+)_(fr|en) \*/")
+
+
+def _index_html() -> str:
+    return (bs.ROOT / "index.html").read_text(encoding="utf-8")
+
+
+def _zones_html() -> list[str]:
+    return sorted(set(_MARQ_HTML.findall(_index_html())))
+
+
+def _zones_i18n() -> list[tuple[str, str]]:
+    return sorted(set(_MARQ_I18N.findall(_index_html())))
+
+
+def _perimer(html: str, ouvre: str, ferme: str) -> str:
+    assert ouvre in html and ferme in html, f"marqueur absent d'index.html : {ouvre}"
+    i, j = html.index(ouvre) + len(ouvre), html.index(ferme)
+    assert i <= j, f"marqueurs croisés : {ouvre}"
+    return html[:i] + _PERIME + html[j:]
+
+
+def _entre(html: str, ouvre: str, ferme: str) -> str:
+    i, j = html.index(ouvre) + len(ouvre), html.index(ferme)
+    return html[i:j]
+
+
+def test_index_html_declare_bien_des_zones_a_batir():
+    """Garde-fou : une énumération vide validerait tout en n'exerçant rien."""
+    assert len(_zones_html()) >= 8, _zones_html()
+    assert len(_zones_i18n()) >= 16, _zones_i18n()
+    assert "footer" in _zones_html()
+    assert ("footer", "fr") in _zones_i18n()
+
+
+@pytest.mark.parametrize("nom", _zones_html())
+def test_le_build_reecrit_chaque_zone_declaree_par_lartefact(nom):
+    profile = bs.load_profile()
+    assert nom in bs.HTML_SECTIONS, (
+        f"index.html déclare la zone BUILD:{nom}, qu'aucune section enregistrée "
+        "ne produit — son contenu ne sera plus jamais mis à jour")
+    ouvre, ferme = f"<!-- BUILD:{nom} -->", f"<!-- /BUILD:{nom} -->"
+    out = bs.build_html(_perimer(_index_html(), ouvre, ferme), profile)
+    assert _PERIME not in out, (
+        f"la zone BUILD:{nom} n'est plus réécrite par le build — la zone existe "
+        "dans la page servie mais plus rien ne l'entretient")
+    assert _entre(out, ouvre, ferme) == bs.HTML_SECTIONS[nom](profile), (
+        f"la zone BUILD:{nom} ne porte pas ce que sa fonction de rendu produit")
+
+
+@pytest.mark.parametrize("nom,lang", _zones_i18n())
+def test_le_build_reecrit_chaque_region_i18n_declaree(nom, lang):
+    profile = bs.load_profile()
+    assert nom in bs.I18N_SECTIONS, (
+        f"index.html déclare la région i18n_{nom}_{lang}, qu'aucun générateur "
+        "enregistré ne produit — la traduction figera")
+    ouvre, ferme = f"/* BUILD:i18n_{nom}_{lang} */", f"/* /BUILD:i18n_{nom}_{lang} */"
+    out = bs.build_html(_perimer(_index_html(), ouvre, ferme), profile)
+    assert _PERIME not in out, (
+        f"la région i18n_{nom}_{lang} n'est plus réécrite par le build")
+    assert _entre(out, ouvre, ferme) == bs.I18N_SECTIONS[nom](profile, lang), (
+        f"la région i18n_{nom}_{lang} ne porte pas ce que son générateur produit")

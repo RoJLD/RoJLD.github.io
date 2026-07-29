@@ -12,7 +12,6 @@ son `applyLang` redessine le radar et sort du périmètre de ce stub.
 from __future__ import annotations
 
 import functools
-import shutil
 import sys
 from pathlib import Path
 
@@ -25,9 +24,10 @@ import build_browse  # noqa: E402
 import build_highlights  # noqa: E402
 from lang_switch_harness import run_lang_switch  # noqa: E402
 
-pytestmark = pytest.mark.skipif(
-    shutil.which("node") is None, reason="node absent — harnais comportemental non exécutable"
-)
+# La porte de l'oracle est commune à tout le dépôt (`conftest.node_requis`) :
+# skip sur un poste sans node, ÉCHEC si `ELYSIUM_REQUIRE_NODE=1`. Le `skipif`
+# local qui vivait ici échappait à ce drapeau — quatre gardes de comportement
+# pouvaient s'évaporer en laissant du vert dans une chaîne d'intégration.
 
 CARDS = [
     {
@@ -55,7 +55,7 @@ def _page(nom: str) -> str:
 
 
 @pytest.mark.parametrize("nom", sorted(BUILDERS))
-def test_la_bascule_en_envoie_vers_la_page_anglaise(nom):
+def test_la_bascule_en_envoie_vers_la_page_anglaise(nom, node_requis):
     out = run_lang_switch(_page(nom), entry="applyBrowseLang", lang="en", cards=CARDS)
     assert out[0]["attrs"]["href"] == "/articles/x.en.html", (
         f"{nom} : en anglais le lien doit pointer vers la version .en"
@@ -63,7 +63,7 @@ def test_la_bascule_en_envoie_vers_la_page_anglaise(nom):
 
 
 @pytest.mark.parametrize("nom", sorted(BUILDERS))
-def test_la_bascule_fr_ramene_vers_la_page_francaise(nom):
+def test_la_bascule_fr_ramene_vers_la_page_francaise(nom, node_requis):
     out = run_lang_switch(_page(nom), entry="applyBrowseLang", lang="fr", cards=CARDS)
     assert out[0]["attrs"]["href"] == "/articles/x.html", (
         f"{nom} : en français le lien doit revenir sur la version FR"

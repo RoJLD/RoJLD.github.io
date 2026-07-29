@@ -9,12 +9,17 @@
   <meta property="og:description" content="Pilotez votre recherche d'emploi comme un professionnel. Scoring IA, analytics, relances intelligentes.">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <!-- Thème partagé : restauré AVANT le premier rendu (pas de flash sombre). -->
+  <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root{--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px;--ease:cubic-bezier(.4,0,.2,1)}
     [data-theme="dark"]{--bg-0:#060a12;--bg-1:#0a1020;--bg-2:#111a2e;--bg-3:#162244;--border:#1a2847;--border-hi:#253a68;--tx-1:#e6eaf3;--tx-2:#8b9aba;--tx-3:#54678a;--accent:#3b82f6;--accent-g:rgba(59,130,246,.12);--green:#22c55e;--green-g:rgba(34,197,94,.10);--warm:#f59e42;--warm-g:rgba(245,158,66,.10);--violet:#a78bfa;--violet-g:rgba(167,139,250,.10);--rose:#e879a8;--glass:rgba(10,16,32,.75);--shadow:rgba(0,0,0,.3)}
+    /* Palette claire partagée avec l'accueil et les 7 pages générées (clé localStorage 'theme').
+       Sans ce bloc, un visiteur en thème clair recevait une page noire. */
+    [data-theme="light"]{--bg-0:#f5f7fa;--bg-1:#edf0f5;--bg-2:#ffffff;--bg-3:#f0f3f8;--border:#d8dfe9;--border-hi:#c2cbda;--tx-1:#1a2035;--tx-2:#546178;--tx-3:#8594ad;--accent:#2563eb;--accent-g:rgba(37,99,235,.08);--green:#16a34a;--green-g:rgba(22,163,74,.08);--warm:#d97706;--warm-g:rgba(217,119,6,.08);--violet:#7c3aed;--violet-g:rgba(124,58,237,.08);--rose:#db2777;--glass:rgba(245,247,250,.8);--shadow:rgba(0,0,0,.06)}
 
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     html{scroll-behavior:smooth}
@@ -34,6 +39,9 @@
     .nav-links{display:flex;align-items:center;gap:28px}
     .nav-links a{color:var(--tx-2);text-decoration:none;font-size:14px;transition:color .2s}
     .nav-links a:hover{color:var(--tx-1)}
+    /* Bascule de thème — même contrat visuel que les 7 pages générées. */
+    .ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
+    .ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
     .btn-nav{background:var(--accent);color:#fff;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:opacity .2s}
     .btn-nav:hover{opacity:.85;color:#fff}
 
@@ -162,6 +170,7 @@
       <a href="#tools">Outils gratuits</a>
       <a href="/" style="color:var(--tx-3)">Portfolio →</a>
       <a href="#beta" class="btn-nav">Rejoindre la bêta</a>
+      <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
     </div>
   </div>
 </nav>
@@ -379,7 +388,7 @@
 <footer>
   <div class="footer-inner">
     <div class="footer-left">
-      © 2025 Robin Denis · Ergon est en développement actif
+      © <span id="footYear">2025–2026</span> Robin Denis · Ergon est en développement actif
     </div>
     <div class="footer-links">
       <a href="/">Portfolio</a>
@@ -392,6 +401,26 @@
 </footer>
 
 <script>
+// ── Pied de page : année courante, plus jamais figée (page sans builder) ──
+(function(){
+  var el = document.getElementById('footYear'), y = new Date().getFullYear();
+  if (el) el.textContent = y > 2025 ? '2025–' + y : '2025';
+})();
+
+// ── Thème (même clé localStorage que l'accueil et les 7 pages générées) ──
+(function(){
+  var root = document.documentElement, b = document.getElementById('themeBtn');
+  if (b) b.textContent = root.getAttribute('data-theme') === 'light' ? '☀️' : '🌙';
+})();
+function tgTheme() {
+  var root = document.documentElement;
+  var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  root.setAttribute('data-theme', next);
+  try { localStorage.setItem('theme', next); } catch (e) {}
+  var b = document.getElementById('themeBtn');
+  if (b) b.textContent = next === 'light' ? '☀️' : '🌙';
+}
+
 // URL de l'API Ergon, a mettre a jour apres deploiement
 const API_URL = 'https://life-architect-api.onrender.com';
 

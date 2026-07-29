@@ -513,6 +513,32 @@ def gen_i18n_modals(profile, lang):
     return "\n" + "\n".join(out) + "\n"
 
 
+# ── Pied de page ──────────────────────────────────────────────────────────────
+_FOOTER_TPL = {"fr": "Robin Denis · Dernière mise à jour {date}",
+               "en": "Robin Denis · Last updated {date}"}
+
+
+def footer_text(profile, lang):
+    """Pied de page depuis profile['$updated'] (ISO 'YYYY-MM' ou 'YYYY-MM-DD').
+
+    Écrit en dur, il restait figé à « Mars 2026 » : la chaîne vivait dans le
+    dictionnaire i18n, hors zone BUILD, donc hors d'atteinte du build.
+    """
+    iso = str(profile.get("$updated") or "")
+    if not re.match(r"^\d{4}-\d{2}(-\d{2})?$", iso):
+        raise BuildError(f"$updated attendu 'YYYY-MM[-DD]', reçu {profile.get('$updated')!r}")
+    return _FOOTER_TPL[lang].format(date=fmt_date(iso[:7], lang))
+
+
+def render_footer(profile):
+    """Rendu statique (FR = langue par défaut du document)."""
+    return esc(footer_text(profile, "fr"))
+
+
+def gen_i18n_footer(profile, lang):
+    return f"\n        footer: {js_str(footer_text(profile, lang))},\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -524,6 +550,7 @@ HTML_SECTIONS = {
     "journey": render_journey,
     "modals": render_modals,
     "demos": render_demos,
+    "footer": render_footer,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
@@ -536,6 +563,7 @@ I18N_SECTIONS = {
     "journey": gen_i18n_journey,
     "modals": gen_i18n_modals,
     "demos": gen_i18n_demos,
+    "footer": gen_i18n_footer,
 }
 
 
@@ -558,10 +586,29 @@ def build(profile_path=None, index_path=None, write=True):
     except Exception:
         validate = None
     profile = load_profile(profile_path)
-    if validate:
-        errs = validate(profile)
+
+    def _gate(root):
+        """`root=None` -> règles de forme seules ; `root=ROOT` -> + résolution disque."""
+        if not validate:
+            return
+        errs = validate(profile, root=root)
         if errs:
             raise BuildError("profile.json invalide : " + " ; ".join(errs[:5]))
+
+    # Le gate est joué en DEUX passes, et l'ordre n'est pas un détail.
+    #
+    # Passe 1 (forme seule, AVANT toute écriture) : un profil structurellement
+    # invalide ne doit produire aucun fichier. Mesuré : c'est la propriété que
+    # l'ordre historique garantissait, et la perdre serait une régression.
+    #
+    # Passe 2 (résolution disque, APRÈS build_articles) : les `articles[].url`
+    # sont des SORTIES de ce build, pas des références externes. Les résoudre
+    # avant `build_articles` exigeait sur disque des pages que le générateur
+    # écrit dix lignes plus bas — ajouter un article neuf faisait donc échouer
+    # le build ENTIER, en désignant l'URL sans nommer le générateur. Le piège
+    # était latent (les .html sont commités) et se serait armé au premier
+    # article ajouté.
+    _gate(None)
     idx_path = Path(index_path) if index_path else ROOT / "index.html"
     html = idx_path.read_text(encoding="utf-8")
     # Les pages d'articles sont générées AVANT index.html, et non après comme les
@@ -580,6 +627,10 @@ def build(profile_path=None, index_path=None, write=True):
     # Zero Masking n'existait alors que dans le test. Émettre n'est pas garder.
     for m in missing:
         print(f"[build_site] ! source d'article absente : {m}")
+    # Passe 2 : les pages d'articles existent maintenant sur disque, la résolution
+    # des liens locaux peut s'exercer sans se heurter à ses propres sorties. Un
+    # `url` d'article qui ne correspond à aucune page produite échoue toujours ici.
+    _gate(ROOT)
     out = build_html(html, profile)
     if write:
         idx_path.write_text(out, encoding="utf-8")
