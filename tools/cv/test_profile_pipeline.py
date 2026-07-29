@@ -46,6 +46,35 @@ def test_atomic_write(tmp_path):
     assert json.loads(prof.read_text(encoding="utf-8")) == {"a": 1, "é": "à"}
 
 
+# ── I5 : l'écriture doit être un point fixe ─────────────────────────────────
+#
+# `atomic_write_profile` est le SEUL goulot d'écriture de profile.json. S'il
+# n'est pas idempotent, le premier enregistrement du CMS mêle un reformatage
+# complet du fichier au vrai changement, et le diff devient illisible — le pire
+# moment pour perdre la lecture d'un diff, c'est la première fois qu'on l'utilise.
+
+def test_atomic_write_est_un_point_fixe(tmp_path):
+    """écrire → relire → réécrire doit rendre le même octet, newline final compris."""
+    prof = tmp_path / "profile.json"
+    pp.atomic_write_profile(_profile(), prof)
+    un = prof.read_bytes()
+    pp.atomic_write_profile(json.loads(un.decode("utf-8")), prof)
+    assert prof.read_bytes() == un, "la 2e écriture ne rend pas le même octet"
+    assert un.endswith(b"\n"), "pas de newline final (POSIX ; git le signale)"
+
+
+def test_atomic_write_est_un_point_fixe_sur_le_vrai_profil(tmp_path):
+    """Même invariant sur la FORME RÉELLE des données, pas sur une fixture polie :
+    c'est le vrai profile.json qui a exhibé le reformatage (1672 → 1693 lignes)."""
+    reel = json.loads(pp.PROFILE_PATH.read_text(encoding="utf-8"))
+    cible = tmp_path / "profile.json"
+    pp.atomic_write_profile(reel, cible)
+    un = cible.read_bytes()
+    pp.atomic_write_profile(json.loads(un.decode("utf-8")), cible)
+    assert cible.read_bytes() == un
+    assert un.endswith(b"\n")
+
+
 def test_build_profile_graph():
     g = pp.build_profile_graph(_profile())
     types = g["summary"]["by_type"]
