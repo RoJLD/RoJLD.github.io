@@ -1,10 +1,42 @@
-"""Σ-CV-ATELIER sous-projet C — extracteur fiche-de-poste → cfg de ciblage.
+"""Σ-CV-ATELIER sous-projet C — extracteur fiche-de-poste → `job_context`.
 
 Le « seul maillon manquant » du CV ciblé (roadmap Track 2b). Prend une fiche de
 poste + le profil, demande à un LLM d'en déduire un `cfg` de sélection
 (relevance_key / min_relevance / domains_in / keywords), puis le **valide et
 clampe** contre les domaines/clés réellement présents (config-only reject-loud,
 isomorphe S4). Le cfg alimente ensuite cv_select.select_experiences → render → PDF.
+
+K1 (plan B lettre, ADR-003) élargit ce cfg en **`job_context`** : entreprise,
+intitulé, exigences saillantes, registre, marché. `job_context` **englobe** le
+cfg — même dict, clés en plus — parce que `atelier.generate_pdf` le consomme tel
+quel ; `extract_cfg` reste donc un alias exact de `extract_job_context`.
+
+### Régime de validation, référentiel par référentiel
+
+La validation historique est *reject-loud contre le profil*. Les nouveaux champs
+n'ont **aucun référentiel dans `profile.json`** — ils décrivent le POSTE, pas la
+personne. Les clamper contre le profil serait un contresens ; les accepter sur
+parole serait le mode de défaillance que tout le plan B existe pour supprimer.
+On choisit donc le référentiel de chaque champ, et le régime en découle :
+
+| champ | référentiel | régime |
+|---|---|---|
+| `relevance_key`, `domains_in` | `profile.json` | clamp reject-loud (inchangé) |
+| `register`, `market` | vocabulaire fermé, à nous | clamp sur l'énumération |
+| `company`, `job_title` | **la fiche de poste elle-même** | ancrage **verbatim** |
+| `requirements` | aucun | forme et bornes seules |
+
+`company` et `job_title` sont rendus **littéralement** en tête de la lettre : une
+entreprise inventée arriverait telle quelle chez un recruteur. Ils ne sont donc
+retenus que s'ils apparaissent dans la fenêtre de fiche réellement envoyée au
+modèle (`_PROMPT_JOB_CHARS`), à la casse et aux espaces près — sinon `None` +
+WARNING. Valider contre le texte complet validerait contre ce que le modèle n'a
+pas lu.
+
+`requirements` est paraphrasable par nature : aucun ancrage n'est possible. Le
+risque résiduel (une exigence qui pousse le modèle à prêter une compétence au
+candidat) n'est pas traité ici mais **en aval**, par le vérificateur d'ancrage
+`cv_grounding` — c'est lui qui juge toute affirmation portant sur le candidat.
 
 Seam `complete_fn` injectable (comme score_job_offer) : les tests passent une
 fonction factice, la prod route via le résolveur souverain llm_client (SIGIL-1714,
@@ -20,6 +52,26 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_MIN_REL = 0.5
 _MAX_KEYWORDS = 20
+
+# Fenêtre de fiche envoyée au modèle. L'ancrage verbatim se mesure sur CETTE
+# tranche : c'est la seule que le modèle a pu lire.
+_PROMPT_JOB_CHARS = 4000
+
+_MAX_SHORT_CHARS = 120      # entreprise, intitulé
+_MAX_REQ_CHARS = 200        # une exigence
+_MAX_REQUIREMENTS = 8
+
+# Vocabulaires FERMÉS (référentiel = nous). Ce ne sont pas des données du profil :
+# ils pilotent la rédaction, pas la sélection des faits.
+_REGISTERS = ("formel", "neutre", "direct")
+_DEFAULT_REGISTER = "neutre"
+_MARKETS = ("FR", "EU", "UK", "US", "CH", "CA", "INTL")
+
+# Provenance de chaque champ sans référentiel-profil, pour que l'aval sache ce
+# qu'il manipule : "verbatim" (ancré dans la fiche), "model" (sortie du modèle,
+# bornée mais non ancrable), "default" (notre défaut), "rejected" (sortie du
+# modèle écartée), "absent" (le modèle n'a rien fourni d'exploitable).
+_CONTEXT_FIELDS = ("company", "job_title", "requirements", "register", "market")
 
 
 def known_relevance_keys(profile: dict) -> list[str]:
@@ -40,25 +92,42 @@ def known_domains(profile: dict) -> list[str]:
 def _default_cfg(keys: list[str]) -> dict[str, Any]:
     key = "general" if "general" in keys else keys[0]
     return {"relevance_key": key, "min_relevance": 0.0, "domains_in": [],
-            "keywords": [], "label": {"fr": "Ciblé (défaut)", "en": "Targeted (default)"}}
+            "keywords": [], "label": {"fr": "Ciblé (défaut)", "en": "Targeted (default)"},
+            "company": None, "job_title": None, "requirements": [],
+            "register": _DEFAULT_REGISTER, "market": None,
+            "_field_provenance": {"company": "absent", "job_title": "absent",
+                                  "requirements": "absent", "register": "default",
+                                  "market": "absent"}}
 
 
 def _build_prompt(job_posting: str, keys: list[str], domains: list[str]) -> str:
     return f"""Tu es un assistant de candidature. À partir de la FICHE DE POSTE ci-dessous,
-déduis une configuration de ciblage de CV.
+déduis une configuration de ciblage de CV et le contexte du poste.
 
 FICHE DE POSTE :
-{job_posting[:4000]}
+{job_posting[:_PROMPT_JOB_CHARS]}
 
 CLÉS DE PERTINENCE disponibles (choisis LA plus adaptée) : {", ".join(keys)}
 DOMAINES disponibles (choisis un sous-ensemble pertinent) : {", ".join(domains)}
+REGISTRES possibles : {", ".join(_REGISTERS)}
+MARCHÉS possibles : {", ".join(_MARKETS)}
+
+"company" et "job_title" doivent être RECOPIÉS MOT POUR MOT depuis la fiche
+ci-dessus. N'invente rien, ne complète pas une abréviation, ne traduis pas : si
+la fiche ne les nomme pas explicitement, mets null. Toute valeur absente de la
+fiche sera rejetée.
 
 Retourne UNIQUEMENT un objet JSON valide (sans markdown, sans commentaire) :
 {{
   "relevance_key": "<une des clés de pertinence>",
   "min_relevance": <flottant 0.0-1.0, seuil de pertinence>,
   "domains_in": [<sous-ensemble des domaines disponibles>],
-  "keywords": [<3-10 mots-clés saillants de la fiche>]
+  "keywords": [<3-10 mots-clés saillants de la fiche>],
+  "company": "<nom de l'entreprise, mot pour mot, ou null>",
+  "job_title": "<intitulé du poste, mot pour mot, ou null>",
+  "requirements": [<3-8 exigences saillantes de la fiche, courtes>],
+  "register": "<un des registres>",
+  "market": "<un des marchés, ou null>"
 }}"""
 
 
@@ -66,12 +135,68 @@ def _clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
 
 
-def extract_cfg(job_posting: str, profile: dict,
-                complete_fn: Optional[Callable[[str], str]] = None) -> dict[str, Any]:
-    """Déduit un cfg de ciblage depuis une fiche de poste, validé contre le profil.
+def _norm(s: str) -> str:
+    """Forme de comparaison : espaces (y compris sauts de ligne) écrasés, casse pliée."""
+    return " ".join(s.split()).casefold()
+
+
+def _clean_str(value: Any, cap: int) -> Optional[str]:
+    """Chaîne bornée, espaces écrasés, caractères de contrôle retirés. None sinon.
+
+    Non-str → None (jamais `str(value)` : un dict bilingue stringifié atterrirait
+    tel quel dans l'en-tête d'une lettre).
+    """
+    if not isinstance(value, str):
+        return None
+    s = " ".join(value.split())
+    s = "".join(ch for ch in s if ch.isprintable())
+    s = s.strip()
+    return s[:cap] if s else None
+
+
+def _verbatim_field(name: str, value: Any, window: str, cap: int) -> tuple[Optional[str], str]:
+    """(valeur, provenance) — retenue seulement si littéralement dans `window`."""
+    s = _clean_str(value, cap)
+    if s is None:
+        return None, "absent"
+    if _norm(s) in _norm(window):
+        return s, "verbatim"
+    logger.warning("cv_target: champ %s=%r absent de la fiche — rejeté (non ancré)", name, s)
+    return None, "rejected"
+
+
+def _enum_field(name: str, value: Any, allowed: tuple[str, ...],
+                default: Optional[str], upper: bool) -> tuple[Optional[str], str]:
+    """(valeur, provenance) — clamp sur un vocabulaire fermé."""
+    s = _clean_str(value, _MAX_SHORT_CHARS)
+    if s is None:
+        return default, "default" if default is not None else "absent"
+    s = s.upper() if upper else s.lower()
+    if s in allowed:
+        return s, "model"
+    logger.warning("cv_target: champ %s=%r hors vocabulaire %s — rejeté", name, s, allowed)
+    return default, "rejected"
+
+
+def _requirements_field(value: Any) -> tuple[list[str], str]:
+    if not isinstance(value, list):
+        return [], "absent"
+    out = [c for c in (_clean_str(v, _MAX_REQ_CHARS) for v in value) if c]
+    return out[:_MAX_REQUIREMENTS], ("model" if out else "absent")
+
+
+def extract_job_context(job_posting: str, profile: dict,
+                        complete_fn: Optional[Callable[[str], str]] = None) -> dict[str, Any]:
+    """Déduit un `job_context` depuis une fiche de poste (K1).
+
+    Le résultat **englobe** le cfg de ciblage historique (mêmes clés, mêmes
+    valeurs) : il reste directement consommable par `cv_select.select_experiences`
+    et `atelier.generate_pdf`. S'y ajoutent `company`, `job_title`,
+    `requirements`, `register`, `market` et `_field_provenance`.
 
     complete_fn : callable (prompt)->str injectable. Si None → llm_client.complete
-    (tier local-precision). Sur échec (LLM absent, JSON invalide) → cfg défaut + WARNING.
+    (tier local-precision). Sur échec (LLM absent, JSON invalide) → contexte défaut
+    + WARNING.
     """
     keys = known_relevance_keys(profile)
     domains = known_domains(profile)
@@ -104,13 +229,43 @@ def extract_cfg(job_posting: str, profile: dict,
     domains_in = [d for d in (parsed.get("domains_in") or []) if d in domains]
     keywords = [str(k) for k in (parsed.get("keywords") or [])][:_MAX_KEYWORDS]
 
+    # Champs sans référentiel-profil : chacun selon SON référentiel (cf. docstring).
+    window = job_posting[:_PROMPT_JOB_CHARS]
+    company, prov_company = _verbatim_field("company", parsed.get("company"),
+                                            window, _MAX_SHORT_CHARS)
+    job_title, prov_title = _verbatim_field("job_title", parsed.get("job_title"),
+                                            window, _MAX_SHORT_CHARS)
+    requirements, prov_req = _requirements_field(parsed.get("requirements"))
+    register, prov_reg = _enum_field("register", parsed.get("register"), _REGISTERS,
+                                     _DEFAULT_REGISTER, upper=False)
+    market, prov_mkt = _enum_field("market", parsed.get("market"), _MARKETS, None, upper=True)
+
     return {
         "relevance_key": key,
         "min_relevance": min_rel,
         "domains_in": domains_in,
         "keywords": keywords,
         "label": {"fr": "Ciblé (fiche de poste)", "en": "Targeted (job posting)"},
+        "company": company,
+        "job_title": job_title,
+        "requirements": requirements,
+        "register": register,
+        "market": market,
+        "_field_provenance": {"company": prov_company, "job_title": prov_title,
+                              "requirements": prov_req, "register": prov_reg,
+                              "market": prov_mkt},
     }
+
+
+def extract_cfg(job_posting: str, profile: dict,
+                complete_fn: Optional[Callable[[str], str]] = None) -> dict[str, Any]:
+    """Alias historique de `extract_job_context` — MÊME objet, pas une projection.
+
+    Le cfg n'est pas « extrait » du job_context : c'est le job_context lui-même,
+    dont `select_experiences` / `build_structured_cv` ne lisent qu'un sous-ensemble
+    de clés (`.get`). Renvoyer une projection réduite ici recréerait deux vérités.
+    """
+    return extract_job_context(job_posting, profile, complete_fn=complete_fn)
 
 
 def targeted_structured_cv(job_posting: str, profile: dict, lang: str = "fr",
