@@ -146,14 +146,36 @@ modèle rédige librement à l'intérieur.
 1. `job_context` — réutilise `cv_target`, étendu pour extraire aussi entreprise, intitulé,
    exigences saillantes et registre.
 2. `select_evidence(profile, job_context)` — **pur** : les 2-3 expériences/projets les plus
-   pertinents, via le même score de pertinence que le CV. La lettre parle donc des mêmes
-   faits que le CV qui l'accompagne.
+   pertinents. *(Promesse corrigée le 2026-07-28, à l'implémentation — voir l'encadré
+   ci-dessous.)*
 3. `draft(profile_facts, job_context, skeleton, lang)` — LLM. Ne reçoit **que** les faits
    sélectionnés, jamais `profile.json` entier : ce qu'on ne donne pas ne peut pas être
    déformé.
 4. `check_grounding(letter, profile)` — LLM, **appel séparé**, la lettre passée en entrée
    *non fiable*. Le rédacteur ne juge pas sa propre copie dans le même contexte.
 5. Export — **bloqué** tant qu'une affirmation ne trace pas.
+
+### Correction de la promesse « mêmes faits que le CV » (2026-07-28)
+
+Le point 2 promettait initialement : *« via le même score de pertinence que le CV. La lettre
+parle donc des mêmes faits que le CV qui l'accompagne. »* **La mesure contredit la prémisse** :
+les 3 expériences de `profile.json` portent un dict `relevance`, mais **aucun des 17 projets**
+n'en porte — ils n'ont que `domains`. Un score fondé sur `relevance` rendrait 0.0 pour les 17
+projets, et la promesse serait tenue en n'ayant jamais rien à dire d'un projet.
+
+Deux voies existaient : taguer éditorialement les 17 projets (travail humain, et inventer des
+poids serait un placeholder), ou scorer les projets sur `domains ∩ job_context.domains_in`.
+**La seconde est retenue.** La promesse devient donc, et c'est ce que le code tient :
+
+> Les **expériences** citées par la lettre sont exactement celles que le CV retient, dans le
+> même ordre — `select_evidence` appelle `cv_select.select_experiences(profile, job_context)`,
+> le même appel avec le même cfg. Les **projets** sont retenus sur un score **distinct**, le
+> recouvrement de domaines, parce qu'aucun ne porte de pertinence chiffrée. La lettre peut
+> donc citer un projet que le CV ne montre pas ; chaque preuve déclare la base de son score
+> (`score_basis`), et **toute preuve trace vers une entrée réelle de `profile.json`**.
+
+Taguer éditorialement les projets reste ouvert : le jour où `projects[*].relevance` existe,
+`score_project` sera remplacé et la promesse d'origine redeviendra tenable sans rien défaire.
 
 ### Le vérificateur d'ancrage
 
@@ -221,8 +243,18 @@ mêmes modes de défaillance.
 - `assets/js/cv-templates.js` — **généré**
 - `tools/cv/cv_letter.py` — squelettes, brouillon, sélection de preuves
 - `tools/cv/cv_grounding.py` — extraction d'affirmations, partition, verdict
+- `tools/cv/cv_letter_render.py` — **rendu de la lettre + porte d'export**
+  *(ajouté le 2026-07-28 : trou du spec lui-même. Le diagramme §2 fait converger CV et LETTRE
+  vers `render_html`, mais `cv_render.render_html` ne sait rendre qu'un `structured_cv`, et
+  cette liste ne mentionnait aucun renderer de lettre. Second constat mesuré : `build_css`,
+  que l'audit déclare réutilisable, **n'existe pas encore** — `grep -rn build_css` rend 0 hit ;
+  c'est un livrable du plan A. `cv_letter_render` apporte donc son propre `build_letter_css`,
+  avec la **même forme de donnée `style`** qu'au §3, pour que la convergence se fasse par
+  substitution le jour où `build_css` atterrit. Pas de miroir JS : l'atelier n'a pas d'aperçu
+  client de la lettre, donc aucune paire à synchroniser et aucun cas de parité à ajouter.)*
 - `letters/skeletons/standard.{fr,en}.md`
-- tests : `test_cv_templates.py`, `test_cv_letter.py`, `test_cv_grounding.py`
+- tests : `test_cv_templates.py`, `test_cv_letter.py`, `test_cv_grounding.py`,
+  `test_cv_letter_render.py`, `test_cv_job_context.py`
 
 **Modifier**
 - `tools/cv/cv_render.py` + `assets/js/cv-render.js` — `build_css(style)` des deux côtés
