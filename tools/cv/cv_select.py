@@ -3,15 +3,29 @@
 Cœur d'export natif profile.json (la source de vérité, Track 1). Fournit :
 - select_experiences(profile, cfg)  → filtrage AUTO au niveau expérience (préfabs/ciblage)
 - select_manual(profile, bullet_ids, lang) → sélection MANUELLE bullet-par-bullet (cases à cocher)
+- select_projects(profile, cfg)     → filtrage AUTO des projets (type + domaines)
+- project_entries(profile, projects, lang) → projection neutre-langue des projets
 - build_structured_cv(profile, experiences, lang) → dict de rendu neutre-langue-résolue
 
 Aucun tag par-bullet requis : le filtrage auto s'appuie sur `experience.relevance`
 + `experience.domains` (présents dans profile.json) ; les cases à cocher sont une
 sélection humaine explicite. Fonctions PURES et déterministes (testables sans I/O).
+
+── Drapeau `cfg["ats_extras"]` (M6, ajouté 2026-07-28) ────────────────────────
+`build_structured_cv` possède un MIROIR JavaScript (`assets/js/cv-select.js`) dont
+l'égalité octet-à-octet est vérifiée par `tools/cv/parity.js` (12 cas `scv:`). Les
+champs réclamés par le seul gabarit `.docx` ATS — la liste `projects`, et
+`location`/`division` sur les entrées d'expérience — ne sont donc PAS projetés par
+défaut : le navigateur ne rend pas de `.docx`, et les ajouter systématiquement
+ferait rougir la parité sans qu'aucun consommateur client n'en profite.
+Ils n'apparaissent que si le cfg porte `ats_extras: True` — chemin emprunté
+uniquement par `cv_docx.py`. `test_cv_docx.py` verrouille les deux formes.
+Si le miroir JS venait à implémenter ces champs, ce drapeau doit disparaître.
 """
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 
@@ -225,6 +239,119 @@ def _languages(profile: dict[str, Any], lang: str) -> list[dict[str, str]]:
     ]
 
 
+# ── Projets (M6) ─────────────────────────────────────────────────────────────
+# `profile.projects` porte 17 entrées typées academic|personal|professional. Le
+# gabarit ATS réclame une section « Academic Projects » : la donnée existe, seule
+# la projection manquait. Filtrage par `type` puis par `domains` (déjà présent sur
+# chaque projet) — aucun nouveau tag éditorial n'est requis.
+
+_PROJECT_TYPES_DEFAULT = ("academic",)
+
+_YEAR_RE = re.compile(r"(?<!\d)(\d{4})(?!\d)")
+
+
+def _project_year(date_str: Any) -> int:
+    """Année de tri d'un projet : la PLUS GRANDE année à 4 chiffres du champ `date`.
+
+    `date` est une chaîne libre dans profile.json ('2025 — 2026', '2026',
+    'ECE Paris', 'Perso', '2024 — présent') : un tri lexicographique y serait
+    arbitraire. On extrait donc les années ; aucune année → 0, donc en dernier.
+    """
+    s = date_str if isinstance(date_str, str) else ""
+    years = [int(y) for y in _YEAR_RE.findall(s)]
+    return max(years) if years else 0
+
+
+def select_projects(profile: dict[str, Any], cfg: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """Filtre + ordonne `profile.projects` (filtrage AUTO, fonction pure).
+
+    cfg :
+      - projects_types      : types retenus (liste NON VIDE) ; défaut ('academic',)
+      - projects_domains_in : domaines visés ; vide/absent = aucune contrainte
+      - max_projects        : cap (entier >= 0)
+
+    Règle d'inclusion (ET, contrairement aux expériences) : `type` retenu **et**
+    (aucun domaine visé **ou** intersection non vide avec `domains`). Le ET est
+    volontaire : « projets académiques du domaine quant » est une conjonction, là
+    où le OU des expériences sert à rattraper une expérience faiblement notée.
+    Tri : année desc, puis id — déterministe, sans dépendre de l'ordre du JSON.
+    `featured` n'est PAS utilisé : c'est un signal de mise en avant sur la page
+    d'accueil du site, pas un signal de pertinence CV.
+    """
+    cfg = cfg or {}
+    types = cfg.get("projects_types")
+    types = set(types) if isinstance(types, list) and types else set(_PROJECT_TYPES_DEFAULT)
+    domains_in = set(cfg.get("projects_domains_in") or [])
+
+    matched = [
+        p for p in _as_list(profile.get("projects"))
+        if isinstance(p, dict) and p.get("type") in types
+        and (not domains_in or (set(_as_list(p.get("domains"))) & domains_in))
+    ]
+    matched.sort(key=lambda p: (-_project_year(p.get("date")), str(p.get("id") or "")))
+
+    cap = cfg.get("max_projects")
+    if isinstance(cap, int) and not isinstance(cap, bool) and cap >= 0:
+        matched = matched[:cap]
+    return matched
+
+
+def _project_org(profile: dict[str, Any], context: Any, lang: str) -> str:
+    """Organisation d'un projet (« School/Company/Society » du gabarit).
+
+    `project.context` est une CLÉ ÉTRANGÈRE vers `education[].id` ('ece') ou
+    `experiences[].id` ('bouygues_2025', 'alten_2026'). On la résout — on n'invente
+    pas de libellé. 'personal' ne correspond à rien : chaîne vide, et le renderer
+    saute simplement la ligne.
+    """
+    ctx = context if isinstance(context, str) else ""
+    if not ctx:
+        return ""
+    for e in _as_list(profile.get("education")):
+        if isinstance(e, dict) and e.get("id") == ctx:
+            return _loc(e.get("school"), lang)
+    for x in _as_list(profile.get("experiences")):
+        if isinstance(x, dict) and x.get("id") == ctx:
+            return _loc(x.get("company"), lang)
+    return ""
+
+
+def project_entries(profile: dict[str, Any], projects: list[dict[str, Any]],
+                    lang: str) -> list[dict[str, Any]]:
+    """Projette des projets sélectionnés en entrées neutres-langue.
+
+    ⚠️ AUCUN projet de profile.json ne porte de `bullets` aujourd'hui — seulement
+    `summary`/`impact` en prose. La projection ne fabrique donc rien : elle expose
+    la prose telle quelle et lève `needs_bullets` pour SIGNALER ce qui reste à
+    rédiger (cf. `projects_needing_bullets`). Le gabarit ATS veut des puces menées
+    par un verbe : c'est un travail éditorial humain, pas une génération.
+    """
+    out: list[dict[str, Any]] = []
+    for p in projects:
+        raw = p.get("bullets")
+        raw = raw.get(lang) if isinstance(raw, dict) else None
+        bullets = [b for b in _as_list(raw) if isinstance(b, str) and b]
+        out.append({
+            "id": str(p.get("id") or ""),
+            "name": _loc(p.get("name"), lang),
+            "type": str(p.get("type") or ""),
+            "date": _loc(p.get("date"), lang),
+            "org": _project_org(profile, p.get("context"), lang),
+            "summary": _loc(p.get("summary"), lang),
+            "impact": _loc(p.get("impact"), lang),
+            "stack": [s for s in _as_list(p.get("stack")) if isinstance(s, str) and s],
+            "domains": [d for d in _as_list(p.get("domains")) if isinstance(d, str) and d],
+            "bullets": bullets,
+            "needs_bullets": not bullets,
+        })
+    return out
+
+
+def projects_needing_bullets(entries: list[dict[str, Any]]) -> list[str]:
+    """Ids des projets projetés sans puce rédigée (reste-à-faire éditorial)."""
+    return [e["id"] for e in entries if e.get("needs_bullets")]
+
+
 def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any]],
                         lang: str, cfg: dict[str, Any] | None = None) -> dict[str, Any]:
     """Construit le dict de rendu neutre depuis profile + une sélection d'expériences.
@@ -235,9 +362,11 @@ def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any
     """
     identity = profile.get("identity") or {}
     present = "présent" if lang == "fr" else "present"
+    # Champs réservés au gabarit .docx ATS — hors miroir JS (cf. docstring module).
+    ats_extras = bool((cfg or {}).get("ats_extras"))
     sections = []
     for exp in experiences:
-        sections.append({
+        sec = {
             "kind": "experience",
             "company": _loc(exp.get("company"), lang),
             "title": _loc(exp.get("title"), lang),
@@ -247,7 +376,14 @@ def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any
             "dates": f"{exp.get('start') or ''} → "
                      f"{present if exp.get('current') else (exp.get('end') or '')}",
             "bullets": _as_list((exp.get("bullets") or {}).get(lang)),
-        })
+        }
+        if ats_extras:
+            # `location` et `division` EXISTENT sur les 3 expériences de
+            # profile.json et n'étaient projetés nulle part ; le gabarit ATS en a
+            # besoin (ligne « COMPANY — DIVISION <tab> City, Country »).
+            sec["location"] = _loc(exp.get("location"), lang)
+            sec["division"] = _loc(exp.get("division"), lang)
+        sections.append(sec)
 
     # Compétences groupées par catégorie (pilotées par cfg) ; `skills_top` reste
     # la liste PLATE dérivée, pour les consommateurs historiques du schéma.
@@ -255,7 +391,7 @@ def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any
     skills_top = [n for g in skills_groups for n in g["items"]]
 
     links = identity.get("links") or {}
-    return {
+    out = {
         "lang": lang,
         "identity": {
             "name": f"{identity.get('first_name') or ''} {identity.get('last_name') or ''}".strip()
@@ -280,3 +416,6 @@ def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any
         "interests": [_loc(i, lang) for i in _as_list(profile.get("interests"))],
         "footer": {"updated": _loc(profile.get("$updated"), lang)},
     }
+    if ats_extras:
+        out["projects"] = project_entries(profile, select_projects(profile, cfg), lang)
+    return out
