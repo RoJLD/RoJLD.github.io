@@ -47,9 +47,17 @@ def parse_and_validate(raw_json, validate_fn=None):
 
 
 def atomic_write_profile(parsed, profile_path):
+    """Seul goulot d'écriture de profile.json — donc seul endroit où garantir la
+    stabilité du format.
+
+    Le `+ "\\n"` n'est pas cosmétique : sans lui, la 1re écriture supprime le
+    newline final du fichier suivi (`\\ No newline at end of file`) et mêle cette
+    ligne de bruit au vrai changement. Avec lui, écrire → relire → réécrire est un
+    point fixe (cf. `test_atomic_write_est_un_point_fixe`).
+    """
     profile_path = pathlib.Path(profile_path)
     tmp = profile_path.parent / (profile_path.name + ".tmp")
-    tmp.write_text(json.dumps(parsed, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(parsed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     tmp.replace(profile_path)
 
 
