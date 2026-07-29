@@ -84,6 +84,7 @@
     .cat-fin{background:rgba(74,222,128,.12);color:var(--green)}
     .cat-ml{background:rgba(251,146,60,.12);color:var(--orange)}
     .cat-dom{background:rgba(244,114,182,.12);color:var(--pink)}
+    .cat-eng{background:rgba(56,189,248,.12);color:#38bdf8}
     .gap-tag{display:inline-flex;align-items:center;padding:4px 9px;border-radius:5px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--red);font-size:11px;margin:3px}
     .gap-note{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
     .combo{padding:14px;border-radius:8px;border:1px solid;margin-bottom:8px}
@@ -363,6 +364,35 @@ const SKILL_ALIASES = {
   "Actuariat": [
     "actuariat","actuarial","actuaire","solvabilité","solvency",
     "assurance vie","réserves techniques","best estimate","orsa","embedded value"
+  ],
+  // Catégorie `engineering` — 6 compétences déclarées qui n'étaient jamais
+  // parcourues : une offre DevOps/Kubernetes matchait 0 % par construction.
+  "Kubernetes / K3s": [
+    "kubernetes","k8s","k3s","docker","container","conteneur",
+    "helm","openshift","orchestration de conteneurs"
+  ],
+  "LLM Orchestration": [
+    "llm","large language model","langchain","llamaindex"," rag ",
+    "retrieval augmented","prompt engineering","openai","genai",
+    "ia générative","generative ai","agent ia"
+  ],
+  "Knowledge Graphs": [
+    "knowledge graph","graphe de connaissance","neo4j","kuzu","sparql",
+    "ontologie","ontology"," rdf ","triple store","graphe sémantique"
+  ],
+  "Multi-Agent Systems": [
+    "multi-agent","multi agent","agentic","système multi-agents",
+    "agent autonome","autonomous agent","crewai","autogen"
+  ],
+  "DevOps / GitOps": [
+    "devops","gitops","ci/cd","cicd","intégration continue",
+    "continuous integration","argocd","terraform","ansible","jenkins",
+    "github actions","gitlab ci","infrastructure as code"
+  ],
+  "TDD / Testing": [
+    "tdd","test-driven","test driven","pytest","tests unitaires",
+    "unit test","couverture de test","code coverage"," qa ",
+    "assurance qualité","junit","integration test"
   ]
 };
 
@@ -434,9 +464,10 @@ function detectSignal(jd, signals) {
 function analyzeJD(jdRaw, profile) {
   const jd = jdRaw.toLowerCase();
 
-  // Collect all skills across categories
+  // Collect all skills across categories.
+  // `engineering` manquait : 6 compétences déclarées invisibles à l'analyse.
   const allSkills = [];
-  for (const cat of ['programming','finance','data_ml','domain']) {
+  for (const cat of ['programming','finance','data_ml','domain','engineering']) {
     for (const s of (profile.skills[cat] || []))
       allSkills.push({...s, category: cat});
   }
@@ -546,8 +577,8 @@ function scoreVerdict(pct) {
   return             {label:'Hors cible',       bg:'rgba(100,100,100,.15)', color:'#52566b'};
 }
 
-const CAT_CLASS = {programming:'cat-prog', finance:'cat-fin', data_ml:'cat-ml', domain:'cat-dom'};
-const CAT_LABEL = {programming:'Code', finance:'Finance', data_ml:'ML/Data', domain:'Domaine'};
+const CAT_CLASS = {programming:'cat-prog', finance:'cat-fin', data_ml:'cat-ml', domain:'cat-dom', engineering:'cat-eng'};
+const CAT_LABEL = {programming:'Code', finance:'Finance', data_ml:'ML/Data', domain:'Domaine', engineering:'Infra'};
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 function renderResults(res) {

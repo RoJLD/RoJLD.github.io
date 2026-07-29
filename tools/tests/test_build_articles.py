@@ -227,12 +227,30 @@ def test_article_inconnu_fail_loud():
 
 
 def test_url_absente_fail_loud():
-    """`onchain_analytics` n'a pas d'`url` (statut `soon`) : la génération s'arrête
-    dans `slug_of`, avant même de chercher une source."""
+    """Un article sans `url` échoue fort, en NOMMANT le champ manquant.
+
+    Deux corrections mesurées :
+
+    1. La fixture est désormais SYNTHÉTIQUE. Ce test observait
+       `onchain_analytics`, seul article `soon` du corpus réel : le publier —
+       ce que la tâche H17 demande explicitement — retirait la donnée observée
+       et faisait échouer le test pour une raison étrangère à ce qu'il vérifie.
+       Une règle de code ne doit pas dépendre d'un choix éditorial.
+
+    2. Le motif d'erreur est vérifié, pas seulement le type. `pytest.raises(
+       BuildError)` seul acceptait n'importe quel échec : un mutant supprimant
+       le garde laissait le test vert, l'exception partant plus loin pour une
+       autre raison. Et la docstring d'origine désignait la mauvaise cause —
+       l'arrêt vient de `_exiger_champs`, pas de `slug_of`, ce dernier étant
+       gardé par `art.get("url")` chez ses deux appelants.
+    """
     import build_articles
-    with pytest.raises(build_articles.BuildError):
-        build_articles.render_article_page(build_articles.load_profile(),
-                                           "onchain_analytics", "fr")
+    p = build_articles.load_profile()
+    p["articles"] = [{"id": "sans_url", "domains": [],
+                      "title": {"fr": "T", "en": "T"}, "desc": {"fr": "D", "en": "D"},
+                      "date": "2026-08", "tags": [], "status": "soon"}]
+    with pytest.raises(build_articles.BuildError, match=r"champ\(s\) requis manquant\(s\) : url"):
+        build_articles.render_article_page(p, "sans_url", "fr")
 
 
 def test_source_absente_fail_loud():

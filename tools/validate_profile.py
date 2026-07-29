@@ -12,6 +12,58 @@ import sys
 from pathlib import Path
 
 
+# Schémas non résolvables sur le disque -> hors périmètre du validateur.
+_EXTERNAL = ("http://", "https://", "//", "mailto:", "tel:")
+
+
+def _local_urls(profile):
+    """(label, url) de chaque URL déclarée dans profile.json.
+
+    Convention du corpus : une URL locale est un chemin **relatif à la racine du
+    site** (les gabarits lui appliquent `_abs_url`), jamais relatif à la page.
+    """
+    for p in profile.get("projects", []):
+        for key, url in (p.get("links") or {}).items():
+            yield f"project '{p.get('id','?')}'.links.{key}", url
+    for a in profile.get("articles", []):
+        if a.get("url"):
+            yield f"article '{a.get('id','?')}'.url", a["url"]
+    for key, url in ((profile.get("identity") or {}).get("links") or {}).items():
+        yield f"identity.links.{key}", url
+
+
+def _has_anchor(text: str, frag: str) -> bool:
+    return any(pat in text for pat in (f'id="{frag}"', f"id='{frag}'", f'name="{frag}"'))
+
+
+def _validate_links(profile, root, errors):
+    """Liens locaux : forme non ambiguë, puis cible réelle si `root` est fourni."""
+    for label, url in _local_urls(profile):
+        if not url or url.startswith(_EXTERNAL):
+            continue
+        path, _, frag = url.partition("#")
+        # `index.html#x` se lit comme relatif à la PAGE qui le rend : servi
+        # depuis /projects/, il pointe sur /projects/ lui-même, pas sur l'accueil.
+        if path.split("/")[0] == "index.html":
+            cible = "/#" + frag if frag else "/"
+            errors.append(f"{label}: {url!r} est relatif à la page — "
+                          f"écrire {cible!r} pour viser l'accueil")
+            continue
+        if not path:
+            errors.append(f"{label}: {url!r} est une ancre nue — cible dépendante de la page")
+            continue
+        if root is None:
+            continue
+        target = Path(root) / path.lstrip("/")
+        if path.endswith("/") or target.is_dir():
+            target = target / "index.html"
+        if not target.exists():
+            errors.append(f"{label}: cible inexistante {url!r} ({target})")
+        elif frag and target.suffix == ".html":
+            if not _has_anchor(target.read_text(encoding="utf-8", errors="replace"), frag):
+                errors.append(f"{label}: ancre #{frag} absente de {path}")
+
+
 def _skill_iter(profile):
     for cat, skills in (profile.get("skills") or {}).items():
         if cat == "radar_scores":
@@ -20,7 +72,10 @@ def _skill_iter(profile):
             yield cat, s
 
 
-def validate(profile: dict) -> list[str]:
+def validate(profile: dict, root=None) -> list[str]:
+    """Règles du corpus. `root` = racine du site : si fourni, les liens locaux
+    (`projects[].links`, `articles[].url`, `identity.links`) sont résolus sur le
+    disque — c'est ce qui manquait quand /projects/ a été publié avec un 404."""
     errors: list[str] = []
 
     if not profile.get("$version"):
@@ -99,14 +154,17 @@ def validate(profile: dict) -> list[str]:
     if not (profile.get("skills", {}) or {}).get("radar_scores"):
         errors.append("skills.radar_scores empty or missing")
 
+    _validate_links(profile, root, errors)
+
     return errors
 
 
 def main(argv):
-    default = Path(__file__).resolve().parent.parent / "profile.json"
+    site_root = Path(__file__).resolve().parent.parent
+    default = site_root / "profile.json"
     path = Path(argv[1]) if len(argv) > 1 else default
     profile = json.loads(path.read_text(encoding="utf-8"))
-    errs = validate(profile)
+    errs = validate(profile, root=site_root)
     if errs:
         print(f"INVALID: {len(errs)} error(s) in {path}")
         for e in errs:

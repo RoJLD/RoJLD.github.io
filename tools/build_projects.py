@@ -44,6 +44,20 @@ def tag_label(tag: str, labels: dict) -> str:
     return labels.get(tag, tag.replace("-", " ").title())
 
 
+def _abs_url(u):
+    """URL de profile.json -> absolue (idem build_browse._abs_url).
+
+    Les chemins de profile.json sont relatifs à la racine du site ; cette page
+    est servie depuis /projects/, donc les laisser tels quels les résout dans
+    /projects/… (404). Ancre (#…), chemin absolu (/…) et externe préservés.
+    """
+    if not u:
+        return ""
+    if u.startswith(("http://", "https://", "/", "#")):
+        return u
+    return "/" + u
+
+
 def render_links(p: dict) -> str:
     links = p.get("links") or {}
     order = [
@@ -57,7 +71,7 @@ def render_links(p: dict) -> str:
     for key, label, _ in order:
         url = links.get(key)
         if url:
-            out.append(f'<a class="p-link" href="{e(url)}" target="_blank" rel="noopener">{e(label)}</a>')
+            out.append(f'<a class="p-link" href="{e(_abs_url(url))}" target="_blank" rel="noopener">{e(label)}</a>')
     if not out and p.get("code_status"):
         out.append(f'<span class="p-status">{e(p["code_status"])}</span>')
     return "".join(out)
@@ -194,7 +208,7 @@ footer{{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border
   <a class="nav-brand" href="/">R<b>.</b> Denis</a>
   <div class="nav-r">
     <a href="/#experience">Expérience</a>
-    <a href="/#demos">Démos</a>
+    <a href="/demos/">Démos</a>
     <a class="nav-projects on" href="/projects/">Projets</a>
     <a href="/explorer/">Explorer</a>
     <a href="/highlights/">Highlights</a>

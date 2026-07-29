@@ -241,6 +241,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
   <a class="nav-brand" href="/">R<b>.</b> Denis</a>
   <div class="nav-r">
     <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
+    <a href="/demos/" data-fr="Démos" data-en="Demos">Démos</a>
     <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
     <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
     <a href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
