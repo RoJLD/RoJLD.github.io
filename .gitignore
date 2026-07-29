@@ -9,3 +9,17 @@ __pycache__/
 # Journaux et artefacts locaux de l atelier
 tools/cv/atelier*.log
 tools/cv/parity_cases.json
+
+# Artefacts d'outillage agentique — audit anthropos 2026-07-28, tâche A6.
+# CE DÉPÔT EST PUBLIC (GitHub Pages → robin-denis.com) : tout ce qui n'est pas
+# ignoré ici est à un `git add -A` de se retrouver en ligne. Mesuré ce jour :
+# `.superpowers/` contenait 8 maquettes d'architecture internes (design-candidatures,
+# arch-localhost…) non suivies mais publiables. Le dépôt privé ELYSIUM a un hook
+# pre-commit ; ce dépôt-ci, le seul public, n'en avait aucun — asymétrie inverse
+# au risque. Même leçon que le commentaire `git add -A tools/` ci-dessus.
+.claude/
+.superpowers/
+.pytest_cache/
+.env
+.env.*
+!.env.example
