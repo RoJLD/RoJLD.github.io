@@ -316,6 +316,64 @@ def test_wrong_token_is_refused(tmp_path, monkeypatch):
     assert code == 403
 
 
+def test_seule_l_egalite_exacte_du_jeton_ouvre_les_routes_mutantes(tmp_path, monkeypatch):
+    """Les faux jetons sont DÉRIVÉS du vrai, jamais écrits à la main.
+
+    Mesuré 2026-07-29 : remplacer `secrets.compare_digest(given, csrf_token())` par
+    `given.startswith(csrf_token()[:1])` — un préfixe d'UN caractère ouvre alors
+    `/save` — laissait la suite VERTE, `test_wrong_token_is_refused` compris. Ce
+    dernier n'essaie qu'un seul faux jeton, écrit à la main (`"x" * 43`) : il ne
+    refuse que parce que le vrai ne commence pas par « x », soit 63 fois sur 64. Une
+    liste écrite à la main dont le test est le seul lecteur ne voit pas cette classe
+    de trous, et échoue à pile ou face plutôt que sur la propriété.
+
+    Les faux sont donc fabriqués depuis le jeton RÉELLEMENT SERVI dans la page —
+    la seule source qui suive le module quoi qu'il devienne : préfixe, moitié,
+    troncature, rallonge, bruit autour, un caractère changé à chaque extrémité et au
+    milieu. Toute comparaison plus laxiste que l'égalité (`startswith`, `in`, « les n
+    premiers caractères ») rougit sur au moins l'un d'eux — et le vrai jeton doit
+    continuer d'ouvrir : une garde qui mure la porte n'en est pas une.
+    """
+    cible = _pointe_vers_une_copie(tmp_path, monkeypatch)
+    intact = cible.read_text(encoding="utf-8")
+    with _server() as base:
+        port = _port_of(base)
+        code, page = _get(base, "/")
+        assert code == 200
+        m = re.search(r'const TOKEN="([^"]+)"', page)
+        assert m, "la page d'accueil ne porte pas de jeton"
+        jeton = m.group(1)
+
+        def _un_caractere_change(t: str, i: int) -> str:
+            return t[:i] + ("A" if t[i] != "A" else "B") + t[i + 1:]
+
+        faux = {
+            "chaîne vide": "",
+            "préfixe d'un caractère": jeton[:1],
+            "première moitié": jeton[:len(jeton) // 2],
+            "tronqué d'un caractère": jeton[:-1],
+            "privé de son premier caractère": jeton[1:],
+            "rallongé d'un caractère": jeton + "A",
+            "noyé dans du bruit": "A" + jeton + "A",
+            "premier caractère changé": _un_caractere_change(jeton, 0),
+            "caractère médian changé": _un_caractere_change(jeton, len(jeton) // 2),
+            "dernier caractère changé": _un_caractere_change(jeton, len(jeton) - 1),
+        }
+        if jeton.swapcase() != jeton:
+            faux["casse inversée"] = jeton.swapcase()
+        assert jeton not in faux.values(), "un « faux » jeton est en fait le vrai"
+
+        for nom, mauvais in faux.items():
+            code, corps = _post(port, "/save", {"json": "{}"},
+                                **{atelier.CSRF_HEADER: mauvais})
+            assert code == 403, f"jeton ACCEPTÉ ({nom}) : {mauvais!r} → HTTP {code}"
+        assert cible.read_text(encoding="utf-8") == intact, (
+            "profile.json réécrit par une requête à jeton invalide")
+
+        code, _ = _post(port, "/save", {"json": "{}"}, **{atelier.CSRF_HEADER: jeton})
+        assert code == 200, "le jeton exact n'ouvre plus rien : porte murée"
+
+
 def test_foreign_host_is_refused(tmp_path, monkeypatch):
     """DNS rebinding : la résolution pointe sur 127.0.0.1, le `Host` trahit."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
@@ -1254,21 +1312,35 @@ def test_deux_ateliers_lances_separement_ne_tirent_pas_le_meme_jeton():
     valeur calculée depuis le code — est identique d'un interpréteur neuf à
     l'autre. Un jeton tiré de l'entropie du système ne l'est jamais. Cette
     mesure ne peut pas être satisfaite par accident depuis l'intérieur du module.
+
+    Les DEUX jetons d'un interpréteur neuf sont relevés, car un serveur peut être
+    servi avec l'un ou l'autre : `main()` appelle `reset_csrf_token()`, mais
+    `make_server()` — le point d'entrée unique, celui qu'emploient ces tests et
+    tout appelant qui embarque l'atelier — sert le jeton posé À L'IMPORT sans rien
+    retirer. Mesuré 2026-07-29 : figer le `_TOKEN = secrets.token_urlsafe(32)` de
+    niveau module en une constante littérale laissait la suite VERTE (61 tests) —
+    un atelier lancé autrement que par `main` servait alors un jeton lisible dans
+    le code source, et les quatre gardes du lot I1 tombaient avec lui.
     """
     import subprocess
     import sys as _sys
     dossier = str(pathlib.Path(atelier.__file__).resolve().parent)
     programme = ("import sys; sys.path.insert(0, r'" + dossier + "'); "
-                 "import atelier; print(atelier.reset_csrf_token())")
-    tirs = []
+                 "import atelier; print(atelier.csrf_token()); "
+                 "print(atelier.reset_csrf_token())")
+    a_l_import, apres_reset = [], []
     for _ in range(3):
         r = subprocess.run([_sys.executable, "-c", programme],
                            capture_output=True, text=True, timeout=180)
         assert r.returncode == 0, r.stderr[-500:]
-        tirs.append(r.stdout.strip())
-    assert all(tirs), tirs
-    assert len(set(tirs)) == len(tirs), (
-        f"des interpréteurs neufs servent le même jeton : {tirs}")
+        lignes = r.stdout.split()
+        assert len(lignes) == 2, r.stdout
+        a_l_import.append(lignes[0])
+        apres_reset.append(lignes[1])
+    for quand, tirs in (("à l'import", a_l_import), ("après reset", apres_reset)):
+        assert all(tirs), (quand, tirs)
+        assert len(set(tirs)) == len(tirs), (
+            f"des interpréteurs neufs servent le même jeton {quand} : {tirs}")
 
 
 # ── V1 : le profil est une DONNÉE, jamais du balisage ────────────────────────

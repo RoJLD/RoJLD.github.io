@@ -172,6 +172,30 @@ def _numbering_hanging_twips(ref) -> int:
     return min(hangings)
 
 
+def _tab_segments(p) -> list[list]:
+    """Runs du paragraphe, découpés en COLONNES sur les runs porteurs d'une tabulation.
+
+    Repérer une colonne par sa POSITION entre deux tabulations — et non par son style
+    (« le run gras ») — est ce qui rend la mesure indépendante : sinon on postulerait
+    la réponse pour la vérifier ensuite. Les runs vides sont écartés de chaque colonne.
+    """
+    out: list[list] = [[]]
+    for r in p.runs:
+        if "\t" in r.text:
+            out.append([])
+        else:
+            out[-1].append(r)
+    return [[r for r in g if r.text.strip()] for g in out]
+
+
+def _is_section_title(p) -> bool:
+    """Titre de section du gabarit : paragraphe non vide, sans tabulation, dont TOUS
+    les runs sont gras + petites capitales (le critère « runs[0] » attraperait aussi
+    le §13, dont le premier run est une tabulation grasse — mesuré)."""
+    return bool(p.text.strip()) and "\t" not in p.text \
+        and _all_runs_are(p, bold=True, small_caps=True)
+
+
 @functools.lru_cache(maxsize=1)
 def _gabarit() -> dict:
     """Toutes les mesures du gabarit de référence, LUES dans le fichier.
@@ -182,12 +206,7 @@ def _gabarit() -> dict:
     sec, normal = ref.sections[0], ref.styles["Normal"]
     sizes = collections.Counter(r.font.size for p in ref.paragraphs for r in p.runs
                                 if r.font.size is not None)
-    # Titre de section du gabarit : paragraphe non vide, sans tabulation, dont TOUS
-    # les runs sont gras + petites capitales (le critère « runs[0] » attraperait
-    # aussi le §13, dont le premier run est une tabulation grasse — mesuré).
-    titles = [p for p in ref.paragraphs
-              if p.text.strip() and "\t" not in p.text
-              and _all_runs_are(p, bold=True, small_caps=True)]
+    titles = [p for p in ref.paragraphs if _is_section_title(p)]
     title_sizes = {p.runs[0].font.size for p in titles}
     assert len(title_sizes) == 1, f"titres du gabarit à plusieurs corps : {title_sizes}"
     # Ligne d'entrée du gabarit = celle qui porte sa colonne DROITE (« City, Country »).
@@ -197,7 +216,26 @@ def _gabarit() -> dict:
                   if t.alignment == WD_TAB_ALIGNMENT.RIGHT}
     assert len(entry_tabs) == 1, f"taquet droit des lignes d'entrée ambigu : {entry_tabs}"
     (tab_pos, tab_align), = entry_tabs
+    # ── Alignement : le gabarit CENTRE son bloc d'en-tête (la ligne de contact) et ne
+    # centre RIEN en dessous (mesuré : 1 seul § centré, 58 justifiés). Le bloc
+    # d'en-tête, c'est ce qui précède le premier titre de section — repère structurel,
+    # pas une position codée en dur.
+    first_title = next(i for i, p in enumerate(ref.paragraphs) if _is_section_title(p))
+    head_aligns = {p.paragraph_format.alignment
+                   for p in ref.paragraphs[:first_title] if p.text.strip()} - {None}
+    assert len(head_aligns) == 1, f"en-tête du gabarit à plusieurs alignements : {head_aligns}"
+    body_aligns = frozenset(p.paragraph_format.alignment
+                            for p in ref.paragraphs[first_title:] if p.text.strip())
+    # ── Emphase de la COLONNE CENTRALE des lignes d'entrée (l'organisation), run
+    # repéré entre deux tabulations. Mesuré : unanime sur les 7 lignes d'entrée.
+    heads = {(bool(g[1][0].bold), bool(g[1][0].font.small_caps), bool(g[1][0].italic))
+             for p in ref.paragraphs if "City, Country" in p.text
+             for g in [_tab_segments(p)] if len(g) >= 3 and g[1]}
+    assert len(heads) == 1, f"emphase des lignes d'entrée du gabarit ambiguë : {heads}"
     return {
+        "header_alignment": head_aligns.pop(),
+        "body_alignments": body_aligns,
+        "entry_head_emphasis": heads.pop(),
         "page": (sec.page_width, sec.page_height),
         "margins": (sec.left_margin, sec.right_margin, sec.top_margin, sec.bottom_margin),
         "font": normal.font.name,
@@ -216,6 +254,18 @@ def _gabarit() -> dict:
 
 def _tabbed(left: str, right: str) -> str:
     return f"{left}\t{right}" if right else left
+
+
+def _entry_head_texts(scv: dict) -> set[str]:
+    """Têtes d'entrée attendues (expérience / projet / formation), calculées depuis la
+    DONNÉE projetée — jamais relevées dans le document produit."""
+    heads = {_tabbed(" — ".join(x for x in (s.get("company"), s.get("division")) if x),
+                     s.get("location") or "") for s in scv.get("sections") or []}
+    heads |= {_tabbed(p.get("name") or "", p.get("date") or "")
+              for p in scv.get("projects") or []}
+    heads |= {_tabbed(e.get("school") or "", e.get("period") or "")
+              for e in scv.get("education") or []}
+    return heads
 
 
 def _expected_outline(scv: dict, private: dict | None = None) -> list[str]:
@@ -592,6 +642,38 @@ def test_section_titles_themselves_carry_the_small_caps_of_the_gabarit(lang):
     assert prose.runs[0].bold is not True
 
 
+def test_the_header_is_centred_and_nothing_below_it_is_as_in_the_gabarit():
+    """L'alignement des paragraphes n'était gardé NULLE PART.
+
+    Mesuré 2026-07-29 sur `cv_docx` : décentrer le nom, le sous-titre, la ligne de
+    disponibilité OU la ligne de contact (`align=WD_ALIGN_PARAGRAPH.CENTER → None`)
+    laissait la suite VERTE — et CENTRER les puces aussi, ce qui sort un CV dont
+    chaque puce est au milieu de la page. Quatre mutations, aucun rouge.
+
+    L'attendu vient du gabarit LU, dans les deux sens : il centre exactement UN
+    paragraphe, celui de son bloc d'en-tête (`Address | Phone | Email | Looking
+    for…`), et n'en centre AUCUN sous le premier titre de section (58 justifiés,
+    mesuré). C'est ce contraste-là — en-tête centré / corps non centré — qui est
+    exigé de la sortie, jamais une constante recopiée de `cv_docx`.
+    """
+    ref = _gabarit()
+    centre = ref["header_alignment"]
+    assert centre not in ref["body_alignments"], (
+        "le gabarit centrerait aussi son corps ? " f"{ref['body_alignments']}")
+
+    scv = _scv("fr")
+    doc = cv_docx.build_docx(scv, private={"phone": "+00 0 00",
+                                           "availability": {"fr": "Stage 6 mois"}})
+    labels = set(cv_docx._LABELS["fr"].values())
+    first = next(i for i, p in enumerate(doc.paragraphs) if p.text in labels)
+    entete, corps = doc.paragraphs[:first], doc.paragraphs[first:]
+    assert len(entete) == 4, [p.text for p in entete]   # nom / sous-titre / dispo / contact
+    for p in entete:
+        assert p.paragraph_format.alignment == centre, f"en-tête non centré : {p.text!r}"
+    for p in corps:
+        assert p.paragraph_format.alignment != centre, f"corps centré : {p.text!r}"
+
+
 def test_page_setup_matches_the_shipped_pdfs():
     """Les 3 PDF réellement envoyés font 612x792 pt = US Letter, comme le gabarit.
 
@@ -708,6 +790,13 @@ def test_paragraph_spacing_follows_the_normal_style_of_the_gabarit():
         pf = p.paragraph_format
         assert pf.space_after == ref["space_after"], p.text
         assert pf.line_spacing == ref["line_spacing"], p.text
+    # …et sur le STYLE lui-même, pas seulement sur les paragraphes déjà écrits.
+    # Mesuré 2026-07-29 : `normal.paragraph_format.space_after → Pt(12)` et
+    # `line_spacing → 2.0` laissaient la suite VERTE — la boucle ci-dessus ne voit
+    # que les valeurs reposées par `_para`, jamais le repli dont héritera le
+    # prochain paragraphe écrit sans les reposer (et Word rend depuis le style).
+    npf = doc.styles["Normal"].paragraph_format
+    assert (npf.space_after, npf.line_spacing) == (ref["space_after"], ref["line_spacing"])
 
 
 def test_section_titles_are_aired_by_space_before_because_the_output_has_no_blank_line():
@@ -734,11 +823,7 @@ def test_section_titles_are_aired_by_space_before_because_the_output_has_no_blan
     # se touchent si leur première ligne n'est pas aérée (mesuré : retirer
     # `space_before=Pt(3)` des lignes d'entrée laissait la suite verte). Les têtes
     # d'entrée sont calculées depuis la DONNÉE, pas relevées dans le document.
-    heads = {_tabbed(" — ".join(x for x in (s.get("company"), s.get("division")) if x),
-                     s.get("location") or "") for s in scv["sections"]}
-    heads |= {_tabbed(p.get("name") or "", p.get("date") or "") for p in scv["projects"]}
-    heads |= {_tabbed(e.get("school") or "", e.get("period") or "")
-              for e in scv["education"]}
+    heads = _entry_head_texts(scv)
     seen = [p for p in doc.paragraphs if p.text in heads]
     assert len(seen) == len(heads), ([p.text for p in seen], heads)
     for p in seen:
@@ -905,6 +990,20 @@ def test_an_entry_and_its_sub_line_are_distinguished_the_way_the_gabarit_does_it
     assert sub.text == scv["sections"][0]["title"], sub.text
     assert head.font.small_caps is True and sub.font.small_caps is False
     assert head.italic is False and sub.italic is True, "sous-ligne d'entrée non italique"
+
+    # …et l'emphase de la tête est celle MESURÉE dans le gabarit, sur TOUTES les
+    # têtes d'entrée (expérience, projet, formation) — pas seulement la première.
+    # Le run d'organisation du gabarit est repéré entre deux tabulations, jamais par
+    # son style ; il y est unanimement gras + petites capitales + romain. Mesuré
+    # 2026-07-29 : le défaut `bold_left=True` de `_entry_line` → `False` sortait un
+    # CV dont aucun nom d'entreprise, de projet ni d'école n'était gras, suite VERTE
+    # (les deux assertions ci-dessus ne portent que sur `small_caps` et l'italique).
+    expected = _gabarit()["entry_head_emphasis"]
+    seen = [p for p in doc.paragraphs if p.text in _entry_head_texts(scv)]
+    assert len(seen) >= 3, [p.text for p in seen]
+    for p in seen:
+        r = p.runs[0]
+        assert (bool(r.bold), bool(r.font.small_caps), bool(r.italic)) == expected, p.text
 
 
 def test_the_contact_line_is_the_one_the_shipped_prefab_pdf_carries():
