@@ -53,12 +53,23 @@ def _esc(s: Any) -> str:
 
 
 def _css_du_template(template: "dict | str | None") -> str:
-    """CSS du template demande.
+    """CSS du template demande : un NOM, ou un template DEJA CHARGE.
 
     `None` = le defaut `sobre`. Dans ce SEUL cas, l'absence de la banque de donnees
     (clone partiel du depot) retombe sur `CV_CSS`. Un template EXPLICITEMENT demande
     et introuvable leve : un repli silencieux rendrait un CV au mauvais design sans
     rien signaler, et le PDF sortirait quand meme.
+
+    La branche `dict` sert la generation de la banque prefabriquee, qui charge le
+    template UNE fois puis le reutilise pour chaque PDF au lieu de relire le disque.
+    Elle court-circuite donc `charger()` — la seule etape qui confronte une demande a
+    la banque des templates connus — et c'est voulu : le dict vient d'y sortir.
+
+    Corollaire, mesure le 2026-08-04 : cette branche ne doit JAMAIS recevoir de dict
+    venu d'un client. `atelier._handle_generate` coerce en `str` a la frontiere HTTP
+    pour cette raison. Sans cette coercition, des valeurs choisies par le client
+    atterrissaient dans le <style> rendu par Chromium. La garde vit a la FRONTIERE,
+    pas ici : ici, un dict est par contrat un template deja valide.
     """
     import cv_templates
 

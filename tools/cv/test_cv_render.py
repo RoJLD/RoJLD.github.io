@@ -75,3 +75,60 @@ def test_empty_sections_still_valid_doc():
 def test_deterministic():
     cv = _cv()
     assert cv_render.render_html(cv) == cv_render.render_html(cv)
+
+
+# ── la garde vit a la FRONTIERE, pas dans le moteur de rendu ──────────────────
+#
+# `_css_du_template` accepte un dict a dessein : la banque prefabriquee charge le
+# template une fois puis le reutilise par PDF, au lieu de relire le disque (contrat
+# documente dans test_cv_templates.test_render_html_accepte_un_template_charge).
+# Cette branche court-circuite donc `charger()`, et c'est correct — le dict en sort.
+#
+# Le danger n'etait pas la branche, mais le fait qu'un dict CLIENT y parvienne : le
+# gestionnaire HTTP ne coercait pas `template`, alors qu'il coercait `skeleton` deux
+# methodes plus bas. Des valeurs choisies par le client atterrissaient dans le
+# <style> rendu par Chromium. Le test ci-dessous garde la FRONTIERE.
+
+def test_le_handler_coerce_le_template_en_chaine(monkeypatch):
+    """Coercion A LA FRONTIERE : ce que recoit generate_pdf n'est jamais un dict.
+
+    C'est la meme discipline que `skeleton=str(...)` dans _handle_letter. Et c'est le
+    SEUL endroit ou elle peut vivre : `cv_render` ne peut pas refuser les dicts, la
+    banque prefabriquee lui en passe legitimement. Distinguer "dict de confiance" de
+    "dict client" est impossible en aval — donc on tranche en amont, la ou l'origine
+    est connue.
+    """
+    import atelier
+    vus = {}
+
+    def faux_generate_pdf(job, profile, lang, template=None, **_):
+        vus["template"] = template
+        return ({"relevance_key": "x", "min_relevance": 0.5}, b"%PDF-")
+
+    monkeypatch.setattr(atelier, "generate_pdf", faux_generate_pdf)
+    monkeypatch.setattr(atelier, "_PROFILE", _profil_bidon(monkeypatch))
+
+    handler = atelier.Handler.__new__(atelier.Handler)
+    handler._send = lambda *a, **k: None
+    handler._handle_generate({"job": "fiche", "lang": "fr",
+                              "template": {"style": {"page": {"marge": "0"}}}})
+
+    # PREUVE DE PASSAGE d'abord : `_handle_generate` enveloppe tout dans un
+    # `except Exception`. Sans cette assertion, une exception levee AVANT l'appel
+    # laisserait `vus` vide, `vus.get(...)` rendrait None, et le test passerait a
+    # VIDE en pretendant avoir verifie la frontiere.
+    assert "template" in vus, "generate_pdf n'a jamais ete appele — test vide"
+    assert not isinstance(vus["template"], dict), \
+        f"un dict a traverse la frontiere : {vus['template']!r}"
+
+
+def _profil_bidon(monkeypatch, tmp=[]):
+    """Profil minimal sur disque, suffisant pour que _handle_generate le lise."""
+    import json
+    import pathlib
+    import tempfile
+    if not tmp:
+        p = pathlib.Path(tempfile.mkdtemp()) / "profile.json"
+        p.write_text(json.dumps({"identity": {"name": "Robin Denis"}}), encoding="utf-8")
+        tmp.append(p)
+    return tmp[0]

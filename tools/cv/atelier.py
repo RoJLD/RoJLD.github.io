@@ -1029,8 +1029,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         try:
             job, lang, accepte = self._entree(data)
             profile = json.loads(_PROFILE.read_text(encoding="utf-8"))
+            # `str(...)` comme le `skeleton` de _handle_letter deux methodes plus bas :
+            # coercion A LA FRONTIERE. Sans elle, un dict traversait jusqu'a
+            # `cv_render._css_du_template`, qui le passait tel quel a `build_css` en
+            # court-circuitant la validation — des valeurs choisies par le client
+            # atterrissaient dans le <style> rendu par Chromium.
+            demande = data.get("template")
             cfg, pdf = generate_pdf(job, profile, lang,
-                                    template=data.get("template") or None)
+                                    template=str(demande) if demande else None)
             self._livrer(cfg, pdf, ".pdf", accepte)
         except Exception:
             # Le détail (chemins, clés, trace) reste côté serveur. Zero Masking :
