@@ -296,23 +296,134 @@ def _resolve_career(here: "pathlib.Path"):
     return None
 
 
+#: Tiers essayés dans l'ordre, surchargeables par `CV_LLM_TIERS` (séparés par des
+#: virgules). Le défaut n'est PAS un seul tier, et c'est une correction mesurée :
+#: lors du premier usage réel (fiche Amundi, 4908 caractères) `local-precision`
+#: — ollama/deepseek-r1:32b — a échoué **3 fois sur 3** sur
+#: `litellm.Timeout after 120.0s`. Ce n'est pas un backend absent : c'est un modèle
+#: de raisonnement, qui dépense son budget en `<think>` avant de répondre, et qui
+#: dépasse le timeout du gateway. Or `core.llm_client.complete` n'expose aucun
+#: paramètre de timeout : depuis ce module on ne peut pas augmenter le budget, on
+#: ne peut que choisir un tier qui tienne dedans. `local-qwen` (ollama/qwen2.5:14b)
+#: a rendu la même extraction correctement.
+_TIERS_DEFAUT = ("local-precision", "local-qwen")
+
+
+def _tiers() -> tuple[str, ...]:
+    import os
+    brut = os.environ.get("CV_LLM_TIERS", "")
+    choisis = tuple(t.strip() for t in brut.split(",") if t.strip())
+    return choisis or _TIERS_DEFAUT
+
+
+def _complete_http(prompt: str) -> str:
+    """Appel OpenAI-compat DIRECT. Chemin du CONTENEUR, où le sibling n'existe pas.
+
+    Déployé sur le cluster, l'atelier n'a pas de checkout ELYSIUM à côté de lui :
+    `_resolve_career` rend None et le résolveur souverain est hors d'atteinte. Plutôt
+    que d'empaqueter une copie de `career/core/` dans l'image — qui divergerait en
+    silence de son original — on parle directement à un endpoint compatible OpenAI.
+
+    `CV_LLM_BASE_URL` accepte **plusieurs URL séparées par des virgules**, essayées
+    dans l'ordre. C'est nécessaire ici : le seul ollama vivant tourne sur le poste de
+    travail, tandis que `forge-ollama` in-cluster dort avec son nœud (`forge`,
+    réveillable par Wake-on-LAN). Un endpoint unique obligerait à choisir entre
+    « marche quand le PC est allumé » et « marche quand le nœud est réveillé ».
+
+    Chaque échec est journalisé EN NOMMANT l'URL, puis on descend. Si tous tombent,
+    on relaie la dernière erreur : le ciblage échoue, `extract_cfg` retombe sur le
+    cfg défaut, et le garde de ciblage dégradé refuse la livraison. La panne reste
+    donc visible de bout en bout — elle ne se traduit jamais par un CV générique.
+
+    Ce chemin **contourne le gateway souverain**, donc le budget cap SIGIL-529 : il
+    est réservé aux backends LOCAUX (ollama, vllm), dont le coût marginal est nul.
+    Il n'est jamais choisi tant que le sibling est là, et `CV_LLM_BASE_URL` doit
+    être posé explicitement — aucune bascule automatique vers un backend payant.
+
+    Contrepartie utile : ici le **timeout est réglable** (`CV_LLM_TIMEOUT`, 600 s par
+    défaut), ce que `core.llm_client.complete` n'expose pas — c'est précisément la
+    limite qui a fait échouer `local-precision` trois fois sur trois.
+    """
+    import json as _json
+    import os
+    import urllib.request
+
+    bases = [u.strip().rstrip("/") for u in os.environ["CV_LLM_BASE_URL"].split(",")
+             if u.strip()]
+    if not bases:
+        raise RuntimeError("CV_LLM_BASE_URL posé mais vide")
+    modele = os.environ.get("CV_LLM_MODEL", "qwen2.5:14b")
+    delai = int(os.environ.get("CV_LLM_TIMEOUT", "600"))
+    corps = _json.dumps({"model": modele, "temperature": 0, "stream": False,
+                         "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
+
+    derniere: Exception | None = None
+    for rang, base in enumerate(bases, 1):
+        req = urllib.request.Request(f"{base}/chat/completions", data=corps,
+                                     headers={"Content-Type": "application/json"})
+        logger.warning("cv_target: résolveur souverain absent — appel direct %s (%s) "
+                       "[%d/%d], hors gateway et hors budget cap",
+                       base, modele, rang, len(bases))
+        try:
+            return _lire_reponse(req, delai)
+        except Exception as exc:            # noqa: BLE001 — on descend, en le disant
+            derniere = exc
+            logger.warning("cv_target: endpoint %s injoignable (%s) — %s",
+                           base, exc,
+                           "essai du suivant" if rang < len(bases) else "plus aucun")
+    raise RuntimeError(
+        f"aucun des {len(bases)} endpoints LLM n'a répondu ; dernier échec : {derniere}")
+
+
+def _lire_reponse(req, delai: int) -> str:
+    """Exécute la requête et extrait le contenu. Isolé pour être moquable en test."""
+    import json as _json
+    import urllib.request
+
+    with urllib.request.urlopen(req, timeout=delai) as rep:
+        charge = _json.loads(rep.read().decode("utf-8"))
+    return charge["choices"][0]["message"]["content"]
+
+
 def _sovereign_complete(prompt: str) -> str:
     """Route via le résolveur souverain llm_client du sibling ELYSIUM career (SIGIL-1714).
 
     Insère la **racine ELYSIUM** (pour que le tier-1 sigma_llm_gateway — importé en
     `scripts.governance.sigma_llm_gateway` — soit atteignable) ET le dossier career
     (pour `core.llm_client` / `core.config`) sur sys.path, puis importe `complete`.
-    Lève si le sibling est absent → extract_cfg retombe sur le cfg défaut (loud).
+
+    Sibling absent : bascule sur `_complete_http` **si et seulement si**
+    `CV_LLM_BASE_URL` est posé (cas du conteneur). Sinon lève, comme avant →
+    extract_cfg retombe sur le cfg défaut (loud).
+
+    Essaie les tiers de `_tiers()` **dans l'ordre**. Chaque échec est journalisé en
+    WARNING **en nommant le tier et l'erreur** : la descente en gamme est un fait
+    consigné, jamais un repli muet. Si tous échouent, la dernière exception est
+    relancée — aucune prose de repli n'est fabriquée.
     """
     import pathlib
     import sys
 
     resolved = _resolve_career(pathlib.Path(__file__).resolve())
     if resolved is None:
+        import os
+        if os.environ.get("CV_LLM_BASE_URL"):
+            return _complete_http(prompt)
         raise RuntimeError("llm_client souverain introuvable (ELYSIUM career sibling absent)")
     career, elysium_root = resolved
     for p in (str(elysium_root), str(career)):   # racine ELYSIUM (tier-1) ET career (core.*)
         if p not in sys.path:
             sys.path.insert(0, p)
     from core.llm_client import complete  # type: ignore
-    return complete(prompt, tier="local-precision", max_tokens=1024)
+
+    tiers = _tiers()
+    derniere: Optional[Exception] = None
+    for i, tier in enumerate(tiers):
+        try:
+            return complete(prompt, tier=tier, max_tokens=1024)
+        except Exception as exc:
+            derniere = exc
+            reste = tiers[i + 1:]
+            logger.warning("cv_target: tier %s indisponible (%s) — %s", tier, exc,
+                           f"essai de {reste[0]}" if reste else "plus aucun tier")
+    raise derniere if derniere is not None else RuntimeError("aucun tier LLM configuré")

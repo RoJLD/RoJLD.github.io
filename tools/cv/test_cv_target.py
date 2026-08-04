@@ -193,9 +193,113 @@ def test_sovereign_complete_reinserts_elysium_root(monkeypatch):
 def test_extract_cfg_falls_back_loud_when_resolver_absent(profile, monkeypatch, caplog):
     """Résolveur absent → _sovereign_complete lève → extract_cfg retombe sur le
     cfg défaut ET logge un WARNING (fallback bruyant, jamais muet)."""
+    monkeypatch.delenv("CV_LLM_BASE_URL", raising=False)
     monkeypatch.setattr(cv_target, "_resolve_career", lambda here: None)
     with caplog.at_level(logging.WARNING):
         cfg = cv_target.extract_cfg("Quant developer", profile)  # complete_fn=None -> vrai chemin -> raise
     assert cfg["min_relevance"] == 0.0
     assert cfg["relevance_key"] == "general"
     assert any("cfg défaut" in r.message for r in caplog.records)
+
+
+# ── chemin CONTENEUR : appel direct quand le sibling n'existe pas ──────────────
+#
+# Déployé sur le cluster, l'atelier n'a pas de checkout ELYSIUM à côté de lui. Le
+# repli HTTP existe pour ce seul cas et ne doit JAMAIS se déclencher autrement : il
+# contourne le gateway souverain, donc le budget cap SIGIL-529.
+
+def test_sans_sibling_et_sans_url_le_resolveur_leve_toujours(monkeypatch):
+    """L'ancien comportement RESTE le défaut : pas d'URL posée, pas de repli."""
+    monkeypatch.delenv("CV_LLM_BASE_URL", raising=False)
+    monkeypatch.setattr(cv_target, "_resolve_career", lambda here: None)
+    with pytest.raises(RuntimeError, match="souverain introuvable"):
+        cv_target._sovereign_complete("peu importe")
+
+
+def test_sans_sibling_mais_avec_url_l_appel_direct_prend_le_relais(monkeypatch):
+    """Le repli est EXPLICITE : il faut poser l'URL. Rien ne bascule tout seul."""
+    monkeypatch.setenv("CV_LLM_BASE_URL", "http://forge-ollama.elysium-ml.svc:11434/v1")
+    monkeypatch.setattr(cv_target, "_resolve_career", lambda here: None)
+    monkeypatch.setattr(cv_target, "_complete_http", lambda p: f"HTTP:{p}")
+    assert cv_target._sovereign_complete("salut") == "HTTP:salut"
+
+
+def test_avec_sibling_l_appel_direct_n_est_jamais_emprunte(monkeypatch, tmp_path):
+    """Le souverain PRIME : une URL posée ne court-circuite pas le gateway — ni son
+    budget cap — tant que le résolveur est joignable."""
+    monkeypatch.setenv("CV_LLM_BASE_URL", "http://forge-ollama.elysium-ml.svc:11434/v1")
+    monkeypatch.setattr(cv_target, "_resolve_career",
+                        lambda here: (tmp_path / "career", tmp_path))
+
+    def interdit(_p):
+        raise AssertionError("appel direct emprunté alors que le sibling est là")
+
+    monkeypatch.setattr(cv_target, "_complete_http", interdit)
+    # Le sibling factice ne porte pas `core.llm_client` : l'import échoue, et c'est
+    # exactement la preuve cherchée — on est bien parti sur la branche souveraine.
+    with pytest.raises(Exception) as exc:
+        cv_target._sovereign_complete("salut")
+    assert not isinstance(exc.value, AssertionError), exc.value
+
+
+# ── chaîne d'endpoints : le poste, puis l'in-cluster réveillable ───────────────
+#
+# Le seul ollama vivant tourne sur le poste ; `forge-ollama` dort avec son nœud,
+# réveillable par Wake-on-LAN. Un endpoint unique obligerait à choisir entre
+# « marche quand le PC est allumé » et « marche quand le nœud est réveillé ».
+
+def _urls_essayees(monkeypatch, urls: str, resultats):
+    """Rejoue la chaîne en enregistrant l'ordre réel des URL contactées."""
+    monkeypatch.setenv("CV_LLM_BASE_URL", urls)
+    vues = []
+
+    def faux_appel(req, _delai):
+        vues.append(req.full_url)
+        issue = resultats.pop(0)
+        if isinstance(issue, Exception):
+            raise issue
+        return issue
+
+    monkeypatch.setattr(cv_target, "_lire_reponse", faux_appel)
+    return vues
+
+
+def test_la_chaine_descend_sur_le_suivant_quand_le_premier_tombe(monkeypatch, caplog):
+    """PC éteint → on bascule sur l'in-cluster, en NOMMANT l'URL qui a échoué."""
+    vues = _urls_essayees(
+        monkeypatch,
+        "http://192.168.1.30:11434/v1,http://forge-ollama.elysium-ml.svc:11434/v1",
+        [OSError("connexion refusée"), "cfg depuis le cluster"])
+    with caplog.at_level(logging.WARNING):
+        assert cv_target._complete_http("salut") == "cfg depuis le cluster"
+    assert len(vues) == 2, "le second endpoint n'a pas été essayé"
+    assert vues[0].startswith("http://192.168.1.30:11434/")   # le poste d'abord
+    assert "forge-ollama" in vues[1]
+    assert "192.168.1.30" in caplog.text, "l'URL fautive n'est pas nommée dans le journal"
+    assert "injoignable" in caplog.text, "l'échec n'est pas qualifié dans le journal"
+
+
+def test_le_premier_endpoint_joignable_arrete_la_chaine(monkeypatch):
+    """Pas de requête inutile : on ne contacte pas le cluster si le poste répond."""
+    vues = _urls_essayees(
+        monkeypatch,
+        "http://192.168.1.30:11434/v1,http://forge-ollama.elysium-ml.svc:11434/v1",
+        ["cfg depuis le poste"])
+    assert cv_target._complete_http("salut") == "cfg depuis le poste"
+    assert len(vues) == 1, f"endpoints contactés en trop : {vues}"
+
+
+def test_tous_les_endpoints_morts_leve_en_le_disant(monkeypatch):
+    """Échec total → RuntimeError. extract_cfg retombera sur le cfg défaut, et le
+    garde de ciblage dégradé refusera la livraison : la panne reste visible."""
+    _urls_essayees(monkeypatch, "http://a/v1,http://b/v1",
+                   [OSError("a mort"), OSError("b mort")])
+    with pytest.raises(RuntimeError, match="aucun des 2 endpoints"):
+        cv_target._complete_http("salut")
+
+
+def test_une_seule_url_reste_le_cas_nominal(monkeypatch):
+    """La virgule est une EXTENSION : une URL seule se comporte comme avant."""
+    vues = _urls_essayees(monkeypatch, "http://192.168.1.30:11434/v1", ["ok"])
+    assert cv_target._complete_http("salut") == "ok"
+    assert len(vues) == 1

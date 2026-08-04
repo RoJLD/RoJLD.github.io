@@ -45,6 +45,64 @@ def generate_pdf(job_posting: str, profile: dict, lang: str = "fr",
     return cfg, pdf
 
 
+def generate_docx(job_posting: str, profile: dict, lang: str = "fr",
+                  complete_fn: Optional[Callable[[str], str]] = None) -> tuple[dict, bytes]:
+    """Même pipeline ciblé, rendu en **.docx ATS** (texte réel, zéro tableau).
+
+    L'overlay privé (téléphone, disponibilité) est chargé depuis `~/.elysium/` :
+    absent, le document se rend sans — jamais un gabarit à sa place.
+    """
+    import cv_docx                                    # dépendance python-docx : paresseux
+    cfg, scv = cv_target.targeted_structured_cv(job_posting, profile, lang, complete_fn=complete_fn)
+    return cfg, cv_docx.render_docx_bytes(scv, private=cv_docx.load_private_overlay())
+
+
+def generate_letter(job_posting: str, profile: dict, lang: str = "fr",
+                    skeleton: str = "standard",
+                    complete_fn: Optional[Callable[[str], str]] = None,
+                    today: Optional[str] = None,
+                    accepter_generique: bool = False) -> tuple[dict, Optional[dict], Optional[bytes]]:
+    """Lettre de motivation ancrée → `(cfg, verdict, pdf_bytes | None)`.
+
+    Chaîne : `extract_cfg` → `select_evidence` → `build_profile_facts` → `draft`
+    → **`check_grounding`** → `build_letter_document` → `render_letter_html_gated`.
+
+    `evidence=` est transmis au vérificateur : les sources recevables sont clampées
+    sur les seuls faits que le rédacteur a VUS. L'omettre élargirait le référentiel
+    au profil entier — une garantie plus faible, et silencieuse.
+
+    **La porte reste `render_letter_html_gated`, seul chemin vers des octets.** Un
+    verdict rouge n'est pas contourné ici : il est *rapporté*. On renvoie
+    `pdf_bytes=None` avec le verdict, pour que l'appelant montre QUELLES phrases
+    ont bloqué au lieu d'un échec opaque — refuser sans dire quoi corriger ne rend
+    service à personne.
+
+    Le ciblage est éprouvé AVANT la rédaction et renvoie `(cfg, None, None)` s'il a
+    échoué : rédiger puis vérifier coûte deux appels LLM longs (mesuré : 482 s et
+    644 s), et une lettre écrite sans savoir à quel poste on candidate n'a aucune
+    chance d'être ancrée. Échouer tôt vaut mieux qu'échouer cher.
+    """
+    import cv_grounding
+    import cv_letter
+    import cv_letter_render
+
+    cfg = cv_target.extract_cfg(job_posting, profile, complete_fn=complete_fn)
+    if ciblage_degrade(cfg) and not accepter_generique:
+        return cfg, None, None
+    evidence = cv_letter.select_evidence(profile, cfg)
+    facts = cv_letter.build_profile_facts(profile, evidence, lang)
+    squelette = cv_letter.load_skeleton(skeleton, lang)
+    corps = cv_letter.draft(facts, cfg, squelette, lang, complete_fn=complete_fn)
+    verdict = cv_grounding.check_grounding(corps, profile, lang,
+                                           complete_fn=complete_fn, evidence=evidence)
+    doc = cv_letter.build_letter_document(profile, facts, cfg, corps, lang, today=today)
+    try:
+        html = cv_letter_render.render_letter_html_gated(doc, verdict)
+    except cv_grounding.GroundingBlocked:
+        return cfg, verdict, None
+    return cfg, verdict, cv_pdf.html_to_pdf_bytes(html)
+
+
 def _options_templates() -> str:
     """<option> du sélecteur, ÉNUMÉRÉS depuis la banque.
 
@@ -108,51 +166,221 @@ def _git_commit(repo_root: pathlib.Path, paths: list[str], message: str) -> None
     subprocess.run(["git", "-C", str(repo_root), "commit", "-m", message], check=True)
 
 
+# ── ciblage dégradé : le rendre VISIBLE DANS LE PRODUIT ───────────────────────
+#
+# Mesuré au premier usage réel (fiche Amundi, 2026-08-03) : le tier LLM a expiré
+# trois fois, `extract_cfg` est retombé sur le cfg défaut, et l'atelier a livré un
+# CV **générique** sous le nom `cv_cible.pdf` avec le statut « Ciblage:
+# general~0.0 » — indiscernable d'un succès pour qui ne connaît pas le code.
+#
+# `ATELIER.md` affirme que ce repli « n'est jamais silencieux ». C'est vrai du
+# JOURNAL et faux du PRODUIT : le WARNING part dans la console du serveur, pendant
+# que le PDF part chez le recruteur. Un garde qui ne parle qu'à la console ne
+# garde rien.
+#
+# Le signal fiable n'est PAS l'étiquette `general~0.0` — une fiche peut légitimement
+# la produire. C'est `_field_provenance` : un cfg de repli a TOUS ses champs en
+# `absent`/`default`, parce qu'aucun n'a pu être lu de la fiche.
+
+def ciblage_degrade(cfg: dict) -> bool:
+    """Vrai si le cfg est un REPLI, pas une extraction. Structurel, pas heuristique."""
+    prov = cfg.get("_field_provenance") or {}
+    lus = {"verbatim", "model"}
+    return not any(prov.get(champ) in lus
+                   for champ in ("company", "job_title", "requirements", "market"))
+
+
+def verdict_ciblage(cfg: dict, accepter_generique: bool = False) -> dict:
+    """Ce que l'atelier FAIT d'un ciblage dégradé.
+
+    Retourne ``{"livrer": bool, "nom": str, "message": str}`` :
+      - ``livrer``  : envoyer le PDF, ou refuser en HTTP 409 ;
+      - ``nom``     : nom du fichier téléchargé — la vérité qui voyage AVEC l'artefact ;
+      - ``message`` : ce que l'utilisateur lit dans la barre de statut.
+
+    **Politique : refus par défaut, réarmement explicite.** Trois options se
+    présentaient — refuser sèchement, livrer en renommant, livrer en avertissant —
+    et aucune n'était bonne seule. Refuser protège mais enferme : ollama en panne,
+    plus aucun CV, alors qu'un CV générique reste parfois exactement ce qu'on veut.
+    Livrer, même renommé, fait du générique le chemin par DÉFAUT — celui qu'on
+    prend distrait, un soir de candidature à la chaîne.
+
+    En inversant la charge, l'accident devient impossible sans que la capacité
+    disparaisse : un CV générique ne peut plus partir *par erreur*, seulement
+    *exprès*, en un clic (`accepter_generique`). Le coût est un aller-retour HTTP.
+
+    Et même réarmé, le fichier reste nommé `cv_GENERIQUE.pdf` : la décision se
+    prend à l'écran, la vérité voyage avec l'artefact.
+    """
+    if not ciblage_degrade(cfg):
+        return {"livrer": True, "nom": "cv_cible.pdf", "message": "CV ciblé"}
+    if accepter_generique:
+        return {"livrer": True, "nom": "cv_GENERIQUE.pdf",
+                "message": "CV GÉNÉRIQUE assumé — non adapté à cette fiche"}
+    return {"livrer": False, "nom": "cv_GENERIQUE.pdf",
+            "message": ("Ciblage impossible (aucun champ n'a pu être lu de la fiche) : "
+                        "un CV générique serait produit. Relance, ou demande-le "
+                        "explicitement.")}
+
+
+#: Nom interne de l'atelier. « Kleos » (κλέος) : chez Homère, le renom qui circule
+#: par la parole d'autrui et survit à celui qui l'a gagné. Un CV et une lettre ne
+#: sont rien d'autre — une réputation confiée à un tiers pour qu'il la répète.
+#: Reste dans la famille grecque du satellite (Anthropos « l'humain », Ergon « l'œuvre »).
+NOM = "Kleos"
+
+#: Barre de navigation commune aux trois pages. Injectée par `_render` AVANT le
+#: profil, pour la même raison que le jeton : un profil contenant `__NAV__` doit
+#: être affiché, pas interprété.
+_NAV = """<style>
+.nv{display:flex;align-items:center;gap:16px;padding:2px 0 12px;margin:0 0 22px;
+border-bottom:1px solid #e2e8f0;font-size:13px;flex-wrap:wrap}
+.nv a{color:#475569;text-decoration:none;padding:4px 2px;border-bottom:2px solid transparent}
+.nv a:hover{color:#1a1a2e;border-bottom-color:#4361ee}
+.nv a:focus-visible{outline:2px solid #4361ee;outline-offset:3px;border-radius:3px}
+.nv a[aria-current=page]{color:#1a1a2e;font-weight:600;border-bottom-color:#4361ee}
+.nv .brand{color:#1a1a2e;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+font-size:12px;border:0}
+.nv .brand:hover{border-bottom-color:transparent}
+.nv .sp{flex:1}
+.nv .env{color:#94a3b8;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+</style>
+<nav class="nv" aria-label="Sections de l'atelier">
+<a class="brand" href="/">Kleos</a>
+<a href="/" __A_ATELIER__>Atelier</a>
+<a href="/cms" __A_CMS__>Profil</a>
+<a href="/edit" __A_EDIT__>JSON brut</a>
+<span class="sp"></span><span class="env">reseau prive</span>
+</nav>"""
+
 _FORM = """<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<title>Atelier CV ciblé</title><style>
-body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1a1a2e}
-h1{font-size:22px}p.sub{color:#666}
-textarea{width:100%;min-height:240px;border:1px solid #ccd;border-radius:8px;padding:12px;font-size:14px;font-family:inherit}
-.row{display:flex;gap:12px;align-items:center;margin:12px 0}
+<title>Atelier — Kleos</title><style>
+body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;max-width:820px;margin:32px auto;padding:0 20px;color:#1a1a2e}
+h1{font-size:22px;margin:0 0 4px}p.sub{color:#666;margin-top:0}
+textarea{width:100%;min-height:220px;border:1px solid #ccd;border-radius:8px;padding:12px;font-size:14px;font-family:inherit}
+textarea:focus,select:focus,button:focus-visible{outline:2px solid #4361ee;outline-offset:2px}
+.row{display:flex;gap:12px;align-items:center;margin:12px 0;flex-wrap:wrap}
+label.lb{font-size:12px;color:#64748b}
 select,button{padding:10px 14px;border-radius:8px;font-size:14px}
-button{background:#4361ee;color:#fff;border:none;cursor:pointer}button:disabled{opacity:.5}
-#status{color:#666;font-size:13px;margin-left:8px}
+select{border:1px solid #ccd;background:#fff}
+button{background:#4361ee;color:#fff;border:none;cursor:pointer}
+button.alt{background:#fff;color:#1a1a2e;border:1px solid #ccd}
+button.warn{background:#c0392b;color:#fff;margin-top:12px}
+button:disabled{opacity:.45;cursor:progress}
+#status{font-size:13px;margin:14px 0 0;min-height:1.2em}#status.ko{color:#c0392b;font-weight:600}
+table.gd{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}
+table.gd th,table.gd td{border:1px solid #e2e8f0;padding:7px 9px;text-align:left;vertical-align:top}
+table.gd th{background:#f8fafc;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b}
+table.gd td.mot{color:#c0392b;white-space:nowrap;font-family:ui-monospace,Consolas,monospace}
 </style></head><body>
+__NAV__
 <h1>Atelier CV ciblé</h1>
-<p style="font-size:13px"><a href="/cms" style="color:#4361ee">✎ CMS — édition structurée</a> · <a href="/edit" style="color:#4361ee">JSON brut</a></p>
-<p class="sub">Colle une fiche de poste : le CV est filtré vers les expériences les plus pertinentes puis rendu en PDF (texte réel, ATS-safe).</p>
+<p class="sub">Colle une fiche de poste. Le CV est filtré vers les expériences pertinentes ;
+la lettre est rédigée puis <strong>vérifiée phrase par phrase</strong> contre ton profil —
+une affirmation qui ne trace pas bloque l'export.</p>
+<label class="lb" for="job">Fiche de poste</label>
 <textarea id="job" placeholder="Colle la fiche de poste ici..."></textarea>
 <div class="row">
+  <label class="lb" for="lang">Langue</label>
   <select id="lang"><option value="fr">Français</option><option value="en">English</option></select>
+  <label class="lb" for="template">Gabarit</label>
   <select id="template" title="Gabarit de mise en forme">__TEMPLATES__</select>
-  <button id="go" onclick="gen()">Générer le CV ciblé (PDF)</button>
-  <span id="status"></span>
 </div>
+<div class="row">
+  <button id="b-pdf" data-route="/generate"
+          onclick="lancer(this.dataset.route)">CV ciblé (PDF)</button>
+  <button id="b-docx" class="alt" data-route="/generate-docx"
+          onclick="lancer(this.dataset.route)">CV ATS (.docx)</button>
+  <button id="b-lt" class="alt" data-route="/generate-letter"
+          onclick="lancer(this.dataset.route)">Lettre ancrée (PDF)</button>
+</div>
+<p id="status" role="status" aria-live="polite"></p>
+<div id="panneau"></div>
 <script>
 const TOKEN=__TOKEN__;   // jeton anti-CSRF : injecté par le serveur qui sert cette page
-async function gen(){
-  const btn=document.getElementById('go'),st=document.getElementById('status');
-  const job=document.getElementById('job').value.trim();
-  if(!job){st.textContent='Fiche vide.';return}
-  btn.disabled=true;st.textContent='Génération...';
+const BTNS=['b-pdf','b-docx','b-lt'];
+function val(id){return document.getElementById(id).value}
+function occupe(v){BTNS.forEach(function(i){document.getElementById(i).disabled=v})}
+function dire(t,ko){var s=document.getElementById('status');s.textContent=t;s.className=ko?'ko':''}
+function vider(){document.getElementById('panneau').textContent=''}
+
+async function lancer(route,generique){
+  const job=val('job').trim();
+  vider();
+  if(!job){dire('Fiche vide.',true);return}
+  occupe(true);
+  dire(generique?'Génération (générique assumé)...'
+                :'Génération... plusieurs minutes possibles (LLM local).');
   try{
-    const r=await fetch('/generate',{method:'POST',
+    const r=await fetch(route,{method:'POST',
       headers:{'Content-Type':'application/json','X-Atelier-Token':TOKEN},
-      body:JSON.stringify({job:job,lang:document.getElementById('lang').value,
-        template:document.getElementById('template').value})});
+      body:JSON.stringify({job:job,lang:val('lang'),template:val('template'),
+                           generique:!!generique})});
+    if(r.status===409){await refus(r,route);return}
     if(!r.ok)throw new Error('HTTP '+r.status);
-    const blob=await r.blob();
-    const url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download='cv_cible.pdf';a.click();URL.revokeObjectURL(url);
-    st.textContent='PDF téléchargé. Ciblage: '+(r.headers.get('X-CV-Target')||'?');
-  }catch(e){st.textContent='Erreur: '+e.message}
-  btn.disabled=false;
+    await telecharger(r);
+  }catch(e){dire('Erreur: '+e.message,true)}
+  finally{occupe(false)}
+}
+
+// Deux refus DISTINCTS : le ciblage (rien n'a été rédigé, réarmable) et l'ancrage
+// (la lettre existe mais sur-affirme — on montre quoi corriger).
+async function refus(r,route){
+  if(r.headers.get('X-CV-Grounding')==='blocked'){
+    const v=await r.json();
+    dire('Lettre REFUSÉE : '+v.blocking.length+" affirmation(s) sans ancrage. Rien n'est sorti.",true);
+    ancrage(v);return;
+  }
+  dire(await r.text(),true);
+  rearmer(route);
+}
+
+function ancrage(v){
+  const p=document.getElementById('panneau');
+  const t=document.createElement('table');t.className='gd';
+  const th=document.createElement('thead');
+  th.innerHTML='<tr><th>#</th><th>Phrase</th><th>Motif</th></tr>';
+  const tb=document.createElement('tbody');
+  (v.blocking||[]).forEach(function(b){
+    const tr=document.createElement('tr');
+    const txt=(b.phrase!=null&&v.sentences&&v.sentences[b.phrase-1])
+              ?v.sentences[b.phrase-1]:(b.affirmation||'');
+    // textContent, JAMAIS innerHTML : ces phrases viennent du LLM. Une lettre
+    // portant du balisage ne doit pas s'exécuter dans une page qui détient le
+    // jeton anti-CSRF et le profil entier.
+    [[b.phrase==null?'—':b.phrase,''],[txt,''],[b.reason||'',
+      'mot']].forEach(function(c){
+      const td=document.createElement('td');td.textContent=c[0];
+      if(c[1])td.className=c[1];tr.appendChild(td)});
+    tb.appendChild(tr)});
+  t.appendChild(th);t.appendChild(tb);p.appendChild(t);
+}
+
+function rearmer(route){
+  const b=document.createElement('button');b.className='warn';
+  b.textContent='Générer quand même (document GÉNÉRIQUE)';
+  b.onclick=function(){lancer(route,true)};
+  document.getElementById('panneau').appendChild(b);
+}
+
+async function telecharger(r){
+  // Le nom vient du SERVEUR : lui seul sait si le ciblage a eu lieu, et le nom du
+  // fichier est la seule part du verdict qui survive à la fermeture de l'onglet.
+  const m=(r.headers.get('Content-Disposition')||'').match(/filename="([^"]+)"/);
+  const nom=m?m[1]:'document';
+  const blob=await r.blob();
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=nom;a.click();URL.revokeObjectURL(url);
+  const degrade=r.headers.get('X-CV-Degrade')==='1';
+  dire((degrade?'[!] GÉNÉRIQUE — ':'')+nom+' téléchargé'
+       +(r.headers.get('X-CV-Grounding')==='ok'?' · ancrage vérifié':'')
+       +' (ciblage '+(r.headers.get('X-CV-Target')||'?')+')',degrade);
 }
 </script></body></html>"""
 
 
 _EDIT = """<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<title>Éditer le profil — Atelier CV</title><style>
+<title>JSON brut — Kleos</title><style>
 body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;max-width:900px;margin:30px auto;padding:0 20px;color:#1a1a2e}
 h1{font-size:20px}a{color:#4361ee}
 textarea{width:100%;min-height:58vh;border:1px solid #ccd;border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
@@ -162,7 +390,7 @@ button{background:#4361ee;color:#fff;border:none;border-radius:8px;padding:10px 
 #status{font-size:13px}#status.ok{color:#159957}
 #errs{color:#c0392b;font-size:13px;white-space:pre-wrap;margin-top:8px}
 </style></head><body>
-<p><a href="/">← Atelier</a></p>
+__NAV__
 <h1>Éditer le profil (profile.json)</h1>
 <p style="color:#666;font-size:13px">Validé (validate_profile) avant écriture atomique. Le site public s'hydrate de ce fichier.</p>
 <textarea id="p" spellcheck="false"></textarea>
@@ -211,7 +439,7 @@ async function save(){
 # et resoumet l'ENTIER à /save → govern_save. Aucun second chemin d'écriture, et
 # aucune clé non modélisée n'est perdue (cf. assets/js/cms-model.js).
 _CMS = """<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<title>CMS — Atelier</title><style>
+<title>Profil — Kleos</title><style>
 body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;max-width:1100px;margin:24px auto;padding:0 20px;color:#1a1a2e}
 h1{font-size:20px;margin:0 0 4px}a{color:#4361ee}
 .sub{color:#666;font-size:13px;margin:0 0 16px}
@@ -238,8 +466,8 @@ button.danger{color:#c0392b;border-color:#f0c4bd}
 #errs{color:#c0392b;font-size:12.5px;white-space:pre-wrap;margin-top:8px}
 .hint{background:#f6f8ff;border:1px solid #e3e6f0;border-radius:8px;padding:9px 11px;font-size:12.5px;color:#556;margin-bottom:14px}
 </style></head><body>
-<p><a href="/">← Atelier</a> · <a href="/edit">JSON brut</a></p>
-<h1>CMS — édition structurée</h1>
+__NAV__
+<h1>Profil — édition structurée</h1>
 <p class="sub">Les modifications passent par le <b>pipeline gouverné</b> (historique · validation · revue LLM · écriture atomique · graphe · rebuild), exactement comme l'éditeur JSON.</p>
 <div class="hint">Le profil est chargé <b>entier</b> et resoumis <b>entier</b> : les sections non éditables ici (parcours, ikigai, méta…) sont préservées à l'identique.</div>
 <div class="tabs" id="tabs"></div>
@@ -459,8 +687,31 @@ def reset_csrf_token() -> str:
     return _TOKEN
 
 
+def _bind() -> str:
+    """Adresse d'écoute. Loopback par défaut — l'exposition est un acte DÉLIBÉRÉ.
+
+    `ATELIER_BIND=0.0.0.0` est requis pour servir depuis un conteneur, où la
+    frontière n'est plus l'interface réseau mais le pod. Le défaut ne change pas :
+    lancé à la main sur le poste, l'atelier reste inatteignable du réseau.
+    """
+    import os
+    return os.environ.get("ATELIER_BIND", "127.0.0.1").strip() or "127.0.0.1"
+
+
+def _hosts_autorises() -> frozenset:
+    """Hôtes acceptés dans `Host`. Le loopback TOUJOURS, plus `ATELIER_HOSTS`.
+
+    L'allowlist ne se remplace pas, elle s'étend : un déploiement qui ajoute
+    `kleos.elysium.local` ne doit pas, au passage, fermer l'accès local par lequel
+    on diagnostique le déploiement lui-même.
+    """
+    import os
+    sup = os.environ.get("ATELIER_HOSTS", "")
+    return _LOCAL_HOSTS | frozenset(h.strip().lower() for h in sup.split(",") if h.strip())
+
+
 def _hostport_ok(value: Optional[str], port: int) -> bool:
-    """En-tête `Host` : nom dans l'allowlist locale ET port du serveur."""
+    """En-tête `Host` : nom dans l'allowlist ET port du serveur."""
     if not value:
         return False
     try:
@@ -468,24 +719,35 @@ def _hostport_ok(value: Optional[str], port: int) -> bool:
         host, got = parts.hostname, parts.port
     except ValueError:                      # port non numérique, IPv6 malformée…
         return False
-    if host is None or host.lower() not in _LOCAL_HOSTS:
+    if host is None or host.lower() not in _hosts_autorises():
         return False
+    # Derrière un ingress, `Host` ne porte pas de port : `got is None` l'accepte.
     return got is None or got == port
 
 
 _ERR_CLIENT = "Erreur interne — le détail est dans la console de l'atelier."
 
 
-def _render(template: str, profile_raw: Optional[str] = None) -> str:
-    """Injecte le jeton (puis le profil) dans une page servie par l'atelier.
+def _render(template: str, profile_raw: Optional[str] = None,
+            page: str = "") -> str:
+    """Injecte la navigation, le jeton, puis le profil dans une page de l'atelier.
 
-    Le jeton d'abord : si le profil contenait la chaîne `__TOKEN__`, l'ordre
-    inverse l'y remplacerait au lieu de servir la page.
+    L'ORDRE est un invariant de sécurité, pas une commodité : navigation et jeton
+    d'abord, profil ensuite. Le profil est une donnée ÉDITABLE, donc non fiable ;
+    s'il contenait `__TOKEN__` ou `__NAV__`, l'ordre inverse l'y remplacerait au
+    lieu de servir la page — et injecterait du balisage dans le champ d'édition.
+
+    `page` marque l'onglet courant (`aria-current`) : sans lui la barre indique où
+    l'on peut aller, jamais où l'on est.
     """
-    page = template.replace("__TOKEN__", json.dumps(csrf_token()))
+    nav = _NAV
+    for cle, ident in (("__A_ATELIER__", "atelier"), ("__A_CMS__", "cms"),
+                       ("__A_EDIT__", "edit")):
+        nav = nav.replace(cle, 'aria-current="page"' if page == ident else "")
+    out = template.replace("__NAV__", nav).replace("__TOKEN__", json.dumps(csrf_token()))
     if profile_raw is not None:
-        page = page.replace("__PROFILE__", json.dumps(profile_raw).replace("<", "\\u003c"))
-    return page
+        out = out.replace("__PROFILE__", json.dumps(profile_raw).replace("<", "\\u003c"))
+    return out
 
 
 def _url_ok(value: str, port: int) -> bool:
@@ -506,7 +768,7 @@ def _url_ok(value: str, port: int) -> bool:
         return False
     if parts.scheme not in ("http", "https"):
         return False
-    if host is None or host.lower() not in _LOCAL_HOSTS:
+    if host is None or host.lower() not in _hosts_autorises():
         return False
     return got is None or got == port
 
@@ -675,13 +937,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # arbitraire : `_render` pose le jeton d'ABORD, pour qu'un contenu
             # injecté ensuite (les ids venus de cv/templates/*.json) ne puisse pas
             # introduire la chaîne `__TOKEN__`.
-            self._send(200, "text/html; charset=utf-8", _page(_render(_FORM)).encode("utf-8"))
+            self._send(200, "text/html; charset=utf-8",
+                       _page(_render(_FORM, page="atelier")).encode("utf-8"))
         elif self.path == "/edit":
             raw = _PROFILE.read_text(encoding="utf-8")
-            self._send(200, "text/html; charset=utf-8", _render(_EDIT, raw).encode("utf-8"))
+            self._send(200, "text/html; charset=utf-8",
+                       _render(_EDIT, raw, page="edit").encode("utf-8"))
         elif self.path == "/cms":
             raw = _PROFILE.read_text(encoding="utf-8")
-            self._send(200, "text/html; charset=utf-8", _render(_CMS, raw).encode("utf-8"))
+            self._send(200, "text/html; charset=utf-8",
+                       _render(_CMS, raw, page="cms").encode("utf-8"))
         elif urllib.parse.urlsplit(self.path).path in _STATIC_ALLOW:
             # urlsplit : `?v=1` (cache-busting) ne doit pas faire échouer l'allowlist
             p = urllib.parse.urlsplit(self.path).path
@@ -717,25 +982,107 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(400, "text/plain", b"bad json")
         if self.path == "/generate":
             return self._handle_generate(data)
+        if self.path == "/generate-docx":
+            return self._handle_generate_docx(data)
+        if self.path == "/generate-letter":
+            return self._handle_generate_letter(data)
         if self.path == "/save":
             return self._handle_save(data)
         self._send(404, "text/plain", b"not found")
 
+    #: Types MIME des artefacts livrables, par extension.
+    _MIME = {".pdf": "application/pdf",
+             ".docx": "application/vnd.openxmlformats-officedocument"
+                      ".wordprocessingml.document"}
+
+    @staticmethod
+    def _entree(data):
+        """Champs communs aux trois générateurs, normalisés une seule fois."""
+        return (str(data.get("job", "")),
+                "en" if data.get("lang") == "en" else "fr",
+                bool(data.get("generique")))
+
+    def _livrer(self, cfg, octets: bytes, ext: str, accepte: bool):
+        """Applique le VERDICT DE CIBLAGE à un artefact déjà produit.
+
+        Partagé par le CV et le .docx : deux artefacts issus du même pipeline
+        doivent obéir à la même politique, sinon l'un devient la porte dérobée
+        de l'autre.
+        """
+        tag = f"{cfg.get('relevance_key')}~{cfg.get('min_relevance')}"
+        degrade = ciblage_degrade(cfg)
+        v = verdict_ciblage(cfg, accepter_generique=accepte)
+        nom = v["nom"].rsplit(".", 1)[0] + ext
+        if not v["livrer"]:
+            # 409 : la requête est licite, l'ÉTAT ne permet pas d'y répondre.
+            return self._send(409, "text/plain; charset=utf-8",
+                              v["message"].encode("utf-8"),
+                              {"X-CV-Target": tag, "X-CV-Degrade": "1"})
+        self._send(200, self._MIME[ext], octets, {
+            "Content-Disposition": f'attachment; filename="{nom}"',
+            "X-CV-Target": tag,
+            "X-CV-Degrade": "1" if degrade else "0",
+            "X-CV-Message": urllib.parse.quote(v["message"]),
+        })
+
     def _handle_generate(self, data):
         try:
-            job = str(data.get("job", "")); lang = "en" if data.get("lang") == "en" else "fr"
-            template = data.get("template") or None
+            job, lang, accepte = self._entree(data)
             profile = json.loads(_PROFILE.read_text(encoding="utf-8"))
-            cfg, pdf = generate_pdf(job, profile, lang, template=template)
-            tag = f"{cfg.get('relevance_key')}~{cfg.get('min_relevance')}"
-            self._send(200, "application/pdf", pdf, {
-                "Content-Disposition": 'attachment; filename="cv_cible.pdf"',
-                "X-CV-Target": tag,
-            })
+            cfg, pdf = generate_pdf(job, profile, lang,
+                                    template=data.get("template") or None)
+            self._livrer(cfg, pdf, ".pdf", accepte)
         except Exception:
             # Le détail (chemins, clés, trace) reste côté serveur. Zero Masking :
             # rien n'est avalé — la trace complète part dans la console de l'atelier,
             # seul le client n'en obtient qu'un constat.
+            traceback.print_exc()
+            self._send(500, "text/plain; charset=utf-8", _ERR_CLIENT.encode("utf-8"))
+
+    def _handle_generate_docx(self, data):
+        try:
+            job, lang, accepte = self._entree(data)
+            profile = json.loads(_PROFILE.read_text(encoding="utf-8"))
+            cfg, docx = generate_docx(job, profile, lang)
+            self._livrer(cfg, docx, ".docx", accepte)
+        except Exception:
+            traceback.print_exc()
+            self._send(500, "text/plain; charset=utf-8", _ERR_CLIENT.encode("utf-8"))
+
+    def _handle_generate_letter(self, data):
+        """Lettre ancrée. Deux portes distinctes, deux refus distincts.
+
+        Un `409` sans corps JSON = le CIBLAGE a échoué (rien n'a été rédigé).
+        Un `409` avec `{blocking, sentences}` = la lettre existe mais son ANCRAGE
+        est rouge : on renvoie les phrases fautives et leur motif. Confondre les
+        deux refus condamnerait à deviner lequel des deux s'est produit.
+        """
+        try:
+            job, lang, accepte = self._entree(data)
+            from datetime import date
+            profile = json.loads(_PROFILE.read_text(encoding="utf-8"))
+            cfg, verdict, pdf = generate_letter(
+                job, profile, lang, skeleton=str(data.get("skeleton") or "standard"),
+                today=date.today().strftime("%d/%m/%Y"), accepter_generique=accepte)
+            tag = f"{cfg.get('relevance_key')}~{cfg.get('min_relevance')}"
+            if verdict is None:                       # porte 1 : ciblage
+                msg = verdict_ciblage(cfg)["message"]
+                return self._send(409, "text/plain; charset=utf-8", msg.encode("utf-8"),
+                                  {"X-CV-Target": tag, "X-CV-Degrade": "1"})
+            if pdf is None:                           # porte 2 : ancrage
+                corps = json.dumps({"blocking": verdict.get("blocking"),
+                                    "sentences": verdict.get("sentences"),
+                                    "referentiel": verdict.get("referentiel")},
+                                   ensure_ascii=False).encode("utf-8")
+                return self._send(409, "application/json; charset=utf-8", corps,
+                                  {"X-CV-Target": tag, "X-CV-Grounding": "blocked"})
+            self._send(200, "application/pdf", pdf, {
+                "Content-Disposition": 'attachment; filename="lettre.pdf"',
+                "X-CV-Target": tag,
+                "X-CV-Grounding": "ok",
+                "X-CV-Degrade": "1" if ciblage_degrade(cfg) else "0",
+            })
+        except Exception:
             traceback.print_exc()
             self._send(500, "text/plain; charset=utf-8", _ERR_CLIENT.encode("utf-8"))
 
@@ -795,13 +1142,23 @@ def make_server(port: int = 0) -> http.server.HTTPServer:
     Point d'entrée unique volontaire : un test qui reconstruirait son propre
     `HTTPServer` validerait une version reconstituée, pas l'artefact livré.
     """
-    return AtelierServer(("127.0.0.1", port), Handler)
+    return AtelierServer((_bind(), port), Handler)
 
 
 def main(port: int = 8010) -> int:
     reset_csrf_token()   # un jeton neuf par démarrage de serveur
     srv = make_server(port)
-    print(f"[atelier] http://127.0.0.1:{port}  (Ctrl+C pour arrêter)")
+    adresse = _bind()
+    print(f"[atelier] http://{adresse}:{port}  (Ctrl+C pour arrêter)")
+    if adresse not in _LOCAL_HOSTS:
+        # Bruyant par construction : deux gardes viennent de tomber d'un coup
+        # (l'écoute loopback ET l'implicite « seul l'utilisateur local parle »).
+        # Ce qui les remplace est HORS de ce processus — il doit le dire.
+        print(f"[atelier] ATTENTION — écoute sur {adresse}, plus seulement en local.\n"
+              f"[atelier]   Cette page sert le PROFIL ENTIER et sait ÉCRIRE profile.json.\n"
+              f"[atelier]   Le contrôle d'accès doit être assuré EN AMONT (ingress :\n"
+              f"[atelier]   basicAuth + tailnet-only). Hôtes acceptés : "
+              f"{', '.join(sorted(_hosts_autorises()))}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

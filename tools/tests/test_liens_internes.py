@@ -20,6 +20,7 @@ import json
 import pathlib
 import re
 import sys
+from html.parser import HTMLParser as _HTMLParser
 
 import pytest
 
@@ -347,6 +348,131 @@ def _page_synthetique(dossier: pathlib.Path, corps: str) -> pathlib.Path:
     return page
 
 
+# --- Ce qui compte comme ANCRE : un parseur HTML tranche, pas une sous-chaîne --
+#
+# `_has_anchor` cherche trois motifs littéraux. Mesuré 2026-07-29 : le réduire au
+# seul `id="…"` — donc rendre le scanner aveugle à `id='…'` et à `name="…"` —
+# laissait la suite ENTIÈREMENT VERTE (458 passed). Le jumeau de cette fonction,
+# dans `validate_profile`, est tenu par un test paramétré sur les trois formes ;
+# la copie du scanner ne l'était par rien.
+#
+# L'attendu ne peut pas être la liste des trois motifs : ce serait la constante
+# testée recopiée dans son test. Il vient d'un PARSEUR HTML (`html.parser`, la
+# bibliothèque standard), qui lit les attributs au lieu de chercher des chaînes,
+# et qui ne partage aucune ligne avec le scanner. C'est lui qui dit quels
+# fragments existent ; le scanner doit dire la même chose.
+
+def _ancres_selon_un_parseur(texte: str) -> set[str]:
+    """Fragments atteignables dans `texte`, vus par un parseur HTML de la stdlib."""
+    class _Collecteur(_HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.vues: set[str] = set()
+
+        def handle_starttag(self, tag, attrs):
+            d = dict(attrs)
+            self.vues |= {d[k] for k in ("id", "name") if d.get(k)}
+
+    c = _Collecteur()
+    c.feed(texte)
+    return c.vues
+
+
+def test_le_scanner_voit_les_memes_ancres_qu_un_parseur_html(tmp_path):
+    """Les trois façons d'écrire une ancre valent la même chose pour le navigateur.
+
+    L'ENTRÉE est décrite ici (une page cible qui déclare ses ancres en guillemets
+    doubles, en guillemets simples et par `name`) ; la SORTIE attendue est ce que
+    le parseur y trouve. Le scanner doit accepter exactement ces fragments-là —
+    et signaler celui que le parseur ne trouve pas, sans quoi l'acceptation ne
+    prouverait rien.
+    """
+    cible = tmp_path / "cible.html"
+    cible.write_text('<h2 id="doubles">a</h2>'
+                     "<h2 id='simples'>b</h2>"
+                     '<a name="nommee"></a>', encoding="utf-8")
+    attendues = _ancres_selon_un_parseur(cible.read_text(encoding="utf-8"))
+    assert len(attendues) == 3, attendues
+
+    page = tmp_path / "page.html"
+    liens = "".join(f'<a href="cible.html#{a}">x</a>' for a in sorted(attendues))
+    manques = broken_links_in(liens, page, tmp_path)
+    assert manques == [], (
+        f"le scanner ignore des ancres qu'un parseur HTML trouve : {manques}")
+
+    absente = "fragment-que-le-parseur-ne-voit-pas"
+    assert absente not in attendues
+    bad = broken_links_in(f'<a href="cible.html#{absente}">x</a>', page, tmp_path)
+    assert len(bad) == 1 and absente in bad[0], bad
+
+
+@pytest.mark.parametrize("page", [p.relative_to(ROOT).as_posix()
+                                  for p in published_pages()])
+def test_sur_le_site_publie_scanner_et_parseur_saccordent_sur_les_ancres(page):
+    """Même accord, sur la DONNÉE RÉELLE plutôt que sur une page fabriquée.
+
+    Pour chaque lien à fragment d'une page servie, le verdict du scanner
+    (`_has_anchor`) doit être celui du parseur. Une divergence est soit un lien
+    mort que le scan laisse passer, soit un faux positif — les deux rendent la
+    garde inutilisable.
+    """
+    texte = (ROOT / page).read_text(encoding="utf-8", errors="replace")
+    for url in URL_ATTR.findall(texte):
+        cible = resolve(ROOT / page, url.strip())
+        frag = url.strip().partition("#")[2]
+        if not frag or cible is None or cible.suffix != ".html" or not cible.exists():
+            continue
+        cible_txt = cible.read_text(encoding="utf-8", errors="replace")
+        assert _has_anchor(cible_txt, frag) == (frag in _ancres_selon_un_parseur(cible_txt)), (
+            f"{page} -> {url!r} : le scanner et le parseur HTML ne s'accordent pas "
+            f"sur l'ancre #{frag} de {cible.relative_to(ROOT).as_posix()}")
+
+
+def _href_a_fragment_selon_le_parseur(texte: str) -> list[str]:
+    """`href` portant un fragment non nu, relevés par le parseur HTML."""
+    class _Collecteur(_HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.vus: list[str] = []
+
+        def handle_starttag(self, tag, attrs):
+            h = dict(attrs).get("href") or ""
+            if "#" in h and not h.startswith("#"):
+                self.vus.append(h)
+
+    c = _Collecteur()
+    c.feed(texte)
+    return sorted(c.vus)
+
+
+def test_le_corpus_publie_porte_bien_des_liens_a_fragment_a_confronter():
+    """Contre-vacuité du test précédent, SANS nombre écrit à la main.
+
+    Le test ci-dessus ne dit rien si le corpus ne contient aucun lien à
+    fragment, ou si `URL_ATTR`/`resolve` cessent d'en trouver. Le compte attendu
+    ne peut pas être une constante (elle bougera au premier article ajouté) : il
+    vient d'une SECONDE lecture, faite par un parseur HTML là où la première est
+    une expression régulière. Les deux doivent voir exactement les mêmes liens,
+    et il doit y en avoir.
+    """
+    par_regex, par_parseur = {}, {}
+    for p in published_pages():
+        rel = p.relative_to(ROOT).as_posix()
+        texte = p.read_text(encoding="utf-8", errors="replace")
+        par_regex[rel] = sorted(u for u in URL_ATTR.findall(texte)
+                                if "#" in u and not u.startswith("#")
+                                and not u.startswith(EXTERNAL))
+        par_parseur[rel] = [u for u in _href_a_fragment_selon_le_parseur(texte)
+                            if not u.startswith(EXTERNAL)]
+    manquants = {k: sorted(set(par_parseur[k]) - set(par_regex[k])) for k in par_regex}
+    manquants = {k: v for k, v in manquants.items() if v}
+    assert not manquants, (
+        f"des liens à fragment échappent au champ du scanner : {manquants}")
+    total = sum(len(v) for v in par_parseur.values())
+    assert total > 0, "plus aucun lien à fragment dans le site publié : le test "\
+                      "d'accord scanner/parseur ne mesure plus rien"
+
+
 def test_le_scan_signale_un_fichier_absent_reference_en_css(tmp_path):
     """`background:url(...)` vers un fichier absent doit être rapporté."""
     page = _page_synthetique(
@@ -580,6 +706,42 @@ def test_le_generateur_emet_toute_la_nav(page):
         f"le générateur de /{page}/ n'émet plus {manquants} dans sa nav")
 
 
+# --- La marque de la nav doit vivre DANS la nav ------------------------------
+#
+# `destinations_nav()` cherche `nav-brand` n'importe où dans la page ;
+# `pages_atteintes_par_la_nav()` la cherche DANS le bloc `<nav>`. Les deux
+# lectures se rejoignent aujourd'hui, mais rien ne l'exigeait. Mesuré 2026-07-29 :
+# renommer la seule occurrence de `class="nav-brand"` du bloc `<nav>` de
+# `highlights/index.html` — puis celle de son générateur — laissait la suite
+# VERTE (496 passed) dans les deux cas. La règle CSS `.nav-brand{…}`, restée en
+# tête de page, suffisait à faire croire au premier témoin que la page portait
+# toujours la nav partagée, pendant que le second cessait d'y voir une source.
+#
+# Deux conséquences, aucune signalée : le lien « R. Denis » vers l'accueil perdait
+# sa classe (et son style), et le témoin du thème rétrécissait en silence — ce
+# que `corpus_publie` a précisément été écrit pour rendre impossible.
+
+@pytest.mark.parametrize("page", NAV_DESTINATIONS)
+def test_la_marque_de_la_nav_vit_dans_la_nav_et_pas_seulement_dans_le_css(page):
+    """Les deux lectures de la marque doivent porter sur le même objet.
+
+    L'attendu n'est pas un motif recopié : c'est l'ACCORD entre le témoin de
+    page (`destinations_nav`, qui a retenu cette page) et le témoin de bloc
+    (celui de `pages_atteintes_par_la_nav`). Une page retenue par l'un et ignorée
+    par l'autre est un désaccord, quelle que soit la marque choisie.
+    """
+    marque = corpus_publie._NAV_PARTAGEE
+    for source, html in ((f"{page}/index.html",
+                          (ROOT / page / "index.html").read_text(encoding="utf-8")),
+                         (f"générateur de /{page}/", _rendu_des_builders()[page])):
+        blocs = corpus_publie._BLOC_NAV.findall(html)
+        assert blocs, f"{source} : aucun bloc <nav>"
+        assert [b for b in blocs if marque in b], (
+            f"{source} : la marque {marque!r} n'est plus DANS la nav (elle ne "
+            f"subsiste que dans la feuille de style) — la page reste comptée "
+            f"comme destination mais n'est plus vue comme source de nav")
+
+
 # --- validate_profile : la même garde, une couche plus tôt (sur la donnée) ----
 
 def _real_profile():
@@ -643,6 +805,48 @@ def test_validateur_accepte_le_meme_lien_ancre_a_la_racine():
     p = _real_profile()
     p["projects"][0].setdefault("links", {})["demo"] = "/demos/#grid"
     assert validate(p, root=ROOT) == []
+
+
+@pytest.mark.parametrize("relatif, absolu", [
+    ("demos/#grid", "/demos/#grid"),                       # vivant
+    ("demos/#ancre-fantome", "/demos/#ancre-fantome"),     # ancre morte
+    ("repertoire-fantome/", "/repertoire-fantome/"),       # répertoire mort
+    ("fantome.html", "/fantome.html"),                     # fichier mort
+])
+def test_le_validateur_juge_pareil_un_lien_ecrit_a_la_racine_ou_relatif(relatif, absolu):
+    """Un lien écrit `/demos/#x` doit être RÉSOLU, pas classé « externe ».
+
+    Mesuré 2026-07-29 : ajouter `"/"` à `_EXTERNAL` — donc faire sortir du champ
+    du validateur tout lien écrit depuis la racine — laissait la suite VERTE. Le
+    corpus n'écrit aujourd'hui que des chemins relatifs (`articles/x.html`,
+    `demos/#bs`, mesuré : 4 URL locales, aucune absolue), alors que le site
+    publié, lui, n'écrit QUE des chemins absolus (`href="/demos/"`). La première
+    entrée de corpus écrite dans cette forme-là aurait donc échappé à toute
+    validation, et `test_validateur_accepte_le_meme_lien_ancre_a_la_racine`
+    serait resté vert sans rien distinguer : « accepté parce que valide » et
+    « jamais examiné » y rendent la même liste vide.
+
+    L'attendu vient du DISQUE, jamais d'une constante : c'est l'existence réelle
+    de la cible qui dit si le lien doit passer, et les deux écritures du MÊME
+    chemin doivent donner le même verdict.
+    """
+    verdicts = []
+    for forme in (relatif, absolu):
+        p = _real_profile()
+        p["projects"][0].setdefault("links", {})["demo"] = forme
+        verdicts.append([e for e in validate(p, root=ROOT) if "demo" in e])
+    assert bool(verdicts[0]) == bool(verdicts[1]), (
+        f"{relatif!r} et {absolu!r} désignent la même cible mais reçoivent des "
+        f"verdicts différents : {verdicts}")
+    cible = ROOT / absolu.partition("#")[0].lstrip("/")
+    if cible.is_dir():
+        cible = cible / "index.html"
+    frag = absolu.partition("#")[2]
+    attendu_sain = cible.exists() and (
+        not frag or _has_anchor(cible.read_text(encoding="utf-8", errors="replace"), frag))
+    assert bool(verdicts[1]) != attendu_sain, (
+        f"{absolu!r} : cible {'saine' if attendu_sain else 'morte'} sur le disque, "
+        f"verdict du validateur {verdicts[1]}")
 
 
 def test_validateur_refuse_un_lien_mort_dans_identity_links():

@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import json
+import pathlib
+import re
 
 import atelier
 import cv_pdf
+import cv_target
 
 
 def test_html_to_pdf_bytes_smoke():
@@ -314,6 +317,64 @@ def test_wrong_token_is_refused(tmp_path, monkeypatch):
         port = _port_of(base)
         code, _ = _post(port, "/save", {"json": "{}"}, **{atelier.CSRF_HEADER: "x" * 43})
     assert code == 403
+
+
+def test_seule_l_egalite_exacte_du_jeton_ouvre_les_routes_mutantes(tmp_path, monkeypatch):
+    """Les faux jetons sont DÉRIVÉS du vrai, jamais écrits à la main.
+
+    Mesuré 2026-07-29 : remplacer `secrets.compare_digest(given, csrf_token())` par
+    `given.startswith(csrf_token()[:1])` — un préfixe d'UN caractère ouvre alors
+    `/save` — laissait la suite VERTE, `test_wrong_token_is_refused` compris. Ce
+    dernier n'essaie qu'un seul faux jeton, écrit à la main (`"x" * 43`) : il ne
+    refuse que parce que le vrai ne commence pas par « x », soit 63 fois sur 64. Une
+    liste écrite à la main dont le test est le seul lecteur ne voit pas cette classe
+    de trous, et échoue à pile ou face plutôt que sur la propriété.
+
+    Les faux sont donc fabriqués depuis le jeton RÉELLEMENT SERVI dans la page —
+    la seule source qui suive le module quoi qu'il devienne : préfixe, moitié,
+    troncature, rallonge, bruit autour, un caractère changé à chaque extrémité et au
+    milieu. Toute comparaison plus laxiste que l'égalité (`startswith`, `in`, « les n
+    premiers caractères ») rougit sur au moins l'un d'eux — et le vrai jeton doit
+    continuer d'ouvrir : une garde qui mure la porte n'en est pas une.
+    """
+    cible = _pointe_vers_une_copie(tmp_path, monkeypatch)
+    intact = cible.read_text(encoding="utf-8")
+    with _server() as base:
+        port = _port_of(base)
+        code, page = _get(base, "/")
+        assert code == 200
+        m = re.search(r'const TOKEN="([^"]+)"', page)
+        assert m, "la page d'accueil ne porte pas de jeton"
+        jeton = m.group(1)
+
+        def _un_caractere_change(t: str, i: int) -> str:
+            return t[:i] + ("A" if t[i] != "A" else "B") + t[i + 1:]
+
+        faux = {
+            "chaîne vide": "",
+            "préfixe d'un caractère": jeton[:1],
+            "première moitié": jeton[:len(jeton) // 2],
+            "tronqué d'un caractère": jeton[:-1],
+            "privé de son premier caractère": jeton[1:],
+            "rallongé d'un caractère": jeton + "A",
+            "noyé dans du bruit": "A" + jeton + "A",
+            "premier caractère changé": _un_caractere_change(jeton, 0),
+            "caractère médian changé": _un_caractere_change(jeton, len(jeton) // 2),
+            "dernier caractère changé": _un_caractere_change(jeton, len(jeton) - 1),
+        }
+        if jeton.swapcase() != jeton:
+            faux["casse inversée"] = jeton.swapcase()
+        assert jeton not in faux.values(), "un « faux » jeton est en fait le vrai"
+
+        for nom, mauvais in faux.items():
+            code, corps = _post(port, "/save", {"json": "{}"},
+                                **{atelier.CSRF_HEADER: mauvais})
+            assert code == 403, f"jeton ACCEPTÉ ({nom}) : {mauvais!r} → HTTP {code}"
+        assert cible.read_text(encoding="utf-8") == intact, (
+            "profile.json réécrit par une requête à jeton invalide")
+
+        code, _ = _post(port, "/save", {"json": "{}"}, **{atelier.CSRF_HEADER: jeton})
+        assert code == 200, "le jeton exact n'ouvre plus rien : porte murée"
 
 
 def test_foreign_host_is_refused(tmp_path, monkeypatch):
@@ -1254,21 +1315,35 @@ def test_deux_ateliers_lances_separement_ne_tirent_pas_le_meme_jeton():
     valeur calculée depuis le code — est identique d'un interpréteur neuf à
     l'autre. Un jeton tiré de l'entropie du système ne l'est jamais. Cette
     mesure ne peut pas être satisfaite par accident depuis l'intérieur du module.
+
+    Les DEUX jetons d'un interpréteur neuf sont relevés, car un serveur peut être
+    servi avec l'un ou l'autre : `main()` appelle `reset_csrf_token()`, mais
+    `make_server()` — le point d'entrée unique, celui qu'emploient ces tests et
+    tout appelant qui embarque l'atelier — sert le jeton posé À L'IMPORT sans rien
+    retirer. Mesuré 2026-07-29 : figer le `_TOKEN = secrets.token_urlsafe(32)` de
+    niveau module en une constante littérale laissait la suite VERTE (61 tests) —
+    un atelier lancé autrement que par `main` servait alors un jeton lisible dans
+    le code source, et les quatre gardes du lot I1 tombaient avec lui.
     """
     import subprocess
     import sys as _sys
     dossier = str(pathlib.Path(atelier.__file__).resolve().parent)
     programme = ("import sys; sys.path.insert(0, r'" + dossier + "'); "
-                 "import atelier; print(atelier.reset_csrf_token())")
-    tirs = []
+                 "import atelier; print(atelier.csrf_token()); "
+                 "print(atelier.reset_csrf_token())")
+    a_l_import, apres_reset = [], []
     for _ in range(3):
         r = subprocess.run([_sys.executable, "-c", programme],
                            capture_output=True, text=True, timeout=180)
         assert r.returncode == 0, r.stderr[-500:]
-        tirs.append(r.stdout.strip())
-    assert all(tirs), tirs
-    assert len(set(tirs)) == len(tirs), (
-        f"des interpréteurs neufs servent le même jeton : {tirs}")
+        lignes = r.stdout.split()
+        assert len(lignes) == 2, r.stdout
+        a_l_import.append(lignes[0])
+        apres_reset.append(lignes[1])
+    for quand, tirs in (("à l'import", a_l_import), ("après reset", apres_reset)):
+        assert all(tirs), (quand, tirs)
+        assert len(set(tirs)) == len(tirs), (
+            f"des interpréteurs neufs servent le même jeton {quand} : {tirs}")
 
 
 # ── V1 : le profil est une DONNÉE, jamais du balisage ────────────────────────
@@ -1512,9 +1587,15 @@ def _routes_mutantes_declarees(port):
     routes = set()
     for chemin in ("/", "/edit", "/cms"):
         _, _, page = _reponse(port, chemin)
+        html = page.decode("utf-8")
         routes |= set(re.findall(
-            r"""fetch\(\s*["']([^"']+)["']\s*,\s*\{\s*method:\s*["']POST["']""",
-            page.decode("utf-8")))
+            r"""fetch\(\s*["']([^"']+)["']\s*,\s*\{\s*method:\s*["']POST["']""", html))
+        # Les trois générateurs partagent UN seul `fetch(route, …)` : dupliquer le
+        # transport trois fois pour rester détectable par une regex serait laisser
+        # le test dicter l'architecture. La route est donc DÉCLARÉE sur le bouton
+        # (`data-route`) — et le bouton la lit (`this.dataset.route`), donc la
+        # déclaration est utilisée, pas décorative : elle ne peut pas dériver.
+        routes |= set(re.findall(r"""data-route=["']([^"']+)["']""", html))
     return routes
 
 
@@ -1538,9 +1619,11 @@ def test_seules_les_routes_declarees_par_les_pages_repondent_en_POST(
         declarees = _routes_mutantes_declarees(port)
         # Confrontation, pas déclaration : si une route mutante est ajoutée aux
         # pages, ce test doit être revu — c'est précisément ce qu'on veut.
-        assert declarees == {"/generate", "/save"}, declarees
+        assert declarees == {"/generate", "/generate-docx", "/generate-letter",
+                             "/save"}, declarees
         for chemin in ("/", "/edit", "/cms", "/save/", "/save2", "/sauver",
-                       "/n-importe-quoi", "/generate/x"):
+                       "/n-importe-quoi", "/generate/x", "/generate-pdf",
+                       "/generate-docx/", "/generatedocx", "/generate-letter2"):
             assert chemin not in declarees, chemin
             code, _, _ = _reponse(port, chemin, _entetes_legitimes(
                 port, **{"Content-Length": str(len(payload))}), payload, "POST")
@@ -1639,3 +1722,108 @@ def test_toute_reponse_declare_la_taille_reelle_de_son_corps(tmp_path, monkeypat
             assert int(entetes["content-length"]) == len(corps), (
                 f"{methode} {chemin} : Content-Length annoncé "
                 f"{entetes['content-length']}, {len(corps)} octets reçus")
+
+
+# ── un ciblage dégradé doit être visible DANS LE PRODUIT (mesuré 2026-08-03) ───
+#
+# Premier usage réel de la chaîne : le tier LLM a expiré, `extract_cfg` est retombé
+# sur le cfg défaut, et un CV GÉNÉRIQUE est parti sous le nom `cv_cible.pdf` avec
+# le statut « Ciblage: general~0.0 ». Le WARNING existait bel et bien — dans la
+# console du serveur, pendant que le PDF partait chez le recruteur.
+#
+# Les deux cfg ci-dessous sortent du VRAI chemin `cv_target.extract_cfg` et ne sont
+# jamais écrits à la main : un cfg recopié depuis la structure attendue ne pourrait
+# pas diverger de l'implémentation qu'il prétend surveiller.
+
+def _profil_reel():
+    import pathlib
+    chemin = pathlib.Path(__file__).resolve().parents[2] / "profile.json"
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def _cfg_repli(profil):
+    def expire(_p):
+        raise RuntimeError("litellm.Timeout after 120.0s")   # l'erreur réellement vue
+    return cv_target.extract_cfg("Ingénieur quantitatif chez Amundi.", profil,
+                                 complete_fn=expire)
+
+
+def _cfg_extrait(profil):
+    rendu = json.dumps({"relevance_key": "quant", "min_relevance": 0.75,
+                        "domains_in": ["quant"], "keywords": ["machine learning"],
+                        "company": "Amundi", "job_title": "Ingénieur quantitatif",
+                        "requirements": ["machine learning"], "register": "formel",
+                        "market": None})
+    return cv_target.extract_cfg("Ingénieur quantitatif chez Amundi.", profil,
+                                 complete_fn=lambda _p: rendu)
+
+
+def test_a_fallback_cfg_is_detected_as_degraded():
+    assert atelier.ciblage_degrade(_cfg_repli(_profil_reel())) is True
+
+
+def test_a_real_extraction_is_not_flagged_as_degraded():
+    """Le garde doit MORDRE le repli sans mordre un vrai ciblage : un garde qui
+    refuse tout est inutile de la même façon qu'un garde qui laisse tout passer."""
+    assert atelier.ciblage_degrade(_cfg_extrait(_profil_reel())) is False
+
+
+# ── exposition réseau : opt-in explicite, jamais par défaut ───────────────────
+
+def test_par_defaut_l_atelier_reste_loopback_et_refuse_tout_autre_hote(monkeypatch):
+    """Le durcissement d'origine EST le défaut. Un déploiement k8s doit le lever
+    exprès ; l'oublier ne doit jamais ouvrir la page qui sert le profil entier."""
+    monkeypatch.delenv("ATELIER_HOSTS", raising=False)
+    monkeypatch.delenv("ATELIER_BIND", raising=False)
+    assert atelier._bind() == "127.0.0.1"
+    assert atelier._hostport_ok("kleos.elysium.local", 8010) is False
+
+
+def test_un_hote_declare_est_accepte_sans_jamais_fermer_le_loopback(monkeypatch):
+    """L'allowlist s'ÉTEND, elle ne se remplace pas : un déploiement qui ajoute son
+    hôte ne doit pas couper l'accès local par lequel on le diagnostique."""
+    monkeypatch.setenv("ATELIER_HOSTS", "kleos.elysium.local")
+    assert atelier._hostport_ok("kleos.elysium.local", 8010) is True
+    assert atelier._hostport_ok("127.0.0.1:8010", 8010) is True
+    assert atelier._hostport_ok("localhost:8010", 8010) is True
+    # Un voisin de domaine n'hérite de rien : l'allowlist compare des noms entiers.
+    assert atelier._hostport_ok("kleos.elysium.local.evil.tld", 8010) is False
+    assert atelier._hostport_ok("evil-kleos.elysium.local", 8010) is False
+
+
+def test_the_degraded_verdict_renames_the_artefact():
+    """La vérité doit voyager AVEC le fichier : l'écran se ferme, le PDF reste."""
+    profil = _profil_reel()
+    degrade = atelier.verdict_ciblage(_cfg_repli(profil))
+    normal = atelier.verdict_ciblage(_cfg_extrait(profil))
+    assert degrade["nom"] != normal["nom"], "les deux CV portent le même nom"
+    assert "cible" not in degrade["nom"], f"un CV non ciblé nommé {degrade['nom']!r}"
+    assert degrade["message"] != normal["message"]
+
+
+def test_le_pilote_playwright_suit_le_chromium_de_l_image():
+    """Le paquet pip et l'image de base DOIVENT porter la même version.
+
+    Le paquet `playwright` n'est qu'un pilote ; les navigateurs sont cuits dans
+    l'image `mcr.microsoft.com/playwright/python:vX-noble`. Un décalage ne se voit
+    NI à la construction NI au démarrage — il tue le premier rendu PDF, en
+    production, sur « Executable doesn't exist at /ms-playwright/... ».
+
+    Mesuré le 2026-08-04 : une contrainte `>=1.58,<2` a installé 1.62.0 sur une base
+    v1.58.0-noble, et Kleos a rendu 500 sur son bouton principal. Un commentaire
+    « garder ces deux valeurs égales » ne garde rien — il n'est lu que par qui a déjà
+    décidé de changer la ligne. Ce test, lui, échoue au moment du bump.
+    """
+    ici = pathlib.Path(__file__).resolve().parent
+    epingle = re.search(r"^playwright==(\S+)",
+                        (ici / "requirements-atelier.txt").read_text(encoding="utf-8"),
+                        re.M)
+    assert epingle, "playwright doit être épinglé avec ==, jamais borné par une plage"
+
+    base = re.search(r"^FROM mcr\.microsoft\.com/playwright/python:v(\S+?)-",
+                     (ici / "Dockerfile.kleos").read_text(encoding="utf-8"), re.M)
+    assert base, "image de base playwright introuvable dans Dockerfile.kleos"
+
+    assert epingle.group(1) == base.group(1), (
+        f"pilote pip {epingle.group(1)} vs chromium de l'image {base.group(1)} — "
+        "le rendu PDF mourra en production, pas ici")

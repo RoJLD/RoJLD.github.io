@@ -591,6 +591,46 @@ def _extract_json_array(raw: str) -> list[Any]:
     return parsed
 
 
+def normalize_source(src: Any, fact_index: list[dict[str, str]]) -> list[str]:
+    """TRANSPORT : ramène la `source` rendue par le vérificateur aux CHEMINS qu'elle
+    désigne. N'assouplit aucun verdict — ce qui n'est pas reconnu ressort intact.
+
+    Mesuré sur la première lettre réelle : pour la signature « Robin Denis » le
+    vérificateur a répondu ``identity.first_name = Robin\\nidentity.last_name = Denis``
+    — les **lignes** du profil de référence, et non les seuls chemins. C'est une
+    lecture littérale de `build_check_prompt`, qui rend chaque fait sous la forme
+    `chemin = valeur` puis réclame « le `chemin` EXACT copié depuis le PROFIL ».
+    L'affirmation était supportée et l'export a été refusé sur la FORME.
+
+    Le dé-formatage est donc EXACT, jamais permissif : une ligne n'est ramenée à son
+    chemin que si `chemin = valeur` reproduit **au caractère près** une ligne de
+    `fact_index`. Une annotation qui contredit l'index — `identity.first_name =
+    Napoléon` — ne reproduit rien de montré : elle ressort telle quelle et échoue
+    en aval, exactement comme avant. Reconnaître une mise en forme n'est pas
+    accorder du crédit.
+    """
+    if not isinstance(src, str) or not src.strip():
+        return []
+    chemins = {row["source"] for row in fact_index}
+    lignes = {f"{row['source']} = {row['text']}": row["source"] for row in fact_index}
+
+    def _un(frag: str) -> Optional[str]:
+        f = frag.strip()
+        return f if f in chemins else lignes.get(f)
+
+    # Le tout d'abord : la valeur d'un fait peut elle-même contenir un retour à la
+    # ligne, auquel cas découper d'abord détruirait la seule correspondance exacte.
+    entier = _un(src)
+    if entier is not None:
+        return [entier]
+    morceaux = [ligne for ligne in src.splitlines() if ligne.strip()]
+    if len(morceaux) > 1:
+        rendus = [_un(m) for m in morceaux]
+        if all(r is not None for r in rendus):
+            return [r for r in rendus if r is not None]
+    return [src.strip()]
+
+
 # ── verdict ────────────────────────────────────────────────────────────────────
 
 def _blocked(reason: str, sentences: list[str], detail: str = "",
@@ -703,14 +743,20 @@ def check_grounding(letter_text: str, profile: dict[str, Any], lang: str = "fr",
         elif not (isinstance(src, str) and src.strip()):
             blocking.append({"reason": "source_absente", "phrase": num,
                              "affirmation": aff, "source": src})
-        elif resolve_source(profile, src) is MISSING:
-            blocking.append({"reason": "source_introuvable", "phrase": num,
-                             "affirmation": aff, "source": src})
-        elif src.strip() not in allowed:
-            # Le chemin résout, mais il ne désigne PAS un fait montré : le
-            # vérificateur atteste un ancrage sur une donnée que personne n'a vue.
-            blocking.append({"reason": "source_hors_index", "phrase": num,
-                             "affirmation": aff, "source": src})
+        else:
+            # Une source peut légitimement désigner PLUSIEURS chemins — « Robin
+            # Denis » s'appuie sur le prénom ET le nom. Ils doivent alors tenir
+            # TOUS : la conjonction ne peut qu'ajouter des exigences, jamais en
+            # retirer. Un seul chemin non montré suffit à bloquer.
+            chemins = normalize_source(src, fact_index)
+            if any(resolve_source(profile, p) is MISSING for p in chemins):
+                blocking.append({"reason": "source_introuvable", "phrase": num,
+                                 "affirmation": aff, "source": src})
+            elif any(p not in allowed for p in chemins):
+                # Le chemin résout, mais il ne désigne PAS un fait montré : le
+                # vérificateur atteste un ancrage sur une donnée que personne n'a vue.
+                blocking.append({"reason": "source_hors_index", "phrase": num,
+                                 "affirmation": aff, "source": src})
 
     # PARTITION = BIJECTION entre les lignes de la réponse et les phrases : chaque
     # phrase rattachée exactement une fois, ET autant de lignes que de phrases.

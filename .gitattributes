@@ -1,0 +1,13 @@
+# Fins de ligne des artefacts EXECUTES SOUS LINUX.
+#
+# `docker-entrypoint.sh` est le point d'entrée du conteneur Kleos. En CRLF, le
+# noyau lit le shebang comme `/bin/sh\r` et le conteneur meurt sur un
+# « no such file or directory » qui ne nomme jamais le vrai coupable.
+#
+# Mesuré le 2026-08-04 : le blob est bien committé en LF — mais uniquement parce
+# que `core.autocrlf=true` sur CE poste normalise à l'enregistrement. Un poste
+# configuré autrement committerait du CRLF sans le moindre avertissement. Une
+# propriété qui dépend de la configuration locale n'est pas une propriété du
+# dépôt : on l'y inscrit.
+*.sh text eol=lf
+Dockerfile* text eol=lf
