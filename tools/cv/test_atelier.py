@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import pathlib
+import re
 
 import atelier
 import cv_pdf
@@ -1797,3 +1799,31 @@ def test_the_degraded_verdict_renames_the_artefact():
     assert degrade["nom"] != normal["nom"], "les deux CV portent le même nom"
     assert "cible" not in degrade["nom"], f"un CV non ciblé nommé {degrade['nom']!r}"
     assert degrade["message"] != normal["message"]
+
+
+def test_le_pilote_playwright_suit_le_chromium_de_l_image():
+    """Le paquet pip et l'image de base DOIVENT porter la même version.
+
+    Le paquet `playwright` n'est qu'un pilote ; les navigateurs sont cuits dans
+    l'image `mcr.microsoft.com/playwright/python:vX-noble`. Un décalage ne se voit
+    NI à la construction NI au démarrage — il tue le premier rendu PDF, en
+    production, sur « Executable doesn't exist at /ms-playwright/... ».
+
+    Mesuré le 2026-08-04 : une contrainte `>=1.58,<2` a installé 1.62.0 sur une base
+    v1.58.0-noble, et Kleos a rendu 500 sur son bouton principal. Un commentaire
+    « garder ces deux valeurs égales » ne garde rien — il n'est lu que par qui a déjà
+    décidé de changer la ligne. Ce test, lui, échoue au moment du bump.
+    """
+    ici = pathlib.Path(__file__).resolve().parent
+    epingle = re.search(r"^playwright==(\S+)",
+                        (ici / "requirements-atelier.txt").read_text(encoding="utf-8"),
+                        re.M)
+    assert epingle, "playwright doit être épinglé avec ==, jamais borné par une plage"
+
+    base = re.search(r"^FROM mcr\.microsoft\.com/playwright/python:v(\S+?)-",
+                     (ici / "Dockerfile.kleos").read_text(encoding="utf-8"), re.M)
+    assert base, "image de base playwright introuvable dans Dockerfile.kleos"
+
+    assert epingle.group(1) == base.group(1), (
+        f"pilote pip {epingle.group(1)} vs chromium de l'image {base.group(1)} — "
+        "le rendu PDF mourra en production, pas ici")

@@ -8,9 +8,13 @@
 # Base : image officielle Playwright, qui embarque chromium ET ses dépendances
 # système. Les installer à la main sur un python:slim demande une trentaine de
 # paquets apt dont la liste dérive à chaque version de chromium — la maintenir
-# serait re-livrer un travail déjà fait en amont. La version est ÉPINGLÉE sur celle
-# de `requirements-atelier.txt` : un décalage entre le pilote python et le chromium
-# de l'image se solde par une erreur au premier rendu PDF, pas au démarrage.
+# serait re-livrer un travail déjà fait en amont.
+#
+# ⚠ Ce tag et le `playwright==` de `requirements-atelier.txt` DOIVENT rester égaux.
+# Le décalage ne se voit pas au démarrage — il tue le premier rendu PDF, en
+# production, avec « Executable doesn't exist at /ms-playwright/... ». Constaté le
+# 2026-08-04 : une contrainte `>=1.58,<2` avait installé 1.62.0 sur cette base.
+# Changer l'un sans l'autre est la façon la plus simple de casser Kleos.
 FROM mcr.microsoft.com/playwright/python:v1.58.0-noble
 
 ENV PYTHONUNBUFFERED=1 \
