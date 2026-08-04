@@ -193,9 +193,50 @@ def test_sovereign_complete_reinserts_elysium_root(monkeypatch):
 def test_extract_cfg_falls_back_loud_when_resolver_absent(profile, monkeypatch, caplog):
     """Résolveur absent → _sovereign_complete lève → extract_cfg retombe sur le
     cfg défaut ET logge un WARNING (fallback bruyant, jamais muet)."""
+    monkeypatch.delenv("CV_LLM_BASE_URL", raising=False)
     monkeypatch.setattr(cv_target, "_resolve_career", lambda here: None)
     with caplog.at_level(logging.WARNING):
         cfg = cv_target.extract_cfg("Quant developer", profile)  # complete_fn=None -> vrai chemin -> raise
     assert cfg["min_relevance"] == 0.0
     assert cfg["relevance_key"] == "general"
     assert any("cfg défaut" in r.message for r in caplog.records)
+
+
+# ── chemin CONTENEUR : appel direct quand le sibling n'existe pas ──────────────
+#
+# Déployé sur le cluster, l'atelier n'a pas de checkout ELYSIUM à côté de lui. Le
+# repli HTTP existe pour ce seul cas et ne doit JAMAIS se déclencher autrement : il
+# contourne le gateway souverain, donc le budget cap SIGIL-529.
+
+def test_sans_sibling_et_sans_url_le_resolveur_leve_toujours(monkeypatch):
+    """L'ancien comportement RESTE le défaut : pas d'URL posée, pas de repli."""
+    monkeypatch.delenv("CV_LLM_BASE_URL", raising=False)
+    monkeypatch.setattr(cv_target, "_resolve_career", lambda here: None)
+    with pytest.raises(RuntimeError, match="souverain introuvable"):
+        cv_target._sovereign_complete("peu importe")
+
+
+def test_sans_sibling_mais_avec_url_l_appel_direct_prend_le_relais(monkeypatch):
+    """Le repli est EXPLICITE : il faut poser l'URL. Rien ne bascule tout seul."""
+    monkeypatch.setenv("CV_LLM_BASE_URL", "http://forge-ollama.elysium-ml.svc:11434/v1")
+    monkeypatch.setattr(cv_target, "_resolve_career", lambda here: None)
+    monkeypatch.setattr(cv_target, "_complete_http", lambda p: f"HTTP:{p}")
+    assert cv_target._sovereign_complete("salut") == "HTTP:salut"
+
+
+def test_avec_sibling_l_appel_direct_n_est_jamais_emprunte(monkeypatch, tmp_path):
+    """Le souverain PRIME : une URL posée ne court-circuite pas le gateway — ni son
+    budget cap — tant que le résolveur est joignable."""
+    monkeypatch.setenv("CV_LLM_BASE_URL", "http://forge-ollama.elysium-ml.svc:11434/v1")
+    monkeypatch.setattr(cv_target, "_resolve_career",
+                        lambda here: (tmp_path / "career", tmp_path))
+
+    def interdit(_p):
+        raise AssertionError("appel direct emprunté alors que le sibling est là")
+
+    monkeypatch.setattr(cv_target, "_complete_http", interdit)
+    # Le sibling factice ne porte pas `core.llm_client` : l'import échoue, et c'est
+    # exactement la preuve cherchée — on est bien parti sur la branche souveraine.
+    with pytest.raises(Exception) as exc:
+        cv_target._sovereign_complete("salut")
+    assert not isinstance(exc.value, AssertionError), exc.value

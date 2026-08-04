@@ -55,6 +55,7 @@ SIGIL-529) — jamais `anthropic.Anthropic` en direct (ADR-003).
 from __future__ import annotations
 
 import pathlib
+import re
 from typing import Any, Callable, Optional
 
 import cv_grounding
@@ -337,10 +338,37 @@ SQUELETTE DE GUIDAGE (intentions et budgets, PAS des fentes à remplir ;
 n'écris pas les titres de section dans la lettre)
 {_skeleton_block(skeleton)}
 
+AUCUNE FENTE À REMPLIR : n'écris jamais de crochets `[...]`, ni `[Nom du
+recruteur]`, ni `[entreprise]`. Un champ ci-dessus marqué « (non identifié) » est
+une information que nous n'avons PAS : ne la recopie pas, ne l'invente pas,
+tourne la phrase sans elle. Une lettre livrée avec un crochet est refusée.
+
 Budget total ≈ {skeleton['budget_mots']} mots.
 Retourne UNIQUEMENT le corps de la lettre, en paragraphes séparés par une ligne
 vide. Pas d'en-tête, pas d'adresse, pas de date, pas de signature, pas de
 markdown."""
+
+
+#: Une fente = un crochet ouvert et refermé sur UNE ligne, non vide. Borné à 80
+#: caractères et sans retour à la ligne pour ne pas confondre une fente avec une
+#: citation entre crochets qui s'étendrait sur un paragraphe.
+_FENTE = re.compile(r"\[[^\[\]\n]{1,80}\]")
+
+
+def find_placeholders(text: str) -> list[str]:
+    """Fentes de gabarit laissées par le rédacteur, dans l'ordre d'apparition.
+
+    **Zero Placeholder appliqué au produit, pas seulement au dépôt.** Mesuré sur la
+    première lettre réelle : le rédacteur a rendu `[Nom du recruteur]` et
+    `[intitulé non identifié]` — le second étant l'écho du `(non identifié)` que
+    `build_draft_prompt` affiche quand `job_context.job_title` est absent. Une
+    lettre partie chez un recruteur avec un crochet non rempli est le sinistre
+    exact que ce principe existe pour empêcher.
+
+    L'instruction ajoutée au prompt ne suffit pas : un prompt DEMANDE, il ne
+    GARANTIT pas. La garantie est ici, en code, sur la sortie.
+    """
+    return _FENTE.findall(text or "")
 
 
 def draft(profile_facts: dict[str, Any], job_context: dict[str, Any],
@@ -369,6 +397,11 @@ def draft(profile_facts: dict[str, Any], job_context: dict[str, Any],
     text = (raw or "").strip()
     if not text:
         raise LetterError("le rédacteur a renvoyé une réponse vide")
+    fentes = find_placeholders(text)
+    if fentes:
+        raise LetterError(
+            "le rédacteur a laissé des fentes de gabarit : "
+            + ", ".join(repr(f) for f in fentes))
     return text
 
 

@@ -5,6 +5,7 @@ import json
 
 import atelier
 import cv_pdf
+import cv_target
 
 
 def test_html_to_pdf_bytes_smoke():
@@ -1584,9 +1585,15 @@ def _routes_mutantes_declarees(port):
     routes = set()
     for chemin in ("/", "/edit", "/cms"):
         _, _, page = _reponse(port, chemin)
+        html = page.decode("utf-8")
         routes |= set(re.findall(
-            r"""fetch\(\s*["']([^"']+)["']\s*,\s*\{\s*method:\s*["']POST["']""",
-            page.decode("utf-8")))
+            r"""fetch\(\s*["']([^"']+)["']\s*,\s*\{\s*method:\s*["']POST["']""", html))
+        # Les trois générateurs partagent UN seul `fetch(route, …)` : dupliquer le
+        # transport trois fois pour rester détectable par une regex serait laisser
+        # le test dicter l'architecture. La route est donc DÉCLARÉE sur le bouton
+        # (`data-route`) — et le bouton la lit (`this.dataset.route`), donc la
+        # déclaration est utilisée, pas décorative : elle ne peut pas dériver.
+        routes |= set(re.findall(r"""data-route=["']([^"']+)["']""", html))
     return routes
 
 
@@ -1610,9 +1617,11 @@ def test_seules_les_routes_declarees_par_les_pages_repondent_en_POST(
         declarees = _routes_mutantes_declarees(port)
         # Confrontation, pas déclaration : si une route mutante est ajoutée aux
         # pages, ce test doit être revu — c'est précisément ce qu'on veut.
-        assert declarees == {"/generate", "/save"}, declarees
+        assert declarees == {"/generate", "/generate-docx", "/generate-letter",
+                             "/save"}, declarees
         for chemin in ("/", "/edit", "/cms", "/save/", "/save2", "/sauver",
-                       "/n-importe-quoi", "/generate/x"):
+                       "/n-importe-quoi", "/generate/x", "/generate-pdf",
+                       "/generate-docx/", "/generatedocx", "/generate-letter2"):
             assert chemin not in declarees, chemin
             code, _, _ = _reponse(port, chemin, _entetes_legitimes(
                 port, **{"Content-Length": str(len(payload))}), payload, "POST")
@@ -1711,3 +1720,80 @@ def test_toute_reponse_declare_la_taille_reelle_de_son_corps(tmp_path, monkeypat
             assert int(entetes["content-length"]) == len(corps), (
                 f"{methode} {chemin} : Content-Length annoncé "
                 f"{entetes['content-length']}, {len(corps)} octets reçus")
+
+
+# ── un ciblage dégradé doit être visible DANS LE PRODUIT (mesuré 2026-08-03) ───
+#
+# Premier usage réel de la chaîne : le tier LLM a expiré, `extract_cfg` est retombé
+# sur le cfg défaut, et un CV GÉNÉRIQUE est parti sous le nom `cv_cible.pdf` avec
+# le statut « Ciblage: general~0.0 ». Le WARNING existait bel et bien — dans la
+# console du serveur, pendant que le PDF partait chez le recruteur.
+#
+# Les deux cfg ci-dessous sortent du VRAI chemin `cv_target.extract_cfg` et ne sont
+# jamais écrits à la main : un cfg recopié depuis la structure attendue ne pourrait
+# pas diverger de l'implémentation qu'il prétend surveiller.
+
+def _profil_reel():
+    import pathlib
+    chemin = pathlib.Path(__file__).resolve().parents[2] / "profile.json"
+    return json.loads(chemin.read_text(encoding="utf-8"))
+
+
+def _cfg_repli(profil):
+    def expire(_p):
+        raise RuntimeError("litellm.Timeout after 120.0s")   # l'erreur réellement vue
+    return cv_target.extract_cfg("Ingénieur quantitatif chez Amundi.", profil,
+                                 complete_fn=expire)
+
+
+def _cfg_extrait(profil):
+    rendu = json.dumps({"relevance_key": "quant", "min_relevance": 0.75,
+                        "domains_in": ["quant"], "keywords": ["machine learning"],
+                        "company": "Amundi", "job_title": "Ingénieur quantitatif",
+                        "requirements": ["machine learning"], "register": "formel",
+                        "market": None})
+    return cv_target.extract_cfg("Ingénieur quantitatif chez Amundi.", profil,
+                                 complete_fn=lambda _p: rendu)
+
+
+def test_a_fallback_cfg_is_detected_as_degraded():
+    assert atelier.ciblage_degrade(_cfg_repli(_profil_reel())) is True
+
+
+def test_a_real_extraction_is_not_flagged_as_degraded():
+    """Le garde doit MORDRE le repli sans mordre un vrai ciblage : un garde qui
+    refuse tout est inutile de la même façon qu'un garde qui laisse tout passer."""
+    assert atelier.ciblage_degrade(_cfg_extrait(_profil_reel())) is False
+
+
+# ── exposition réseau : opt-in explicite, jamais par défaut ───────────────────
+
+def test_par_defaut_l_atelier_reste_loopback_et_refuse_tout_autre_hote(monkeypatch):
+    """Le durcissement d'origine EST le défaut. Un déploiement k8s doit le lever
+    exprès ; l'oublier ne doit jamais ouvrir la page qui sert le profil entier."""
+    monkeypatch.delenv("ATELIER_HOSTS", raising=False)
+    monkeypatch.delenv("ATELIER_BIND", raising=False)
+    assert atelier._bind() == "127.0.0.1"
+    assert atelier._hostport_ok("kleos.elysium.local", 8010) is False
+
+
+def test_un_hote_declare_est_accepte_sans_jamais_fermer_le_loopback(monkeypatch):
+    """L'allowlist s'ÉTEND, elle ne se remplace pas : un déploiement qui ajoute son
+    hôte ne doit pas couper l'accès local par lequel on le diagnostique."""
+    monkeypatch.setenv("ATELIER_HOSTS", "kleos.elysium.local")
+    assert atelier._hostport_ok("kleos.elysium.local", 8010) is True
+    assert atelier._hostport_ok("127.0.0.1:8010", 8010) is True
+    assert atelier._hostport_ok("localhost:8010", 8010) is True
+    # Un voisin de domaine n'hérite de rien : l'allowlist compare des noms entiers.
+    assert atelier._hostport_ok("kleos.elysium.local.evil.tld", 8010) is False
+    assert atelier._hostport_ok("evil-kleos.elysium.local", 8010) is False
+
+
+def test_the_degraded_verdict_renames_the_artefact():
+    """La vérité doit voyager AVEC le fichier : l'écran se ferme, le PDF reste."""
+    profil = _profil_reel()
+    degrade = atelier.verdict_ciblage(_cfg_repli(profil))
+    normal = atelier.verdict_ciblage(_cfg_extrait(profil))
+    assert degrade["nom"] != normal["nom"], "les deux CV portent le même nom"
+    assert "cible" not in degrade["nom"], f"un CV non ciblé nommé {degrade['nom']!r}"
+    assert degrade["message"] != normal["message"]

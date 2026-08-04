@@ -1,0 +1,41 @@
+# Kleos — atelier CV / .docx ATS / lettre ancrée.
+#
+# Contexte de build = RACINE du dépôt site (le site entier est la donnée : profil,
+# gabarits `cv/templates`, squelettes `letters/skeletons`, `assets/js/cms-model.js`).
+#
+#   kaniko --context=dir:///workspace/src --dockerfile=tools/cv/Dockerfile.kleos
+#
+# Base : image officielle Playwright, qui embarque chromium ET ses dépendances
+# système. Les installer à la main sur un python:slim demande une trentaine de
+# paquets apt dont la liste dérive à chaque version de chromium — la maintenir
+# serait re-livrer un travail déjà fait en amont. La version est ÉPINGLÉE sur celle
+# de `requirements-atelier.txt` : un décalage entre le pilote python et le chromium
+# de l'image se solde par une erreur au premier rendu PDF, pas au démarrage.
+FROM mcr.microsoft.com/playwright/python:v1.58.0-noble
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+COPY tools/cv/requirements-atelier.txt /tmp/requirements-atelier.txt
+RUN pip install --no-cache-dir --break-system-packages -r /tmp/requirements-atelier.txt
+
+# Le site est copié dans /seed, pas dans /site : /site est le VOLUME, et
+# l'entrypoint arbitre à chaque démarrage ce qui vient de l'image (code, gabarits)
+# et ce qui vient du volume (profil, historique). Cf. docker-entrypoint.sh.
+COPY . /seed
+RUN chmod +x /seed/tools/cv/docker-entrypoint.sh \
+ && mkdir -p /site \
+ && chown -R 1000:1000 /site /seed
+
+# Le manifeste impose runAsNonRoot / runAsUser 1000 : l'image doit pouvoir y obéir.
+USER 1000
+WORKDIR /site
+EXPOSE 8010
+
+# Défauts alignés sur le déploiement cluster. Chacun reste surchargeable, et aucun
+# ne relâche un garde tout seul : `atelier.main` journalise un AVERTISSEMENT dès
+# que l'écoute quitte le loopback.
+ENV ATELIER_BIND=0.0.0.0 \
+    ATELIER_HOSTS=kleos.elysium.local
+
+ENTRYPOINT ["/seed/tools/cv/docker-entrypoint.sh"]

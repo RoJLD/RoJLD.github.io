@@ -676,3 +676,42 @@ def test_the_guarantee_does_not_rest_on_what_the_writer_was_told(real_profile):
                                      complete_fn=_fn(complaisant), evidence=ev)
     assert v["ok"] is False
     assert [b["reason"] for b in v["blocking"]] == ["source_hors_index"]
+
+
+# ── Zero Placeholder appliqué au PRODUIT (mesuré le 2026-08-03) ───────────────
+#
+# Premier usage réel : la lettre rendue portait `[Nom du recruteur]` et
+# `[intitulé non identifié]` — le second étant l'écho du `(non identifié)` que
+# `build_draft_prompt` affiche quand `job_title` est absent. Une lettre partie
+# chez un recruteur avec un crochet non rempli est le sinistre exact que le
+# principe Zero Placeholder existe pour empêcher.
+
+@pytest.mark.parametrize("fente", ["[Nom du recruteur]", "[intitulé non identifié]"])
+def test_draft_refuses_the_placeholders_seen_in_the_real_letter(profile, fente):
+    facts, jc = _facts(profile, min_relevance=0.0)
+    sk = cv_letter.load_skeleton("standard", "fr")
+    voyou = f"Madame, Monsieur {fente},\n\nVotre offre a retenu mon attention."
+    with pytest.raises(cv_letter.LetterError) as exc:
+        cv_letter.draft(facts, jc, sk, "fr", complete_fn=lambda _p: voyou)
+    assert fente in str(exc.value), "le refus doit NOMMER la fente, pas seulement refuser"
+
+
+def test_the_prompt_forbids_placeholders_and_the_code_enforces_it(profile):
+    """Un prompt DEMANDE, il ne GARANTIT pas. Les deux doivent tenir : l'instruction
+    est présente ET un rédacteur qui l'ignore est arrêté."""
+    seen = {}
+    facts, jc = _facts(profile, min_relevance=0.0)
+    sk = cv_letter.load_skeleton("standard", "fr")
+    with pytest.raises(cv_letter.LetterError):
+        cv_letter.draft(facts, jc, sk, "fr",
+                        complete_fn=lambda p: (seen.setdefault("p", p), "Bonjour [X].")[1])
+    assert "crochets" in seen["p"], "l'instruction anti-fente a disparu du prompt"
+
+
+def test_a_clean_letter_is_not_flagged(profile):
+    """Le garde ne doit pas mordre une vraie lettre : sinon rien ne sort jamais."""
+    facts, jc = _facts(profile, min_relevance=0.0)
+    sk = cv_letter.load_skeleton("standard", "fr")
+    propre = ("Madame, Monsieur,\n\nVotre offre de Quantitative AI Portfolio Engineer "
+              "a retenu mon attention.\n\nJe vous prie d'agréer mes salutations.")
+    assert cv_letter.draft(facts, jc, sk, "fr", complete_fn=lambda _p: propre) == propre

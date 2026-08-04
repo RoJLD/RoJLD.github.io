@@ -1022,3 +1022,66 @@ def test_verdict_is_stable_over_repeats():
         blob = json.dumps(v, ensure_ascii=False, sort_keys=True)
         ref = blob if ref is None else ref
         assert blob == ref
+
+
+# ── la source RECOPIÉE DEPUIS LE PROFIL AFFICHÉ (mesuré le 2026-08-03) ─────────
+#
+# Premier usage réel de la chaîne (fiche Amundi). Pour la signature « Robin Denis »
+# le vérificateur a rendu `identity.first_name = Robin\nidentity.last_name = Denis` :
+# les LIGNES du profil de référence, et non les seuls chemins. L'export a été
+# refusé (`source_introuvable`) alors que l'affirmation était pleinement supportée.
+#
+# Ce n'est pas une invention du modèle. `build_check_prompt` affiche chaque fait
+# sous la forme `chemin = valeur` puis réclame « le `chemin` EXACT copié depuis le
+# PROFIL » : copier la ligne entière est une lecture littérale de la consigne.
+#
+# L'attente ci-dessous est ancrée sur le PROMPT réellement construit — jamais
+# recopiée de `normalize_source`. La propriété testée est un aller-retour : ce que
+# le prompt montre doit pouvoir revenir tel quel.
+
+def _ligne_affichee(source: str, lang: str = "fr") -> str:
+    """La ligne `chemin = valeur` telle que le prompt la MONTRE, prouvée présente."""
+    index = cv_grounding.build_fact_index(PROFILE, lang)
+    row = next(r for r in index if r["source"] == source)
+    ligne = f"{row['source']} = {row['text']}"
+    prompt = cv_grounding.build_check_prompt(cv_grounding.split_sentences(LETTER), index)
+    assert f"  {ligne}" in prompt, "le prompt n'affiche pas cette ligne — test caduc"
+    return ligne
+
+
+def test_a_source_copied_as_the_whole_displayed_line_is_accepted():
+    rows = _all_ok()
+    rows[1]["source"] = _ligne_affichee("experiences[nexora].bullets.fr[0]")
+    v = cv_grounding.check_grounding(LETTER, PROFILE, "fr", complete_fn=_fn(rows))
+    assert v["ok"] is True, v["blocking"]
+
+
+def test_a_source_naming_two_displayed_lines_needs_both_and_gets_both():
+    """« Robin Denis » s'appuie sur DEUX faits : le cas réel qui a bloqué."""
+    rows = _all_ok()
+    rows[1]["source"] = (_ligne_affichee("identity.first_name") + "\n"
+                         + _ligne_affichee("identity.last_name"))
+    v = cv_grounding.check_grounding(LETTER, PROFILE, "fr", complete_fn=_fn(rows))
+    assert v["ok"] is True, v["blocking"]
+
+
+def test_one_unshown_line_among_two_blocks_the_whole_source():
+    """La conjonction ne peut qu'AJOUTER des exigences : une seule ligne non
+    montrée suffit. Reconnaître une mise en forme n'est pas accorder du crédit."""
+    rows = _all_ok()
+    rows[1]["source"] = (_ligne_affichee("identity.first_name")
+                         + "\nexperiences[goldman].bullets.fr[0] = Dirigé 40 personnes")
+    v = cv_grounding.check_grounding(LETTER, PROFILE, "fr", complete_fn=_fn(rows))
+    assert v["ok"] is False
+    assert [b["reason"] for b in v["blocking"]] == ["source_introuvable"]
+
+
+def test_an_annotation_contradicting_the_profile_is_not_stripped():
+    """Le dé-formatage est EXACT : `chemin = valeur` n'est ramené à `chemin` que si
+    la ligne reproduit au caractère près une ligne montrée. Une valeur inventée ne
+    reproduit rien : elle ressort intacte et échoue, comme avant le correctif."""
+    rows = _all_ok()
+    rows[1]["source"] = "experiences[nexora].bullets.fr[0] = Dirigé une équipe de 40 personnes"
+    v = cv_grounding.check_grounding(LETTER, PROFILE, "fr", complete_fn=_fn(rows))
+    assert v["ok"] is False
+    assert [b["reason"] for b in v["blocking"]] == ["source_introuvable"]
