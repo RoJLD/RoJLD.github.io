@@ -322,8 +322,18 @@ def _complete_http(prompt: str) -> str:
     Déployé sur le cluster, l'atelier n'a pas de checkout ELYSIUM à côté de lui :
     `_resolve_career` rend None et le résolveur souverain est hors d'atteinte. Plutôt
     que d'empaqueter une copie de `career/core/` dans l'image — qui divergerait en
-    silence de son original — on parle directement à l'endpoint compatible OpenAI
-    du cluster (`forge-ollama.elysium-ml.svc:11434/v1`).
+    silence de son original — on parle directement à un endpoint compatible OpenAI.
+
+    `CV_LLM_BASE_URL` accepte **plusieurs URL séparées par des virgules**, essayées
+    dans l'ordre. C'est nécessaire ici : le seul ollama vivant tourne sur le poste de
+    travail, tandis que `forge-ollama` in-cluster dort avec son nœud (`forge`,
+    réveillable par Wake-on-LAN). Un endpoint unique obligerait à choisir entre
+    « marche quand le PC est allumé » et « marche quand le nœud est réveillé ».
+
+    Chaque échec est journalisé EN NOMMANT l'URL, puis on descend. Si tous tombent,
+    on relaie la dernière erreur : le ciblage échoue, `extract_cfg` retombe sur le
+    cfg défaut, et le garde de ciblage dégradé refuse la livraison. La panne reste
+    donc visible de bout en bout — elle ne se traduit jamais par un CV générique.
 
     Ce chemin **contourne le gateway souverain**, donc le budget cap SIGIL-529 : il
     est réservé aux backends LOCAUX (ollama, vllm), dont le coût marginal est nul.
@@ -338,15 +348,38 @@ def _complete_http(prompt: str) -> str:
     import os
     import urllib.request
 
-    base = os.environ["CV_LLM_BASE_URL"].rstrip("/")
+    bases = [u.strip().rstrip("/") for u in os.environ["CV_LLM_BASE_URL"].split(",")
+             if u.strip()]
+    if not bases:
+        raise RuntimeError("CV_LLM_BASE_URL posé mais vide")
     modele = os.environ.get("CV_LLM_MODEL", "qwen2.5:14b")
+    delai = int(os.environ.get("CV_LLM_TIMEOUT", "600"))
     corps = _json.dumps({"model": modele, "temperature": 0, "stream": False,
                          "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
-    req = urllib.request.Request(f"{base}/chat/completions", data=corps,
-                                 headers={"Content-Type": "application/json"})
-    delai = int(os.environ.get("CV_LLM_TIMEOUT", "600"))
-    logger.warning("cv_target: résolveur souverain absent — appel direct %s (%s), "
-                   "hors gateway et hors budget cap", base, modele)
+
+    derniere: Exception | None = None
+    for rang, base in enumerate(bases, 1):
+        req = urllib.request.Request(f"{base}/chat/completions", data=corps,
+                                     headers={"Content-Type": "application/json"})
+        logger.warning("cv_target: résolveur souverain absent — appel direct %s (%s) "
+                       "[%d/%d], hors gateway et hors budget cap",
+                       base, modele, rang, len(bases))
+        try:
+            return _lire_reponse(req, delai)
+        except Exception as exc:            # noqa: BLE001 — on descend, en le disant
+            derniere = exc
+            logger.warning("cv_target: endpoint %s injoignable (%s) — %s",
+                           base, exc,
+                           "essai du suivant" if rang < len(bases) else "plus aucun")
+    raise RuntimeError(
+        f"aucun des {len(bases)} endpoints LLM n'a répondu ; dernier échec : {derniere}")
+
+
+def _lire_reponse(req, delai: int) -> str:
+    """Exécute la requête et extrait le contenu. Isolé pour être moquable en test."""
+    import json as _json
+    import urllib.request
+
     with urllib.request.urlopen(req, timeout=delai) as rep:
         charge = _json.loads(rep.read().decode("utf-8"))
     return charge["choices"][0]["message"]["content"]
