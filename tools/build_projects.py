@@ -128,7 +128,7 @@ def collect_tags(projects: list[dict]) -> list[str]:
 def render_projects_page(profile: dict) -> str:
     projects = profile.get("projects", [])
     labels = profile.get("project_tag_labels", {})
-    updated = profile.get("projects_meta", {}).get("updated", "")
+    updated = profile.get("$updated", "")  # une seule date pour tout le site
     all_tags = collect_tags(projects)
 
     filter_btns = '<button class="f-btn active" data-filter="all">Tous</button>' + "".join(

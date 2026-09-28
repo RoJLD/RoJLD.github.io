@@ -8,7 +8,9 @@ exits non-zero and prints every violation.
 from __future__ import annotations
 
 import json
+import re
 import sys
+from datetime import date
 from pathlib import Path
 
 
@@ -72,10 +74,53 @@ def _skill_iter(profile):
             yield cat, s
 
 
-def validate(profile: dict, root=None) -> list[str]:
+_YYYY_MM = re.compile(r"^\d{4}-\d{2}$")
+
+
+def _validate_temporal_truths(profile, today, errors):
+    """Les vérités qui périment : `current`, et le statut affiché en page d'accueil.
+
+    Référence = le plus récent de `$updated` (dernière relecture) et `today` (date
+    du build, injectée). `$updated` seul ne suffit pas : personne ne l'avance, et
+    c'est précisément le temps qui passe SANS relecture qui a laissé ALTEN
+    « présent » un mois après la fin du stage. Sans `today`, la règle reste pure
+    et déterministe (atelier, tests) ; les builds passent la date du jour.
+    Comparaison au mois, en chaînes 'YYYY-MM' (ordre lexical = chronologique)."""
+    refs = [r for r in (str(profile.get("$updated") or "")[:7], str(today or "")[:7]) if r]
+    ref = max(refs) if refs else ""
+    for e in profile.get("experiences", []):
+        eid, fin = e.get("id"), e.get("end")
+        if fin is None:
+            continue
+        if not _YYYY_MM.match(str(fin)):
+            errors.append(f"experience '{eid}': end {fin!r} doit être 'YYYY-MM' (lu par le build)")
+            continue
+        if e.get("current") and ref and fin < ref:
+            errors.append(f"experience '{eid}': current=true mais end {fin} est dépassé "
+                          f"(référence {ref}) — le CV imprimerait « présent »")
+
+    # Le texte libre du statut a menti là où le drapeau était déjà juste : il ne
+    # peut pas nommer une entreprise où plus aucune expérience n'est en cours.
+    en_cours = {str(e.get("company") or "").casefold()
+                for e in profile.get("experiences", []) if e.get("current")}
+    status = (profile.get("identity") or {}).get("status") or {}
+    textes = [str(v).casefold() for v in status.values()] if isinstance(status, dict) else []
+    for e in profile.get("experiences", []):
+        societe = str(e.get("company") or "").strip()
+        cle = societe.casefold()
+        if len(cle) < 3 or cle in en_cours:
+            continue
+        if any(re.search(rf"(?<!\w){re.escape(cle)}(?!\w)", t) for t in textes):
+            errors.append(f"identity.status cite {societe!r}, où aucune expérience "
+                          f"n'est en cours (experience '{e.get('id')}')")
+
+
+def validate(profile: dict, root=None, today=None) -> list[str]:
     """Règles du corpus. `root` = racine du site : si fourni, les liens locaux
     (`projects[].links`, `articles[].url`, `identity.links`) sont résolus sur le
-    disque — c'est ce qui manquait quand /projects/ a été publié avec un 404."""
+    disque — c'est ce qui manquait quand /projects/ a été publié avec un 404.
+    `today` = date du build ('YYYY-MM[-DD]') : si fournie, un poste « en cours »
+    dont la fin est dépassée est refusé (voir `_validate_temporal_truths`)."""
     errors: list[str] = []
 
     if not profile.get("$version"):
@@ -126,6 +171,8 @@ def validate(profile: dict, root=None) -> list[str]:
         if not isinstance(obj, dict) or "fr" not in obj or "en" not in obj:
             errors.append(f"{label}: must have both 'fr' and 'en'")
 
+    _validate_temporal_truths(profile, today, errors)
+
     identity = profile.get("identity", {})
     _needs_bilingual(identity.get("tagline", {}), "identity.tagline")
     _needs_bilingual(identity.get("status", {}), "identity.status")
@@ -164,7 +211,7 @@ def main(argv):
     default = site_root / "profile.json"
     path = Path(argv[1]) if len(argv) > 1 else default
     profile = json.loads(path.read_text(encoding="utf-8"))
-    errs = validate(profile, root=site_root)
+    errs = validate(profile, root=site_root, today=date.today().isoformat())
     if errs:
         print(f"INVALID: {len(errs)} error(s) in {path}")
         for e in errs:

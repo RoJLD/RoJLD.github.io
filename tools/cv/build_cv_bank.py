@@ -59,8 +59,26 @@ def build(profile: dict, cfgs: list[dict]) -> list[dict]:
     return manifest
 
 
-def main() -> int:
+def _gate(profile: dict, today: str) -> None:
+    """Refuse de fabriquer un PDF depuis un profil invalide.
+
+    Ces 8 PDF sont ce que télécharge un recruteur, et ce script ne validait rien :
+    il a imprimé « ALTEN 2026-02 → présent » un mois après la fin du stage. La date
+    du jour entre dans le gate pour qu'un poste « en cours » échu bloque la banque."""
+    tools_dir = str(_HERE.parent)
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    from validate_profile import validate  # type: ignore
+    errs = validate(profile, root=_ROOT, today=today)
+    if errs:
+        raise SystemExit("[cv-bank] profile.json invalide, aucun PDF généré :\n  - "
+                         + "\n  - ".join(errs))
+
+
+def main(today: str | None = None) -> int:
+    from datetime import date
     profile = json.loads(_PROFILE.read_text(encoding="utf-8"))
+    _gate(profile, today or date.today().isoformat())
     cfgs = json.loads(_CFG.read_text(encoding="utf-8"))["profiles"]
     manifest = build(profile, cfgs)
     (_OUT / "index.json").write_text(

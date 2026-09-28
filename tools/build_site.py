@@ -42,8 +42,11 @@ def esc(s):
 
 
 def js_str(s):
-    """Encode une string pour un littéral JS double-quote (dict i18n)."""
-    return json.dumps("" if s is None else str(s), ensure_ascii=False)
+    """Encode une string pour un littéral JS double-quote (dict i18n).
+
+    `<` devient `\\u003c` : le dict vit dans un <script>, et un `</script>` venu
+    d'une donnée fermerait le script entier (même parade que build_graph)."""
+    return json.dumps("" if s is None else str(s), ensure_ascii=False).replace("<", "\\u003c")
 
 
 _MONTHS = {
@@ -539,6 +542,19 @@ def gen_i18n_footer(profile, lang):
     return f"\n        footer: {js_str(footer_text(profile, lang))},\n"
 
 
+# ── Statut du hero (pastille verte) ───────────────────────────────────────────
+def render_status(profile):
+    """Texte FR de la pastille (langue par défaut du document).
+
+    Recopié à la main en trois endroits d'index.html, il a affiché un stage
+    terminé depuis un mois : même défaut que le pied de page, même remède."""
+    return esc(_bi(profile["identity"]["status"], "fr"))
+
+
+def gen_i18n_status(profile, lang):
+    return f"\n        status: {js_str(_bi(profile['identity']['status'], lang))},\n"
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -551,6 +567,7 @@ HTML_SECTIONS = {
     "modals": render_modals,
     "demos": render_demos,
     "footer": render_footer,
+    "status": render_status,
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
@@ -564,6 +581,7 @@ I18N_SECTIONS = {
     "modals": gen_i18n_modals,
     "demos": gen_i18n_demos,
     "footer": gen_i18n_footer,
+    "status": gen_i18n_status,
 }
 
 
@@ -578,9 +596,13 @@ def build_html(index_html, profile):
     return out
 
 
-def build(profile_path=None, index_path=None, write=True):
+def build(profile_path=None, index_path=None, write=True, today=None):
     import sys
+    from datetime import date
     sys.path.insert(0, str(ROOT / "tools"))
+    # La date du build entre dans le gate : un poste « en cours » dont la fin est
+    # passée fait échouer la construction au lieu d'être publié comme « présent ».
+    today = today or date.today().isoformat()
     try:
         from validate_profile import validate  # gate pré-build
     except Exception:
@@ -591,7 +613,7 @@ def build(profile_path=None, index_path=None, write=True):
         """`root=None` -> règles de forme seules ; `root=ROOT` -> + résolution disque."""
         if not validate:
             return
-        errs = validate(profile, root=root)
+        errs = validate(profile, root=root, today=today)
         if errs:
             raise BuildError("profile.json invalide : " + " ; ".join(errs[:5]))
 

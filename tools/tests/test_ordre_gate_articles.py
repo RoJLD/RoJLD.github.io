@@ -54,9 +54,9 @@ def test_la_resolution_disque_passe_apres_la_generation_des_articles(monkeypatch
 
     vrai_validate = validate_profile.validate
 
-    def espion_validate(profile, root=None):
+    def espion_validate(profile, root=None, today=None):
         evenements.append("gate:resolution" if root is not None else "gate:forme")
-        return vrai_validate(profile, root=root)
+        return vrai_validate(profile, root=root, today=today)
 
     monkeypatch.setattr(build_articles, "build_articles", espion_articles)
     monkeypatch.setattr(validate_profile, "validate", espion_validate)
@@ -87,9 +87,9 @@ def test_les_regles_de_forme_passent_avant_toute_ecriture(monkeypatch):
 
     vrai_validate = validate_profile.validate
 
-    def espion_validate(profile, root=None):
+    def espion_validate(profile, root=None, today=None):
         evenements.append("gate:resolution" if root is not None else "gate:forme")
-        return vrai_validate(profile, root=root)
+        return vrai_validate(profile, root=root, today=today)
 
     monkeypatch.setattr(build_articles, "build_articles", espion_articles)
     monkeypatch.setattr(validate_profile, "validate", espion_validate)
