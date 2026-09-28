@@ -1459,20 +1459,22 @@ def test_real_profile_renders_a_structurally_ats_document():
     assert {p.style.name for p in doc.paragraphs} == {"Normal"}
     txt = _text(doc)
     assert "Robin Denis" in txt and "ALTEN" in txt and "ECE Paris" in txt
-    # les 10 projets académiques du profil réel n'ont AUCUN bullet : la projection
+    # les 9 projets académiques du profil réel n'ont AUCUN bullet : la projection
     # doit tous les signaler (travail de rédaction restant, pas de fabrication).
-    assert len(scv["projects"]) == 10
+    # 10 → 9 le 2026-09-28 : `trading-algo-csharp` retiré (aucun code, aucun
+    # protocole ; décision du 2026-09-10). Mesuré, pas déduit.
+    assert len(scv["projects"]) == 9
     assert cv_select.projects_needing_bullets(scv["projects"]) == [p["id"] for p in scv["projects"]]
     # bande de taille du gabarit mesuré (51-61 paragraphes)
     assert 40 <= len(doc.paragraphs) <= 90, len(doc.paragraphs)
     # …et surtout : le document porte EXACTEMENT ce que la projection lui donne, sur
     # la VRAIE donnée. C'est ici que se voit une section qui disparaît en silence.
     assert [p.text for p in doc.paragraphs] == _expected_outline(scv)
-    # 8 des 10 projets portent `date == org == 'ECE Paris'` (quirk de donnée
+    # 7 des 9 projets portent `date == org == 'ECE Paris'` (quirk de donnée
     # connu et documenté) : le rendu ne doit jamais imprimer deux fois la chaîne.
     doublons = [p for p in scv["projects"]
                 if p["org"] and p["org"].strip().casefold() == p["date"].strip().casefold()]
-    assert len(doublons) == 8, [p["id"] for p in doublons]   # la mesure, pas un souvenir
+    assert len(doublons) == 7, [p["id"] for p in doublons]   # la mesure, pas un souvenir
     _assert_no_right_column_echo(doc, "profil réel/fr")
     _assert_no_right_column_echo(
         cv_docx.build_docx(cv_select.build_structured_cv(prof, exps, "en", cfg)),

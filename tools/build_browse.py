@@ -411,7 +411,7 @@ def _chips() -> str:
 
 def render_browse_page(profile) -> str:
     cards = "\n".join(render_card(en) for en in aggregate(profile))
-    updated = profile.get("projects_meta", {}).get("updated", "")
+    updated = profile.get("$updated", "")  # une seule date pour tout le site
     return (PAGE_TEMPLATE
             .replace("@@CHIPS@@", _chips())
             .replace("@@CARDS@@", cards)

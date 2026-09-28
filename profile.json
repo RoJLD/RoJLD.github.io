@@ -1,7 +1,7 @@
 {
   "$schema": "https://roblastar.github.io/profile-schema/v1.json",
   "$version": "1.1.0",
-  "$updated": "2026-07-07",
+  "$updated": "2026-09-28",
   "domains": [
     {
       "id": "quant",
@@ -108,8 +108,8 @@
       "en": "Financial & Quantitative Engineering"
     },
     "status": {
-      "fr": "Actuellement : Quant Researcher DeFi @ ALTEN",
-      "en": "Currently: DeFi Quant Researcher @ ALTEN"
+      "fr": "Disponible dès maintenant · Quant developer / researcher",
+      "en": "Available now · Quant developer / researcher"
     },
     "availability": "2026-09",
     "target_roles": [
@@ -230,7 +230,7 @@
       "type": "stage",
       "start": "2026-02",
       "end": "2026-08",
-      "current": true,
+      "current": false,
       "bullets": {
         "fr": [
           "Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d'actifs sur protocoles émergents",
@@ -1109,24 +1109,6 @@
       "code_status": "Code sur demande"
     },
     {
-      "id": "trading-algo-csharp",
-      "name": "Algorithme de trading crypto / forex (C#)",
-      "type": "academic",
-      "date": "ECE Paris",
-      "context": "ece",
-      "summary": "Algorithme de trading automatisé en C# pour marchés crypto et forex (stratégie, backtesting, connexion API marché).",
-      "tags": [
-        "trading",
-        "c-sharp",
-        "quant"
-      ],
-      "domains": [
-        "quant",
-        "dev"
-      ],
-      "code_status": "Code sur demande"
-    },
-    {
       "id": "vba-index-tool",
       "name": "Outil VBA d'analyse & visualisation d'indices boursiers",
       "type": "academic",
@@ -1646,10 +1628,8 @@
     "finance": "Finance",
     "hedging": "Hedging",
     "derivatives": "Dérivés",
-    "trading": "Trading Algo",
     "data-eng": "Data Engineering",
     "python": "Python",
-    "c-sharp": "C#",
     "vba": "VBA / Excel",
     "vhdl": "VHDL / FPGA",
     "hardware": "Hardware",
@@ -1666,7 +1646,6 @@
     "open-source": "Open Source"
   },
   "projects_meta": {
-    "updated": "2026-07-08",
     "github_profile": "https://github.com/RoJLD"
   }
 }

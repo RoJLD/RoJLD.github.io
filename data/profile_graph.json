@@ -126,11 +126,6 @@
       "label": "Résolution de Sudoku par réseau de neurones convolutif"
     },
     {
-      "id": "project:trading-algo-csharp",
-      "type": "project",
-      "label": "Algorithme de trading crypto / forex (C#)"
-    },
-    {
       "id": "project:vba-index-tool",
       "type": "project",
       "label": "Outil VBA d'analyse & visualisation d'indices boursiers"
@@ -539,21 +534,6 @@
     },
     {
       "source": "project:sudoku-cnn",
-      "target": "education:ece",
-      "rel": "context"
-    },
-    {
-      "source": "project:trading-algo-csharp",
-      "target": "domain:quant",
-      "rel": "has_domain"
-    },
-    {
-      "source": "project:trading-algo-csharp",
-      "target": "domain:dev",
-      "rel": "has_domain"
-    },
-    {
-      "source": "project:trading-algo-csharp",
       "target": "education:ece",
       "rel": "context"
     },
@@ -1079,14 +1059,14 @@
     }
   ],
   "summary": {
-    "nodes": 73,
-    "edges": 142,
+    "nodes": 72,
+    "edges": 139,
     "by_type": {
       "identity": 1,
       "domain": 12,
       "experience": 3,
       "education": 2,
-      "project": 17,
+      "project": 16,
       "article": 2,
       "demo": 2,
       "journey": 8,

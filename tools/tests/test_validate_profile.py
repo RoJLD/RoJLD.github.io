@@ -94,6 +94,65 @@ def test_project_requires_type_and_name():
     assert any("type" in e for e in errs)
 
 
+def _alten_en_cours(p):
+    """L'état exact de l'incident sur origin/main (2026-08-04 → 2026-09-28)."""
+    p["$updated"] = "2026-07-07"
+    p["experiences"][0].update({"company": "ALTEN", "start": "2026-02",
+                                "end": "2026-08", "current": True})
+    return p
+
+
+def test_le_temps_qui_passe_suffit_a_perimer_un_poste_en_cours():
+    """ALTEN portait `current: true` ET `end: "2026-08"` : le rendu CV imprime
+    « présent » dès que `current` est vrai, sans regarder `end`. Les 8 PDF publiés
+    ont affirmé « 2026-02 → présent » un mois après la fin du stage.
+
+    Personne n'avait retouché le profil : `$updated` était resté au 2026-07-07.
+    Une règle adossée à `$updated` seul se taisait donc sur l'incident même. La
+    date de référence est la plus récente entre la relecture et le build."""
+    p = _alten_en_cours(_valid_profile())
+    assert validate(p) == []                       # sans date de build : muet, comme avant
+    errs = validate(p, today="2026-09-05")         # un build le 5 septembre
+    assert any("current" in e and "job1" in e for e in errs), errs
+
+
+def test_une_relecture_posterieure_a_la_fin_suffit_aussi():
+    p = _alten_en_cours(_valid_profile())
+    p["$updated"] = "2026-09-28"
+    assert any("current" in e and "job1" in e for e in validate(p))
+
+
+def test_une_fin_prevue_non_depassee_reste_valide():
+    """Un stage en cours a souvent une fin connue d'avance. Le mois de fin lui-même
+    est encore « en cours » : la borne est stricte."""
+    p = _alten_en_cours(_valid_profile())
+    assert validate(p, today="2026-07-15") == []
+    assert validate(p, today="2026-08-31") == []    # dernier mois du stage
+
+
+def test_la_date_de_fin_doit_etre_lisible_par_le_build():
+    """`fmt_range` exige 'YYYY-MM' ; une autre forme passait la validation puis
+    faisait échouer la reconstruction (ou, pire, la règle d'échéance à tort)."""
+    for mauvaise in ("2026", "Août 2026", "2026-8", "2026-08-31"):
+        p = _valid_profile()
+        p["experiences"][0]["end"] = mauvaise
+        assert any("end" in e and "job1" in e for e in validate(p)), mauvaise
+
+
+def test_le_statut_ne_peut_pas_citer_une_entreprise_quittee():
+    """C'est le texte libre du statut qui a menti sur la page d'accueil, pas le
+    drapeau : « Actuellement : Quant Researcher DeFi @ ALTEN » avec current=false."""
+    p = _valid_profile()
+    p["experiences"][0].update({"company": "ALTEN", "start": "2026-02",
+                                "end": "2026-08", "current": False})
+    p["identity"]["status"] = {"fr": "Actuellement : Quant Researcher DeFi @ ALTEN",
+                               "en": "Currently: DeFi Quant Researcher @ ALTEN"}
+    assert any("identity.status" in e and "ALTEN" in e for e in validate(p))
+    # …alors qu'un poste réellement en cours peut être cité.
+    p["experiences"][0].update({"end": "2026-12", "current": True})
+    assert validate(p, today="2026-09-28") == []
+
+
 def test_article_domains_must_be_valid_ids():
     real = json.loads((REPO / "profile.json").read_text(encoding="utf-8"))
     assert validate(real) == []  # profil réel : articles portent des domaines valides

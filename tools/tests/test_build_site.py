@@ -1,6 +1,8 @@
 """Tests SP0 keystone. Modèle réframé : PAS de parité byte (les copies avaient dérivé) —
 on teste que le rendu vient de profile.json, que l'i18n contenu est bilingue, que le build
 est idempotent et fail-loud, et que les clés-chrome i18n sont préservées."""
+import copy
+import json
 import re
 import sys
 from pathlib import Path
@@ -338,7 +340,9 @@ def test_build_also_generates_explorer_page():
     import build_browse as bbr
     p = bs.load_profile()
     out = bbr.build_browse(p, write=False)
-    assert out.count('class="e-card"') == 28 and '<title>Explorer' in out
+    n = sum(len(p[k]) for k in ("projects", "demos", "articles", "experiences",
+                                "education", "recommendations"))
+    assert n >= 20 and out.count('class="e-card"') == n and '<title>Explorer' in out
     import build_site, inspect
     assert "build_browse" in inspect.getsource(build_site.build)
 
@@ -600,6 +604,106 @@ def test_index_html_declare_bien_des_zones_a_batir():
     assert len(_zones_i18n()) >= 16, _zones_i18n()
     assert "footer" in _zones_html()
     assert ("footer", "fr") in _zones_i18n()
+
+
+# ── Statut du hero (pastille verte) ───────────────────────────────────────────
+#
+# Écrit en dur à trois endroits d'index.html (le span, puis une entrée par langue
+# du dict i18n), le statut a affiché « Actuellement : … @ ALTEN » un mois après la
+# fin du stage. Même mécanisme que la date du pied de page (H5) : une chaîne hors
+# zone BUILD est hors d'atteinte du build, et corriger profile.json ne change
+# rien à la page servie.
+
+def test_le_statut_du_hero_est_une_zone_batie():
+    assert "status" in _zones_html()
+    assert ("status", "fr") in _zones_i18n()
+    assert ("status", "en") in _zones_i18n()
+
+
+def test_le_statut_publie_vient_de_identity_status():
+    # L'attendu vient de la DONNÉE, jamais de la fonction de rendu : un test qui
+    # recopie l'implémentation ne peut pas diverger d'elle.
+    profile = bs.load_profile()
+    out = bs.build_html(_index_html(), profile)
+    st = profile["identity"]["status"]
+    assert _entre(out, "<!-- BUILD:status -->", "<!-- /BUILD:status -->") == bs.esc(st["fr"])
+    for lang in ("fr", "en"):
+        region = _entre(out, f"/* BUILD:i18n_status_{lang} */", f"/* /BUILD:i18n_status_{lang} */")
+        assert f"status: {json.dumps(st[lang], ensure_ascii=False)}," in region
+
+
+def test_un_statut_modifie_ne_laisse_aucune_copie_en_dur():
+    """Muter la donnée doit changer TOUTES les occurrences : s'il reste une clé
+    `status:` hors de sa région, l'anglais (ou le français) resterait figé."""
+    profile = copy.deepcopy(bs.load_profile())
+    profile["identity"]["status"] = {"fr": "STATUT-TEST-FR", "en": "STATUT-TEST-EN"}
+    out = bs.build_html(_index_html(), profile)
+    # Zone par zone, et avec des valeurs qui ne coïncident avec AUCUN texte déjà
+    # présent : sur le profil réel, la copie en dur et la donnée étaient identiques,
+    # si bien qu'une zone jamais réécrite passait l'oracle « vient de la donnée ».
+    assert _entre(out, "<!-- BUILD:status -->", "<!-- /BUILD:status -->") == "STATUT-TEST-FR"
+    assert "STATUT-TEST-FR" in _entre(out, "/* BUILD:i18n_status_fr */", "/* /BUILD:i18n_status_fr */")
+    assert "STATUT-TEST-EN" in _entre(out, "/* BUILD:i18n_status_en */", "/* /BUILD:i18n_status_en */")
+    hors_zones = out
+    for ouvre, ferme in (("<!-- BUILD:status -->", "<!-- /BUILD:status -->"),
+                         ("/* BUILD:i18n_status_fr */", "/* /BUILD:i18n_status_fr */"),
+                         ("/* BUILD:i18n_status_en */", "/* /BUILD:i18n_status_en */")):
+        hors_zones = _perimer(hors_zones, ouvre, ferme)
+    # Non ancrée en début de ligne : le dict porte déjà des lignes à plusieurs clés
+    # (`nav_*`), et une copie `status:` collée derrière `hero_tag:` gagnerait (la
+    # dernière clé d'un littéral l'emporte) sans qu'une regex `^\s*status:` la voie.
+    assert not re.search(r"(?<![\w.$-])[\"']?status[\"']?\s*:", hors_zones), (
+        "une entrée `status:` du dict i18n vit hors de sa région BUILD")
+    assert 'data-i18n="status">' + "<!-- BUILD:status -->" in hors_zones, (
+        "le span du hero doit porter la zone BUILD:status, sans texte hors zone")
+
+
+def test_les_sous_pages_datent_leur_pied_de_page_depuis_updated():
+    """Deux dates coexistaient : `$updated` (accueil) et `projects_meta.updated`
+    (projects, explorer, highlights, graph). La seconde, jamais avancée, affichait
+    2026-07-08 sur des pages régénérées le 2026-09-28. Une seule date, `$updated`."""
+    import build_browse, build_graph, build_highlights, build_projects
+    profile = copy.deepcopy(bs.load_profile())
+    profile["$updated"] = "2031-01-02"
+    profile.get("projects_meta", {}).pop("updated", None)
+    for nom, page in (("projects", build_projects.build_projects(profile, write=False)),
+                      ("explorer", build_browse.build_browse(profile, write=False)),
+                      ("highlights", build_highlights.build_highlights(profile, write=False)),
+                      ("graph", build_graph.build_graph(profile, write=False))):
+        assert "2031-01-02" in page, f"le pied de page de /{nom}/ ne lit pas $updated"
+
+
+def test_le_build_refuse_un_poste_en_cours_echu(tmp_path):
+    """Rejoue l'incident : sur origin/main, ALTEN était `current` avec une fin en
+    2026-08 et rien ne s'y opposait. Le build du 5 septembre doit refuser, avant
+    toute écriture, au lieu de publier « présent »."""
+    profile = copy.deepcopy(bs.load_profile())
+    alten = next(e for e in profile["experiences"] if e["id"] == "alten_2026")
+    alten.update({"end": "2026-08", "current": True})
+    profile["$updated"] = "2026-07-07"
+    src = tmp_path / "profile.json"
+    src.write_text(json.dumps(profile, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(bs.BuildError, match="alten_2026"):
+        bs.build(profile_path=src, write=False, today="2026-09-05")
+    # …et le même profil passe tant que la fin prévue n'est pas atteinte.
+    bs.build(profile_path=src, write=False, today="2026-07-20")
+
+
+def test_le_statut_est_echappe_en_html_et_en_js():
+    """Attendus écrits À LA MAIN : comparés à `bs.esc`/`json.dumps`, un rendu qui
+    oublierait d'échapper resterait vert (les vraies données n'ont ni `"` ni `<`).
+    Un `"` non échappé casse le littéral ; un `</script>` ferme le script qui porte
+    tout le dictionnaire i18n."""
+    profile = copy.deepcopy(bs.load_profile())
+    profile["identity"]["status"] = {"fr": 'Dispo "quant" & <R&D>',
+                                     "en": "x </script><script>alert(1)</script>"}
+    out = bs.build_html(_index_html(), profile)
+    assert _entre(out, "<!-- BUILD:status -->", "<!-- /BUILD:status -->") == \
+        'Dispo "quant" &amp; &lt;R&amp;D&gt;'
+    assert 'status: "Dispo \\"quant\\" & \\u003cR&D>",' in \
+        _entre(out, "/* BUILD:i18n_status_fr */", "/* /BUILD:i18n_status_fr */")
+    assert out.count("</script") == _index_html().count("</script"), (
+        "une donnée a injecté une balise </script> dans la page")
 
 
 @pytest.mark.parametrize("nom", _zones_html())

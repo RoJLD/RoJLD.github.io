@@ -460,7 +460,7 @@ def render_highlights_page(profile):
             .replace("@@CAPS@@", json.dumps(CAPS))
             .replace("@@LABELS@@", json.dumps(labels, ensure_ascii=True))
             .replace("@@IDS@@", json.dumps(lenses))
-            .replace("@@UPDATED@@", e(profile.get("projects_meta", {}).get("updated", ""))))
+            .replace("@@UPDATED@@", e(profile.get("$updated", ""))))  # une seule date
 
 
 def build_highlights(profile=None, write: bool = True) -> str:

@@ -630,7 +630,7 @@ def _legend(profile):
 
 def render_graph_page(profile):
     data = assemble(profile)
-    updated = profile.get("projects_meta", {}).get("updated", "")
+    updated = profile.get("$updated", "")  # une seule date pour tout le site
     return (PAGE_TEMPLATE
             .replace("@@EDGES_SVG@@", _edges_svg(data))
             .replace("@@NODES_SVG@@", _nodes_svg(data))

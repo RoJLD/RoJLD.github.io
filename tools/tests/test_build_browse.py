@@ -96,9 +96,40 @@ def test_norm_education_and_reco():
 
 
 # ── aggregate ──
+# L'attendu se lit dans les six collections du profil, pas dans un nombre figé :
+# le « 28 » d'origine (17+2+2+3+2+2) cassait à chaque projet ajouté ou retiré.
+# Le plancher empêche un profil vidé de valider une page vide.
+_COLLECTIONS = ("projects", "demos", "articles", "experiences", "education", "recommendations")
+
+
+def _n_contenus(p):
+    return sum(len(p[k]) for k in _COLLECTIONS)
+
+
+# Le compte dérivé ne voit pas une perte DANS la donnée, et le plancher en tolère
+# 7 : l'ancien « 28 » était aussi le seul garde contre la disparition d'une
+# recommandation ou d'un article (mesuré en revue). Les identifiants de chaque
+# collection sont donc figés, comme EXPECTED_IDS pour les projets.
+_IDS_ATTENDUS = {
+    "demos": {"bs", "mc"},
+    "articles": {"couverture_dynamique", "onchain_analytics"},
+    "experiences": {"alten_2026", "bouygues_2025", "manco_2024"},
+    "education": {"ece", "prepa"},
+    "recommendations": {"student_pop", "manco_paris"},
+}
+
+
+def test_aucune_entree_ne_disparait_en_silence():
+    p = _p()
+    for collection, attendus in _IDS_ATTENDUS.items():
+        assert {x["id"] for x in p[collection]} == attendus, collection
+
+
 def test_aggregate_count():
-    ents = bb.aggregate(_p())
-    assert len(ents) == 28  # 17+2+2+3+2+2
+    p = _p()
+    ents = bb.aggregate(p)
+    assert _n_contenus(p) >= 20
+    assert len(ents) == _n_contenus(p)
     assert {e["type"] for e in ents} == set(bb.TYPE_ORDER)
 
 
@@ -138,7 +169,7 @@ def test_page_controls_and_toggles():
     assert out.count('class="f-btn') == 7            # Tous + 6 types
     assert 'id="q"' in out and 'id="count"' in out and 'id="empty"' in out
     assert 'onclick="toggleLang()"' in out and 'onclick="tgTheme()"' in out
-    assert out.count('class="e-card"') == 28
+    assert out.count('class="e-card"') == _n_contenus(_p())
     assert '/explorer/' in out and 'class="on"' in out  # nav Explorer actif
 
 

@@ -14,19 +14,22 @@ def _profile():
 DOMAINS = {"quant", "risk", "finance", "data", "defi", "dev", "ai", "architecture",
            "infra", "knowledge-graph", "research", "product"}
 EXP_EDU_CTX = {"bouygues_2025", "alten_2026", "manco_2024", "ece", "personal"}
+# `trading-algo-csharp` retiré le 2026-09-28 (décision du 2026-09-10) : aucun code,
+# aucun protocole ni chiffre récupérable, alors que la carte promettait « connexion
+# API marché » et « Code sur demande ». Une promesse publique inexécutable.
 EXPECTED_IDS = {
     "tms-bouygues", "crypto-exploration", "pfe-hedging", "elysium", "portfolio-site",
     "anthropos", "hmm-studio", "derivatives-pricer", "monte-carlo-gbm", "sudoku-cnn",
-    "trading-algo-csharp", "vba-index-tool", "vhdl-calculator", "atc-simulation",
+    "vba-index-tool", "vhdl-calculator", "atc-simulation",
     "gripper-robot", "octoprint-bed-leveller", "ppe-politique-monetaire",
 }
 
 
-def test_seventeen_projects_with_canonical_ids():
+def test_sixteen_projects_with_canonical_ids():
     p = _profile()
     ids = {pr["id"] for pr in p["projects"]}
     assert ids == EXPECTED_IDS
-    assert len(p["projects"]) == 17
+    assert len(p["projects"]) == 16
 
 
 def test_every_project_schema_valid():
@@ -64,6 +67,12 @@ def test_snippets_extracted_to_files():
 def test_tag_labels_and_meta_promoted():
     p = _profile()
     assert isinstance(p.get("project_tag_labels"), dict) and p["project_tag_labels"]
-    assert p.get("projects_meta", {}).get("updated")
+    # Une seule date pour tout le site : `projects_meta.updated`, jamais avancé,
+    # datait les sous-pages du 2026-07-08 après leur régénération du 2026-09-28.
+    assert p.get("$updated")
+    assert "updated" not in p.get("projects_meta", {})
     used = {t for pr in p["projects"] for t in pr["tags"]}
     assert used <= set(p["project_tag_labels"]), used - set(p["project_tag_labels"])
+    # …et l'inverse : un libellé sans projet reste public dans profile.json
+    # (« Trading Algo » a survécu au retrait du projet qui le portait).
+    assert set(p["project_tag_labels"]) <= used, set(p["project_tag_labels"]) - used

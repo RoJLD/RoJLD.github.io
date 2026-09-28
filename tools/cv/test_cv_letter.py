@@ -568,11 +568,14 @@ def test_end_to_end_on_the_real_profile(real_profile):
 #      clampé, alors que `current: True` fait rendre au rédacteur
 #      « 2026-02 → présent » : la valeur brute ne lui est JAMAIS montrée. Une
 #      affirmation ancrée dessus obtenait ok=True.
-#  (2) DIVERGENCE INVERSE — `projects[trading-algo-csharp].date` EST montré au
+#  (2) DIVERGENCE INVERSE — `projects[x].date` (mesuré à l'époque sur
+#      `trading-algo-csharp`, retiré depuis le 2026-09-28) EST montré au
 #      rédacteur et n'existait dans AUCUN index : une affirmation vraie bloquée.
 #
-# Le test ci-dessous lit les DEUX SENS, sur le profil réel, contre l'ARTEFACT
-# RENDU (le bloc de faits du prompt) et non contre l'implémentation du clamp.
+# Les tests ci-dessous lisent les DEUX SENS contre l'ARTEFACT RENDU (le bloc de
+# faits du prompt), et non contre l'implémentation du clamp. Depuis le
+# 2026-09-28, la fuite (1) n'est plus exercée que par le test sur FIXTURE : le
+# profil réel n'a plus d'expérience en cours.
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _leaves(node):
@@ -589,7 +592,7 @@ def _leaves(node):
         yield node
 
 
-def _assert_prompt_and_clamp_agree(profile, jc, lang, min_facts=6):
+def _assert_prompt_and_clamp_agree(profile, jc, lang, min_facts=6, exige_poste_en_cours=True):
     import cv_grounding
     ev = cv_letter.select_evidence(profile, jc)
     # GARDES DU GARDE : les deux branches du clamp et le cas « poste en cours »
@@ -598,9 +601,10 @@ def _assert_prompt_and_clamp_agree(profile, jc, lang, min_facts=6):
     assert kinds == {"experience", "project"}, f"branches non exercées : {kinds}"
     exps = {e.get("id"): e for e in profile.get("experiences") or []}
     prjs = {p.get("id"): p for p in profile.get("projects") or []}
-    assert any(exps[e["id"]].get("current") and exps[e["id"]].get("end")
-               for e in ev if e["kind"] == "experience"), \
-        "aucune expérience EN COURS avec date de fin : la fuite `.end` ne s'exerce pas"
+    if exige_poste_en_cours:
+        assert any(exps[e["id"]].get("current") and exps[e["id"]].get("end")
+                   for e in ev if e["kind"] == "experience"), \
+            "aucune expérience EN COURS avec date de fin : la fuite `.end` ne s'exerce pas"
     assert any(prjs[e["id"]].get("date") for e in ev if e["kind"] == "project"), \
         "aucun projet daté retenu : la divergence `projects[x].date` ne s'exerce pas"
 
@@ -631,16 +635,23 @@ def _assert_prompt_and_clamp_agree(profile, jc, lang, min_facts=6):
 
 
 def test_the_writers_prompt_and_the_verifiers_clamp_carry_the_same_facts(real_profile):
-    """Sur la DONNÉE DE PRODUCTION, dans les deux sens. Ce test unique rougit sur
-    la fuite `.end`, sur la divergence `projects[x].date`, et sur toute
-    modification de `_fact_block` qui cesse de montrer un fait indexé (les puces,
-    le nom du candidat) ou se met à en montrer un qui ne l'est pas (l'e-mail)."""
+    """Sur la DONNÉE DE PRODUCTION, dans les deux sens. Ce test rougit sur la
+    divergence `projects[x].date` et sur toute modification de `_fact_block` qui
+    cesse de montrer un fait indexé (les puces, le nom du candidat) ou se met à en
+    montrer un qui ne l'est pas (l'e-mail).
+
+    Il NE couvre PLUS la fuite `.end` : depuis le 2026-09-28, le profil réel n'a
+    plus aucune expérience en cours (le stage ALTEN s'est terminé en août), donc la
+    forme `current` + `end` n'y existe plus et on ne l'y exige plus. Mesuré en
+    revue : fuite réintroduite, ce test reste vert. Elle est exercée par le test
+    jumeau sur fixture ci-dessous, qui passe par le même helper avec l'exigence
+    active, et qui rougit en FR comme en EN."""
     _assert_prompt_and_clamp_agree(
         real_profile,
         _jc(relevance_key="quant", min_relevance=0.7, domains_in=["quant", "dev"],
             company="Nexora Capital", job_title="Ingénieur Quantitatif",
             requirements=["Python", "C++"], register="formel", market="FR"),
-        "fr", min_facts=12)
+        "fr", min_facts=12, exige_poste_en_cours=False)
 
 
 @pytest.mark.parametrize("lang", ["fr", "en"])
