@@ -99,14 +99,15 @@ def test_le_handler_coerce_le_template_en_chaine(monkeypatch):
     est connue.
     """
     import atelier
+    from tools.cockpit import server  # le module qui LIT les noms que les tests rebindent
     vus = {}
 
     def faux_generate_pdf(job, profile, lang, template=None, **_):
         vus["template"] = template
         return ({"relevance_key": "x", "min_relevance": 0.5}, b"%PDF-")
 
-    monkeypatch.setattr(atelier, "generate_pdf", faux_generate_pdf)
-    monkeypatch.setattr(atelier, "_PROFILE", _profil_bidon(monkeypatch))
+    monkeypatch.setattr(server, "generate_pdf", faux_generate_pdf)
+    monkeypatch.setattr(server, "_PROFILE", _profil_bidon(monkeypatch))
 
     handler = atelier.Handler.__new__(atelier.Handler)
     handler._send = lambda *a, **k: None

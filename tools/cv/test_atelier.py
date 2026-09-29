@@ -8,6 +8,7 @@ import re
 import atelier
 import cv_pdf
 import cv_target
+from tools.cockpit import server  # le module qui LIT les noms que les tests rebindent
 
 
 def test_html_to_pdf_bytes_smoke():
@@ -246,7 +247,7 @@ def _pointe_vers_une_copie(tmp_path, monkeypatch):
     """Fait viser à l'atelier une COPIE du vrai profil : le dépôt n'est jamais muté."""
     target = tmp_path / "profile.json"
     target.write_text(_REAL_PROFILE.read_text(encoding="utf-8"), encoding="utf-8")
-    monkeypatch.setattr(atelier, "_PROFILE", target)
+    monkeypatch.setattr(server, "_PROFILE", target)
     return target
 
 
@@ -260,7 +261,7 @@ def test_cross_origin_mutation_is_refused(tmp_path, monkeypatch):
     """
     target = _pointe_vers_une_copie(tmp_path, monkeypatch)
     commits = []
-    monkeypatch.setattr(atelier, "_git_commit", lambda *a, **k: commits.append(a))
+    monkeypatch.setattr(server, "_git_commit", lambda *a, **k: commits.append(a))
 
     pwned = json.loads(target.read_text(encoding="utf-8"))
     pwned["identity"]["last_name"] = "PWNED"
@@ -524,7 +525,7 @@ def test_le_plafond_refuse_toujours_sans_lire_le_corps(tmp_path, monkeypatch):
     OUVERT. Un serveur qui attendrait le corps resterait bloqué jusqu'au délai de
     garde ; ici la réponse doit être immédiate."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 5.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 5.0)
     with _server() as base:
         port = _port_of(base)
         t0 = time.monotonic()
@@ -568,7 +569,7 @@ def test_le_refus_part_sans_attendre_le_corps(tmp_path, monkeypatch):
     séparément que la RÉPONSE, elle, part avant que le moindre octet de corps
     n'arrive. Mesure : temps jusqu'au premier octet, corps jamais émis."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 5.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 5.0)
     with _server() as base:
         port = _port_of(base)
         cas = [
@@ -602,9 +603,9 @@ def test_le_client_n_attend_pas_la_fin_du_nettoyage(tmp_path, monkeypatch):
     portée à 5 s pour que « sain » (~0,01 s) et « muet » (5 s) restent
     incomparables même sur une machine chargée."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "LINGER_IDLE_S", 5.0)
-    monkeypatch.setattr(atelier, "LINGER_TOTAL_S", 30.0)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 30.0)
+    monkeypatch.setattr(server, "LINGER_IDLE_S", 5.0)
+    monkeypatch.setattr(server, "LINGER_TOTAL_S", 30.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 30.0)
     with _server() as base:
         port = _port_of(base)
         t0 = time.monotonic()
@@ -653,9 +654,9 @@ def test_la_fermeture_courtoise_lache_un_client_silencieux(tmp_path, monkeypatch
     """Borne d'INACTIVITÉ : rien n'arrive et le client ne ferme pas son canal
     d'écriture — le serveur ne peut pas attendre un EOF qui ne viendra jamais."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "LINGER_IDLE_S", 0.3)
-    monkeypatch.setattr(atelier, "LINGER_TOTAL_S", 30.0)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 30.0)
+    monkeypatch.setattr(server, "LINGER_IDLE_S", 0.3)
+    monkeypatch.setattr(server, "LINGER_TOTAL_S", 30.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 30.0)
     with _server() as base:
         port = _port_of(base)
         base_fils = threading.active_count()
@@ -673,9 +674,9 @@ def test_la_fermeture_courtoise_a_un_plafond_dur(tmp_path, monkeypatch):
     C'est le slowloris d'après-refus : un octet toutes les 50 ms suffit à rendre
     la borne d'inactivité inopérante. Seul `LINGER_TOTAL_S` rend le fil."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "LINGER_IDLE_S", 0.3)
-    monkeypatch.setattr(atelier, "LINGER_TOTAL_S", 0.8)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 30.0)
+    monkeypatch.setattr(server, "LINGER_IDLE_S", 0.3)
+    monkeypatch.setattr(server, "LINGER_TOTAL_S", 0.8)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 30.0)
     with _server() as base:
         port = _port_of(base)
         base_fils = threading.active_count()
@@ -841,7 +842,7 @@ def test_une_connexion_muette_est_relachee(tmp_path, monkeypatch):
     """…et la borne reste indispensable : sinon chaque connexion muette immobilise
     un fil pour toujours (épuisement du pool, la famine par un autre chemin)."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 0.6)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 0.6)
     with _server() as base:
         port = _port_of(base)
         t0 = time.monotonic()
@@ -1022,7 +1023,7 @@ def test_un_profil_contenant_le_marqueur_du_jeton_est_servi_intact(tmp_path, mon
                        indent=2, ensure_ascii=False)
     cible = tmp_path / "profile.json"
     cible.write_text(piege, encoding="utf-8")
-    monkeypatch.setattr(atelier, "_PROFILE", cible)
+    monkeypatch.setattr(server, "_PROFILE", cible)
     with _server() as base:
         for chemin, motif in (("/edit", r"var P = (.*);\n"),
                               ("/cms", r"var profile = JSON\.parse\((.*)\);\n")):
@@ -1052,12 +1053,12 @@ def test_main_tire_un_jeton_neuf_au_demarrage(monkeypatch):
     retirant `reset_csrf_token()` : la page servait le jeton d'import à
     l'identique, et les 38 tests restaient VERTS.
     """
-    monkeypatch.setattr(atelier, "_TOKEN", atelier._TOKEN)   # rotation annulée au teardown
+    monkeypatch.setattr(server, "_TOKEN", server._TOKEN)   # rotation annulée au teardown
     avant = atelier.csrf_token()
     crees, vrai = [], atelier.make_server
     # `main` fixe le port ; on le force éphémère pour ne pas heurter un atelier
     # qui tournerait vraiment. Le serveur construit reste le VRAI `make_server`.
-    monkeypatch.setattr(atelier, "make_server",
+    monkeypatch.setattr(server, "make_server",
                         lambda port=0: (crees.append(vrai(0)), crees[-1])[1])
     threading.Thread(target=atelier.main, args=(0,), daemon=True).start()
     debut = time.monotonic()
@@ -1168,7 +1169,7 @@ def test_internal_error_is_not_echoed_to_the_client(tmp_path, monkeypatch, capfd
     def boum(*a, **k):
         raise RuntimeError("C:/chemin/secret/interne — jeton=DEADBEEF")
 
-    monkeypatch.setattr(atelier, "save_profile_edit", boum)
+    monkeypatch.setattr(server, "save_profile_edit", boum)
     with _server() as base:
         code, body = _post(_port_of(base), "/save", {"json": "{}"})
     assert code == 500
@@ -1256,7 +1257,7 @@ def test_le_jeton_anti_csrf_est_imprevisible(monkeypatch):
     l'artefact livré (43 caractères, 43 positions à 16-45 valeurs) — pour rougir
     sur une dégénérescence, jamais sur un changement de forme légitime.
     """
-    monkeypatch.setattr(atelier, "_TOKEN", atelier._TOKEN)   # rotation annulée au teardown
+    monkeypatch.setattr(server, "_TOKEN", server._TOKEN)   # rotation annulée au teardown
     tirs = [atelier.reset_csrf_token() for _ in range(64)]
 
     assert len(set(tirs)) == len(tirs), (
@@ -1287,7 +1288,7 @@ def test_le_jeton_d_une_session_precedente_n_ouvre_plus_rien(tmp_path, monkeypat
     toujours.
     """
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "_TOKEN", atelier._TOKEN)
+    monkeypatch.setattr(server, "_TOKEN", server._TOKEN)
 
     atelier.reset_csrf_token()
     with _server() as base:
@@ -1358,7 +1359,7 @@ def _page_avec_ce_profil(tmp_path, monkeypatch, contenu, chemin, nom):
     """Sert `chemin` avec un profil donné et rend la page (source d'attendu)."""
     cible = tmp_path / f"profile_{nom}.json"
     cible.write_text(contenu, encoding="utf-8")
-    monkeypatch.setattr(atelier, "_PROFILE", cible)
+    monkeypatch.setattr(server, "_PROFILE", cible)
     with _server() as base:
         code, page = _get(base, chemin)
     assert code == 200, (chemin, nom, code)
@@ -1536,7 +1537,7 @@ def test_une_erreur_interne_de_generate_ne_part_pas_au_client_mais_a_la_console(
     def boum(*a, **k):
         raise RuntimeError(f"C:/chemin/secret/interne — jeton={marqueur}")
 
-    monkeypatch.setattr(atelier, "generate_pdf", boum)
+    monkeypatch.setattr(server, "generate_pdf", boum)
     with _server() as base:
         code, corps = _post(_port_of(base), "/generate", {"job": "x", "lang": "fr"})
     assert code == 500, corps[:200]
@@ -1562,7 +1563,7 @@ def test_un_corps_non_utf8_est_refuse_et_n_atteint_jamais_le_pipeline(
     _pointe_vers_une_copie(tmp_path, monkeypatch)
     appels = []
     vrai = atelier.save_profile_edit
-    monkeypatch.setattr(atelier, "save_profile_edit",
+    monkeypatch.setattr(server, "save_profile_edit",
                         lambda *a, **k: (appels.append(a), vrai(*a, **k))[1])
     corps = b'{"json":"\xff\xfe\x80abc"}'
     with _server() as base:
