@@ -56,6 +56,13 @@ def test_un_local_json_illisible_donne_none_sans_lever(tmp_path):
     assert config.career_ops_root(env={}, local_json=lj) is None
 
 
+@pytest.mark.parametrize("contenu", ["[1, 2, 3]", '"texte"'])
+def test_un_local_json_valide_mais_pas_objet_donne_none_sans_lever(tmp_path, contenu):
+    lj = tmp_path / "local.json"
+    lj.write_text(contenu, encoding="utf-8")
+    assert config.career_ops_root(env={}, local_json=lj) is None
+
+
 def test_sans_rien_c_est_none(tmp_path):
     assert config.career_ops_root(env={}, local_json=tmp_path / "absent.json") is None
 

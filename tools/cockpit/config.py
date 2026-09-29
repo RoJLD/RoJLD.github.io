@@ -36,9 +36,10 @@ def career_ops_root(env=None, local_json: Path = LOCAL_JSON) -> Path | None:
     cand = (env.get("CAREER_OPS_ROOT") or "").strip()
     if not cand and local_json.is_file():
         try:
-            cand = str(json.loads(local_json.read_text(encoding="utf-8")).get("career_ops_root", "")).strip()
+            data = json.loads(local_json.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return None
+        cand = str(data.get("career_ops_root", "")).strip() if isinstance(data, dict) else ""
     if not cand:
         return None
     p = Path(cand).expanduser()
