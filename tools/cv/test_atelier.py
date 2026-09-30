@@ -1214,7 +1214,10 @@ def test_une_sauvegarde_gouvernee_regenere_la_banque_de_cv(tmp_path, monkeypatch
 
 
 def test_un_gate_de_banque_qui_refuse_est_rapporte_pas_masque(tmp_path, monkeypatch):
-    """build_cv_bank.main lève SystemExit sur profil invalide : rapporté dans stages.prefab."""
+    """build_cv_bank.main lève SystemExit sur profil invalide : rapporté dans
+    stages.prefab, jamais masqué. M1 (revue finale opus) : `_regen_bank`
+    convertit SystemExit en RuntimeError (point unique du correctif) — le
+    message ORIGINAL du gate doit survivre à la conversion, intact."""
     target = _pointe_vers_une_copie(tmp_path, monkeypatch)
     monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)
 
@@ -1225,7 +1228,8 @@ def test_un_gate_de_banque_qui_refuse_est_rapporte_pas_masque(tmp_path, monkeypa
         status, body = _post(_port_of(base), "/save", _payload_gouverne(target))
     rep = json.loads(body)
     assert status == 200 and rep["stages"]["write"] == {"ok": True}
-    assert rep["stages"]["prefab"]["ok"] is False and "SystemExit" in rep["stages"]["prefab"]["error"]
+    assert rep["stages"]["prefab"]["ok"] is False
+    assert "profile.json invalide" in rep["stages"]["prefab"]["error"], rep["stages"]["prefab"]
 
 
 def test_une_sauvegarde_refusee_ne_regenere_rien(tmp_path, monkeypatch):
@@ -1238,6 +1242,47 @@ def test_une_sauvegarde_refusee_ne_regenere_rien(tmp_path, monkeypatch):
         status, body = _post(_port_of(base), "/save", corps)
     rep = json.loads(body)
     assert rep["ok"] is False and "prefab" not in rep.get("stages", {}) and appels == []
+
+
+# ── M1 (revue finale opus) : SystemExit du gate sur /save AVEC regen:true ──────
+#
+# `/save` avec `regen: true` (case "Régénérer la banque préfab" de /edit, HORS
+# pipeline gouverné) appelait `_regen_bank()` sans le `except (Exception,
+# SystemExit)` du chemin gouverné. `SystemExit` N'EST PAS une `Exception` (elle
+# hérite de `BaseException`) : elle traverse le `except Exception:` du handler,
+# remonte jusqu'au fil HTTP qui la reçoit non rattrapée — et `threading`
+# l'IGNORE EN SILENCE (aucune trace, le fil meurt). Le client ne reçoit ALORS
+# AUCUNE réponse (RemoteDisconnected / « Failed to fetch » côté navigateur),
+# alors que `profile.json` est déjà écrit à ce stade.
+
+def test_un_gate_de_banque_qui_refuse_sur_save_simple_ne_perd_pas_la_reponse(tmp_path, monkeypatch):
+    """M1 : `_regen_bank` doit convertir SystemExit en exception ordinaire —
+    seul point de correctif — pour que la réponse HTTP arrive TOUJOURS, même
+    quand `regen: true` est demandé hors du pipeline gouverné.
+
+    Monkeypatcher `pages_cv._regen_bank` directement court-circuiterait le
+    correctif (qui VIT dans `_regen_bank`) : on patche `build_cv_bank.main`,
+    ce que `_regen_bank` appelle réellement, pour que sa conversion interne
+    SystemExit -> RuntimeError soit effectivement exercée."""
+    import build_cv_bank
+    target = _pointe_vers_une_copie(tmp_path, monkeypatch)
+    prof = json.loads(target.read_text(encoding="utf-8"))
+    prof["identity"]["last_name"] = "Denis-Regen"
+
+    def _refuse():
+        raise SystemExit("[cv-bank] profile.json invalide, aucun PDF généré")
+    monkeypatch.setattr(build_cv_bank, "main", _refuse)
+    with _server() as base:
+        port = _port_of(base)
+        h = _entetes_legitimes(port)
+        payload = json.dumps({"json": json.dumps(prof), "regen": True}).encode("utf-8")
+        h["Content-Length"] = str(len(payload))
+        code, incident = _tir(port, "/save", h, payload)
+    assert code is not None, (
+        f"reponse PERDUE (SystemExit non rattrapee, le fil HTTP est mort en silence) "
+        f"— incident={incident}")
+    # le profil est ecrit AVANT le regen : le crash du fil ne doit pas le perdre
+    assert json.loads(target.read_text(encoding="utf-8"))["identity"]["last_name"] == "Denis-Regen"
 
 
 # ╔══════════════════════════════════════════════════════════════════════════╗

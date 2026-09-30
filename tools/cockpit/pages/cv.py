@@ -137,8 +137,23 @@ def save_profile_edit(raw_json: str, profile_path: pathlib.Path,
 
 
 def _regen_bank() -> None:
+    """Régénère la banque de PDF préfabriqués.
+
+    `build_cv_bank.main()` lève `SystemExit` quand son gate daté refuse (profil
+    invalide). `SystemExit` n'est PAS une `Exception` — non convertie ici, elle
+    traverse le `except Exception:` de `handle_save` (gouverné ET `/save` avec
+    `regen: true`), remonte jusqu'au fil HTTP qui la reçoit non rattrapée, et
+    `threading` l'IGNORE EN SILENCE (mesuré M1, revue finale opus 2026-09-29) :
+    le fil meurt sans réponse — le client voit une connexion perdue
+    (RemoteDisconnected / « Failed to fetch ») alors que `profile.json` est
+    déjà écrit. Point unique du correctif : convertir en exception ordinaire,
+    pour que les DEUX appelants la rapportent au lieu de tuer le fil.
+    """
     import build_cv_bank  # type: ignore
-    build_cv_bank.main()
+    try:
+        build_cv_bank.main()
+    except SystemExit as exc:
+        raise RuntimeError(f"gate de banque prefab refuse : {exc}") from exc
 
 
 def _git_commit(repo_root: pathlib.Path, paths: list[str], message: str) -> None:
