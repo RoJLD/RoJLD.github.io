@@ -18,6 +18,7 @@ import json
 import pathlib
 import sys
 import types
+import urllib.parse
 
 import pytest
 from docx.enum.text import WD_TAB_ALIGNMENT
@@ -293,9 +294,15 @@ def _expected_outline(scv: dict, private: dict | None = None) -> list[str]:
         lines.append(idy["title"])
     if avail:
         lines.append(str(avail))
+    # D13b (fix round 1, Tâche 7) : miroir de cv_docx._site_display/build_docx —
+    # le PDF public (l'oracle) porte le lien du site et des libellés génériques
+    # pour linkedin/github ; ce modèle-monde doit SUIVRE ce format.
+    site = (idy.get("links") or {}).get("site") or ""
+    site_display = (urllib.parse.urlsplit(site).netloc or site) if site else ""
     contact = " • ".join(x for x in (idy.get("location"), idy.get("email"),
-                                     priv.get("phone"), idy.get("linkedin"),
-                                     idy.get("github")) if x)
+                                     priv.get("phone"), site_display,
+                                     "LinkedIn" if idy.get("linkedin") else "",
+                                     "GitHub" if idy.get("github") else "") if x)
     if contact:
         lines.append(contact)
 

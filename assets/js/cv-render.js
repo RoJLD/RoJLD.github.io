@@ -18,6 +18,7 @@
     ".cv-name { font-size: 17pt; font-weight: 700; margin: 0; }\n" +
     ".cv-title { font-size: 10.5pt; color: #4361ee; margin: 1px 0 0; }\n" +
     ".cv-contact { font-size: 8.5pt; color: #555; margin-top: 3px; }\n" +
+    ".cv-contact a { color: inherit; text-decoration: none; }\n" +
     ".cv-section { margin-bottom: 7px; page-break-inside: avoid; }\n" +
     ".cv-exp-head { display: flex; justify-content: space-between; font-weight: 600; }\n" +
     ".cv-exp-company { color: #16213e; }\n" +
@@ -84,6 +85,9 @@
       ".cv-name { font-size: " + h1 + "; font-weight: 700; margin: 0; }\n" +
       ".cv-title { font-size: " + h2 + "; color: " + accent + "; margin: 1px 0 0; }\n" +
       ".cv-contact { font-size: " + tiny + "; color: " + muted + "; margin-top: 3px; }\n" +
+      // Fix round 1 (revue D13b) : regle LITTERALE (aucun token `style`), miroir de
+      // cv_templates.build_css.
+      ".cv-contact a { color: inherit; text-decoration: none; }\n" +
       ".cv-section { margin-bottom: " + sectionGap + "; page-break-inside: avoid; }\n" +
       ".cv-exp-head { display: flex; justify-content: space-between; font-weight: 600; }\n" +
       ".cv-exp-company { color: " + ink2 + "; }\n" +

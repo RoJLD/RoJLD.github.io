@@ -83,6 +83,10 @@ def build_css(style: dict) -> str:
         f".cv-name {{ font-size: {h1}; font-weight: 700; margin: 0; }}\n"
         f".cv-title {{ font-size: {h2}; color: {accent}; margin: 1px 0 0; }}\n"
         f".cv-contact {{ font-size: {tiny}; color: {muted}; margin-top: 3px; }}\n"
+        # Fix round 1 (revue D13b) : sans cette règle, les 4 ancres <a> de la ligne
+        # de contact héritent du bleu + soulignement par défaut du navigateur —
+        # règle LITTÉRALE (aucun token `style`), comme `* { box-sizing: ... }`.
+        f".cv-contact a {{ color: inherit; text-decoration: none; }}\n"
         f".cv-section {{ margin-bottom: {section_gap}; page-break-inside: avoid; }}\n"
         f".cv-exp-head {{ display: flex; justify-content: space-between; font-weight: 600; }}\n"
         f".cv-exp-company {{ color: {ink_2}; }}\n"

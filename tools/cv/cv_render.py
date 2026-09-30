@@ -21,6 +21,7 @@ body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a2
 .cv-name { font-size: 17pt; font-weight: 700; margin: 0; }
 .cv-title { font-size: 10.5pt; color: #4361ee; margin: 1px 0 0; }
 .cv-contact { font-size: 8.5pt; color: #555; margin-top: 3px; }
+.cv-contact a { color: inherit; text-decoration: none; }
 .cv-section { margin-bottom: 7px; page-break-inside: avoid; }
 .cv-exp-head { display: flex; justify-content: space-between; font-weight: 600; }
 .cv-exp-company { color: #16213e; }
