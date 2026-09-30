@@ -10,12 +10,21 @@ import json
 
 NOM = "Kleos"  # nom interne inchangé (les tests le lisent)
 
-# <style> repris tel quel de _NAV (atelier.py:235-254) ; liste de liens étendue.
+# <style> repris tel quel de _NAV (atelier.py:235-246, commit 7e7abf0) ; seule la
+# LISTE de liens change (pages sœurs du cockpit) — Ruling C9 révisé (revue finale
+# opus, 2026-09-29) : la spec ne touche que la liste, jamais le style.
 NAV = """<style>
-.nv{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;margin-bottom:18px;font-size:14px}
-.nv a{color:#1a1a2e;text-decoration:none;padding:4px 8px;border-radius:6px}
-.nv a[aria-current=page]{background:#e8edff;color:#4361ee;font-weight:600}
-.nv .brand{font-weight:700;color:#4361ee}.nv .sp{flex:1}.nv .env{font-size:12px;color:#159957}
+.nv{display:flex;align-items:center;gap:16px;padding:2px 0 12px;margin:0 0 22px;
+border-bottom:1px solid #e2e8f0;font-size:13px;flex-wrap:wrap}
+.nv a{color:#475569;text-decoration:none;padding:4px 2px;border-bottom:2px solid transparent}
+.nv a:hover{color:#1a1a2e;border-bottom-color:#4361ee}
+.nv a:focus-visible{outline:2px solid #4361ee;outline-offset:3px;border-radius:3px}
+.nv a[aria-current=page]{color:#1a1a2e;font-weight:600;border-bottom-color:#4361ee}
+.nv .brand{color:#1a1a2e;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+font-size:12px;border:0}
+.nv .brand:hover{border-bottom-color:transparent}
+.nv .sp{flex:1}
+.nv .env{color:#94a3b8;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 </style>
 <nav class="nv" aria-label="Sections du cockpit">
 <a class="brand" href="/">Cockpit</a>
@@ -27,7 +36,6 @@ NAV = """<style>
 <a href="/anthropos" __A_ANTHROPOS__>Anthropos</a>
 <span class="sp"></span><span class="env">reseau prive</span>
 </nav>"""
-# ⚠️ Si le <style> réel de _NAV diffère de ce bloc, reprendre le RÉEL (déplacement, pas réécriture).
 
 _PAGES = (("__A_ACCUEIL__", "accueil"), ("__A_ATELIER__", "atelier"), ("__A_CMS__", "cms"),
           ("__A_EDIT__", "edit"), ("__A_CAREER__", "career-ops"), ("__A_ANTHROPOS__", "anthropos"))

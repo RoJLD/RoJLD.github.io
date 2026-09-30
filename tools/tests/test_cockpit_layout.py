@@ -27,6 +27,18 @@ def test_la_page_courante_porte_aria_current():
     assert 'href="/cv/" aria-current="page"' not in out
 
 
+def test_le_nav_porte_le_style_original_focus_visible_hover_et_flex_wrap():
+    """I2 (revue finale opus, 2026-09-29) : la coquille du cockpit (SIGIL Ruling C9
+    révisé) ne change QUE la liste de liens de la nav, pas son style. Le <style>
+    de _NAV avait été réécrit en la déplaçant (tools/cv/atelier.py:235-246,
+    commit 7e7abf0 -> layout.py), perdant `:focus-visible` (anneau de focus
+    clavier — régression d'accessibilité), `:hover` et `flex-wrap:wrap`."""
+    out = layout.render("__NAV__", "t", page="accueil")
+    assert ".nv a:focus-visible{outline:2px solid #4361ee;outline-offset:3px;border-radius:3px}" in out
+    assert ".nv a:hover{color:#1a1a2e;border-bottom-color:#4361ee}" in out
+    assert "flex-wrap:wrap" in out
+
+
 def test_page_compose_une_page_complete_avec_nav_jeton_et_corps():
     out = layout.page("Accueil", "<p>corps __TOKEN__</p>", "JETON-2", "accueil")
     assert out.startswith("<!doctype html>") and "<title>Accueil — Cockpit</title>" in out
