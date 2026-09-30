@@ -97,6 +97,12 @@ def _contact_html(identity: dict[str, Any]) -> str:
     PDF les porte comme annotations de lien /Annots) ; la localisation reste du texte
     brut (elle ne pointe nulle part). Miroir : assets/js/cv-render.js::renderHtml
     (construit EN LIGNE côté JS, pas de fonction séparée — cf. commit review C3).
+
+    Fix round 2 (revue) : le texte VISIBLE de linkedin/github est la forme
+    d'affichage `_link_display` (`identity["linkedin"]`/`["github"]`, ex.
+    « linkedin.com/in/… »), PAS un libellé générique — un libellé nu perdait
+    l'adresse pour un recruteur qui imprime le PDF. Le `href` garde l'URL complète
+    (`identity["links"]`).
     """
     liens = identity.get("links") or {}
     parts: list[str] = []
@@ -108,9 +114,9 @@ def _contact_html(identity: dict[str, Any]) -> str:
     if site:
         parts.append(_lien(site, urllib.parse.urlsplit(site).netloc or site))
     if liens.get("linkedin"):
-        parts.append(_lien(liens["linkedin"], "LinkedIn"))
+        parts.append(_lien(liens["linkedin"], identity.get("linkedin") or liens["linkedin"]))
     if liens.get("github"):
-        parts.append(_lien(liens["github"], "GitHub"))
+        parts.append(_lien(liens["github"], identity.get("github") or liens["github"]))
     return " • ".join(parts)
 
 

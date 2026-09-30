@@ -295,14 +295,14 @@ def _expected_outline(scv: dict, private: dict | None = None) -> list[str]:
     if avail:
         lines.append(str(avail))
     # D13b (fix round 1, Tâche 7) : miroir de cv_docx._site_display/build_docx —
-    # le PDF public (l'oracle) porte le lien du site et des libellés génériques
-    # pour linkedin/github ; ce modèle-monde doit SUIVRE ce format.
+    # le PDF public (l'oracle) porte le lien du site ; ce modèle-monde doit SUIVRE
+    # ce format. Fix round 2 (revue) : linkedin/github restent `idy.get(...)`, leur
+    # forme d'affichage `_link_display` — jamais un libellé générique.
     site = (idy.get("links") or {}).get("site") or ""
     site_display = (urllib.parse.urlsplit(site).netloc or site) if site else ""
     contact = " • ".join(x for x in (idy.get("location"), idy.get("email"),
                                      priv.get("phone"), site_display,
-                                     "LinkedIn" if idy.get("linkedin") else "",
-                                     "GitHub" if idy.get("github") else "") if x)
+                                     idy.get("linkedin"), idy.get("github")) if x)
     if contact:
         lines.append(contact)
 
@@ -1019,8 +1019,15 @@ def test_the_contact_line_is_the_one_the_shipped_prefab_pdf_carries():
     Ce PDF est produit par l'AUTRE renderer (HTML → Chromium) depuis le MÊME
     profile.json. Sa ligne de contact est donc un attendu qu'aucune mutation de
     `cv_docx` ne peut suivre. Mesuré : retirer l'e-mail, ou linkedin+github, de la
-    ligne de contact laissait la suite VERTE — or « Ville • email • téléphone •
-    linkedin » est la composition des CV réellement envoyés.
+    ligne de contact laissait la suite VERTE.
+
+    Composition (D13b + fix rounds 1-2, Tâche 7) : « Ville • email • [téléphone] •
+    site • linkedin • github », site/linkedin/github en forme d'affichage
+    `_link_display` (host sans schéma, ex. « robin-denis.com »,
+    « linkedin.com/in/… », « github.com/… ») — le PDF les porte en ancres <a href>
+    cliquables (href = URL complète), le .docx en texte brut identique (ce
+    renderer ne crée jamais d'hyperlien) : les DEUX renderers doivent donc
+    produire la MÊME chaîne visible, ce que ce test vérifie.
     """
     pypdf = pytest.importorskip("pypdf", reason="lecture du PDF préfabriqué servi")
     if not _PREFAB_FR.exists():
@@ -1044,6 +1051,24 @@ def test_the_contact_line_is_the_one_the_shipped_prefab_pdf_carries():
     parts = line.split(" • ")
     assert parts.index(sentinel) == parts.index(scv["identity"]["email"]) + 1, parts
     assert line.replace(f" • {sentinel}", "") == shipped[0]
+
+
+def test_docx_contact_line_montre_l_adresse_linkedin_github_pas_un_libelle():
+    """Fix round 2 (revue) : le round 1 avait remplacé linkedin/github par des
+    libellés génériques (« LinkedIn »/« GitHub ») dans la ligne de contact .docx —
+    ce renderer NE crée jamais d'hyperlien (ADR hors périmètre), donc un libellé nu
+    perd l'adresse pour le recruteur ou l'ATS qui lit le texte brut. Ruling du
+    contrôleur : retour à la forme d'affichage `_link_display`."""
+    prof = json.loads(_REAL_PROFILE.read_text(encoding="utf-8"))
+    cfg = {"relevance_key": "general", "min_relevance": 0.0, "ats_extras": True}
+    scv = cv_select.build_structured_cv(
+        prof, cv_select.select_experiences(prof, cfg), "fr", cfg)
+    texts = [p.text for p in cv_docx.build_docx(scv).paragraphs]
+    contact = next(t for t in texts if scv["identity"]["email"] in t)
+    assert scv["identity"]["linkedin"] in contact
+    assert scv["identity"]["github"] in contact
+    assert "LinkedIn" not in contact
+    assert "GitHub" not in contact
 
 
 def _assert_no_right_column_echo(doc, where: str) -> None:

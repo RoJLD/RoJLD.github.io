@@ -155,13 +155,16 @@
     // cliquables (sauf la localisation, texte brut). Jamais le tél. Miroir de
     // cv_render._contact_html — construit EN LIGNE ici (pas de fonction séparée,
     // cf. commit review C3 : aucune contactHtml n'existait côté JS avant ce miroir).
+    // Fix round 2 (revue) : le texte VISIBLE de linkedin/github est idy.linkedin/
+    // idy.github (forme d'affichage linkDisplay, ex. "linkedin.com/in/…"), pas un
+    // libellé générique — le href garde l'URL complète (cvLinks).
     var cvLinks = idy.links || {};
     var contactParts = [];
     if (idy.location) contactParts.push(esc(idy.location));
     if (idy.email) contactParts.push(lien("mailto:" + idy.email, idy.email));
     if (cvLinks.site) contactParts.push(lien(cvLinks.site, netloc(cvLinks.site) || cvLinks.site));
-    if (cvLinks.linkedin) contactParts.push(lien(cvLinks.linkedin, "LinkedIn"));
-    if (cvLinks.github) contactParts.push(lien(cvLinks.github, "GitHub"));
+    if (cvLinks.linkedin) contactParts.push(lien(cvLinks.linkedin, idy.linkedin || cvLinks.linkedin));
+    if (cvLinks.github) contactParts.push(lien(cvLinks.github, idy.github || cvLinks.github));
     var contact = contactParts.join(" • ");
     if (contact) p.push('<p class="cv-contact">' + contact + "</p>");
     p.push("</header>");

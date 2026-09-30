@@ -318,13 +318,15 @@ def build_docx(structured_cv: dict[str, Any], private: dict[str, Any] | None = N
         p = _para(doc, align=WD_ALIGN_PARAGRAPH.CENTER)
         _run(p, availability, italic=True)
     # D13b (fix round 1, Tâche 7) : le PDF public (l'oracle) porte désormais aussi
-    # le lien du site, et affiche linkedin/github par un libellé générique — la
-    # ligne de contact .docx doit SUIVRE ce format (jamais l'inverse : cf. le
-    # docstring de test_the_contact_line_is_the_one_the_shipped_prefab_pdf_carries).
+    # le lien du site — la ligne de contact .docx doit SUIVRE ce format (jamais
+    # l'inverse : cf. le docstring de
+    # test_the_contact_line_is_the_one_the_shipped_prefab_pdf_carries).
+    # Fix round 2 (revue) : linkedin/github restent leur forme d'affichage
+    # `_link_display` (comme avant D13b) — ce renderer ne crée jamais d'hyperlien,
+    # un libellé générique nu perdrait l'adresse pour le recruteur/l'ATS.
     contact = _join([idy.get("location"), idy.get("email"), phone,
                      _site_display((idy.get("links") or {}).get("site", "")),
-                     "LinkedIn" if idy.get("linkedin") else "",
-                     "GitHub" if idy.get("github") else ""])
+                     idy.get("linkedin"), idy.get("github")])
     if contact:
         p = _para(doc, align=WD_ALIGN_PARAGRAPH.CENTER)
         _run(p, contact)

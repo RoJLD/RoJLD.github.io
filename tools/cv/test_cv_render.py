@@ -151,6 +151,24 @@ def test_le_html_du_cv_porte_des_ancres_cliquables():
     assert scv["identity"]["location"] + " • " in html_        # C2 : séparateur réel " • "
 
 
+def test_les_ancres_linkedin_github_affichent_l_adresse_pas_un_libelle():
+    """Fix round 2 (revue) : le round 1 avait remplacé le texte VISIBLE des ancres
+    LinkedIn/GitHub par des libellés génériques (« LinkedIn »/« GitHub »), perdant
+    l'adresse pour un recruteur qui imprime le PDF ou le lit sans souris. Ruling du
+    contrôleur : le texte visible revient à la forme d'affichage `_link_display`
+    (celle déjà portée par `identity["linkedin"]`/`identity["github"]`) ; le `href`
+    garde l'URL complète (identity["links"])."""
+    prof = json.loads(_REAL_PROFILE.read_text(encoding="utf-8"))
+    cfg = {"relevance_key": "general", "min_relevance": 0.0}
+    scv = cv_select.build_structured_cv(prof, cv_select.select_experiences(prof, cfg), "fr", cfg)
+    html_ = cv_render.render_html(scv)
+    liens = prof["identity"]["links"]
+    assert f'href="{liens["linkedin"]}">{scv["identity"]["linkedin"]}</a>' in html_
+    assert f'href="{liens["github"]}">{scv["identity"]["github"]}</a>' in html_
+    assert ">LinkedIn<" not in html_
+    assert ">GitHub<" not in html_
+
+
 def _profil_bidon(monkeypatch, tmp=[]):
     """Profil minimal sur disque, suffisant pour que _handle_generate le lise."""
     import json
