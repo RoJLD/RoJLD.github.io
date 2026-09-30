@@ -1347,6 +1347,41 @@ def test_deux_ateliers_lances_separement_ne_tirent_pas_le_meme_jeton():
             f"des interpréteurs neufs servent le même jeton {quand} : {tirs}")
 
 
+def test_la_facade_se_lance_par_script_hors_du_depot_kleos(tmp_path):
+    """Review Focus 1 — `docker-entrypoint.sh` fait `exec python /site/tools/cv/atelier.py`
+    depuis `/site` ; l'image Kleos ne pose AUCUN `PYTHONPATH` vers le dépôt.
+
+    Contrairement à `test_deux_ateliers_lances_separement_ne_tirent_pas_le_meme_jeton`
+    ci-dessus, qui insère `tools/cv` sur `sys.path` LUI-MÊME avant `import atelier` (donc
+    n'exerce jamais le bootstrap de la façade), ce test lance la façade PAR CHEMIN,
+    depuis un `cwd` HORS du dépôt et avec un environnement sans `PYTHONPATH` : seule la
+    ligne `sys.path.insert(0, str(_SITE))` de `tools/cv/atelier.py` peut faire résoudre
+    `tools.cockpit.server`. Avec `-c`, `''` sur `sys.path` résout au `cwd` — un `cwd`
+    dans le dépôt masquerait un bootstrap cassé via le paquet-espace-de-noms `tools`,
+    donc `cwd=tmp_path` (hors dépôt) est la seule garantie que c'est la façade, et
+    pas un accident de `cwd`, qui a résolu l'import.
+
+    `runpy.run_path(..., run_name=...)` sans `"__main__"` : le bloc `if __name__ ==
+    "__main__": sys.exit(main())` de la façade n'exécute JAMAIS `main()` — aucun port
+    n'est lié, aucun serveur ne démarre.
+    """
+    import os
+    import subprocess
+    import sys as _sys
+    facade = str(pathlib.Path(atelier.__file__).resolve())
+    programme = (
+        "import runpy\n"
+        "ns = runpy.run_path(r'" + facade + "', run_name='facade_sous_test')\n"
+        "print(ns['make_server'].__module__)\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    r = subprocess.run([_sys.executable, "-c", programme],
+                       cwd=str(tmp_path), env=env,
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, f"stdout={r.stdout!r} stderr={r.stderr[-2000:]!r}"
+    assert r.stdout.strip() == "tools.cockpit.server", r.stdout
+
+
 # ── V1 : le profil est une DONNÉE, jamais du balisage ────────────────────────
 
 _PIEGES_BALISAGE = ["</script><script>alert(1)</script>",
