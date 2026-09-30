@@ -17,15 +17,10 @@ import secrets
 import socket
 import sys
 import time
-import traceback
 import urllib.parse
 from typing import Optional
 
 from tools.cockpit import config  # insère la racine du site, tools/ et tools/cv/ dans sys.path
-
-import cv_pdf      # noqa: E402  (à plat, depuis tools/cv — test_cv_templates patche server.cv_target.*)
-import cv_render   # noqa: E402
-import cv_target   # noqa: E402
 
 _ROOT = config.SITE_ROOT
 
@@ -425,5 +420,4 @@ def main(port: int = 8010) -> int:
 
 
 if __name__ == "__main__":
-    import sys
     sys.exit(main())

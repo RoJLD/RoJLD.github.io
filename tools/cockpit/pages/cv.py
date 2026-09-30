@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import pathlib
-import sys
 import traceback
 import urllib.parse
 from datetime import date
@@ -112,11 +111,11 @@ def _options_templates() -> str:
 def _page(form: Optional[str] = None) -> str:
     """Le formulaire, sélecteur de template injecté (patron de _EDIT / _CMS).
 
-    `form` permet de COMPOSER avec `_render`, qui pose le jeton anti-CSRF :
-    l'appelant passe `_page(_render(_FORM))`. Le défaut `None` — et non `_FORM` —
-    est imposé par deux contraintes mesurées : `_FORM` est défini APRÈS cette
-    fonction (un défaut littéral lèverait `NameError` à l'import), et un test
-    existant appelle `_page()` sans argument.
+    `form` permet de COMPOSER avec `layout.render`, qui pose le jeton anti-CSRF :
+    l'appelant passe `_page(layout.render(_FORM, token, page="atelier"))`. Le
+    défaut `None` — et non `_FORM` — est imposé par deux contraintes mesurées :
+    `_FORM` est défini APRÈS cette fonction (un défaut littéral lèverait
+    `NameError` à l'import), et un test existant appelle `_page()` sans argument.
     """
     return (_FORM if form is None else form).replace("__TEMPLATES__", _options_templates())
 
