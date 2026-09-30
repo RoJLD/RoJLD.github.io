@@ -1189,6 +1189,57 @@ def test_internal_error_is_not_echoed_to_the_client(tmp_path, monkeypatch, capfd
     assert "DEADBEEF" in capfd.readouterr().err, "la trace n'a pas été journalisée"
 
 
+# ── La sauvegarde gouvernée régénère la banque de CV préfabriqués ───────────
+#
+# Mesuré le 2026-09-28 : `govern_save` réécrivait profile.json, l'historique et
+# le graphe, mais ne touchait jamais `cv/prefab` — une édition via `/cms`
+# laissait les 8 PDF publics diverger silencieusement du profil.
+
+def _payload_gouverne(target):
+    return {"json": target.read_text(encoding="utf-8"), "govern": True, "rebuild": False}
+
+
+def test_une_sauvegarde_gouvernee_regenere_la_banque_de_cv(tmp_path, monkeypatch):
+    """Mesuré le 2026-09-28 : govern_save ne régénérait pas cv/prefab — une édition /cms
+    laissait les 8 PDF publics diverger du profil."""
+    target = _pointe_vers_une_copie(tmp_path, monkeypatch)   # rebinde pages_cv._PROFILE
+    monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)          # historique/graphe sous tmp
+    appels = []
+    monkeypatch.setattr(pages_cv, "_regen_bank", lambda: appels.append(1))
+    with _server() as base:
+        status, body = _post(_port_of(base), "/save", _payload_gouverne(target))
+    rep = json.loads(body)
+    assert status == 200 and rep["ok"] is True
+    assert rep["stages"]["prefab"] == {"ok": True} and appels == [1]
+
+
+def test_un_gate_de_banque_qui_refuse_est_rapporte_pas_masque(tmp_path, monkeypatch):
+    """build_cv_bank.main lève SystemExit sur profil invalide : rapporté dans stages.prefab."""
+    target = _pointe_vers_une_copie(tmp_path, monkeypatch)
+    monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)
+
+    def _refuse():
+        raise SystemExit("[cv-bank] profile.json invalide, aucun PDF généré")
+    monkeypatch.setattr(pages_cv, "_regen_bank", _refuse)
+    with _server() as base:
+        status, body = _post(_port_of(base), "/save", _payload_gouverne(target))
+    rep = json.loads(body)
+    assert status == 200 and rep["stages"]["write"] == {"ok": True}
+    assert rep["stages"]["prefab"]["ok"] is False and "SystemExit" in rep["stages"]["prefab"]["error"]
+
+
+def test_une_sauvegarde_refusee_ne_regenere_rien(tmp_path, monkeypatch):
+    _pointe_vers_une_copie(tmp_path, monkeypatch)
+    monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)
+    appels = []
+    monkeypatch.setattr(pages_cv, "_regen_bank", lambda: appels.append(1))
+    corps = {"json": "{pas du json", "govern": True, "rebuild": False}
+    with _server() as base:
+        status, body = _post(_port_of(base), "/save", corps)
+    rep = json.loads(body)
+    assert rep["ok"] is False and "prefab" not in rep.get("stages", {}) and appels == []
+
+
 # ╔══════════════════════════════════════════════════════════════════════════╗
 # ║  PASSE 2 — les propriétés dont la passe 1 dépendait sans les tenir        ║
 # ╚══════════════════════════════════════════════════════════════════════════╝

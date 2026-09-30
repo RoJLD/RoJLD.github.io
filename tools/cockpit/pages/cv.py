@@ -696,6 +696,16 @@ def handle_save(h, data):              # ex 1095-1123 ; `_PROFILE`, `_ROOT`, `sa
                 str(data.get("json", "")), _PROFILE,
                 _ROOT / "data" / "profile_history", _ROOT / "data" / "profile_graph.json",
                 ts, do_rebuild=bool(data.get("rebuild", True)))
+            if report.get("ok"):
+                # Spec § 6.4 : les 8 PDF publics dérivent de profile.json ; une édition sans
+                # régénération les laissait mentir. Le gate de build_cv_bank lève SystemExit
+                # sur profil invalide : rapporté, jamais masqué — le profil est déjà écrit.
+                try:
+                    _regen_bank()
+                    report["stages"]["prefab"] = {"ok": True}
+                except (Exception, SystemExit) as exc:
+                    traceback.print_exc()
+                    report["stages"]["prefab"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
             return h._send(200, "application/json; charset=utf-8",
                            json.dumps(report, ensure_ascii=False).encode("utf-8"))
         res = save_profile_edit(str(data.get("json", "")), _PROFILE)
