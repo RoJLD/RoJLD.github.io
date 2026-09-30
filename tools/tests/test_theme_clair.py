@@ -61,8 +61,11 @@ PAGES_A_BOOT = corpus_publie.pages_a_boot()
 # la marque de la nav partagée).
 PAGES_GENEREES = corpus_publie.destinations_nav()
 
-# La page sans builder : toute régression y est définitive.
-PAGE_MANUELLE = "life-architect/index.html"
+# La page sans builder qu'aucun build ne répare a existé ici
+# (`life-architect/index.html`, `PAGE_MANUELLE`) — retirée du site le
+# 2026-09-29 (D13a : bêta morte, formulaire mort, lien 404). La garde dédiée
+# qui vérifiait son mécanisme de bascule (`test_la_page_manuelle_bascule_
+# reellement_lattribut`) a disparu avec elle.
 
 
 # ── Le plancher : dérivé, parce que deux versions écrites à la main sont mortes ─
@@ -130,11 +133,13 @@ def test_aucune_section_de_la_nav_n_est_hors_du_champ_du_theme():
     assert sections <= set(PAGES_ATTEIGNABLES), (
         f"sections publiées qu'aucun lien de nav n'atteint : "
         f"{sorted(sections - set(PAGES_ATTEIGNABLES))}")
-    assert PAGE_MANUELLE in PAGES_ATTEIGNABLES, (
-        f"{PAGE_MANUELLE} n'est plus atteinte par la nav — la page qu'aucun "
-        "builder ne répare sortirait du champ de toutes les gardes")
-    assert len(PAGES_A_PALETTE) >= 10, PAGES_A_PALETTE
-    assert len(corpus_publie.pages_publiees()) >= 20, corpus_publie.pages_publiees()
+    # Planchers réabaissés au 2026-09-29 (D13a) : retrait de `life-architect/
+    # index.html` (comptait dans les deux) et des 7 `cv/*.html` (hors thème,
+    # cf. `_PALETTE_SOMBRE` absente de leur HTML) — 10 -> 9 pages à palette,
+    # 23 -> 15 pages publiées. Chaque plancher reste égal au compte mesuré
+    # après suppression : toute nouvelle amputation continue de rougir ici.
+    assert len(PAGES_A_PALETTE) >= 9, PAGES_A_PALETTE
+    assert len(corpus_publie.pages_publiees()) >= 15, corpus_publie.pages_publiees()
 
 
 def _palette(html: str, theme: str) -> set[str] | None:
@@ -410,16 +415,12 @@ def test_le_script_qui_lit_le_theme_l_applique(page):
         "la valeur mémorisée est lue puis jetée")
 
 
-def test_la_page_manuelle_bascule_reellement_lattribut():
-    """`/life-architect/` n'a pas de builder : son mécanisme est vérifié en propre.
-
-    Déclarer la palette ne suffit pas — encore faut-il que quelque chose écrive
-    `data-theme` sur la racine, sinon le bloc clair n'est jamais atteint.
-    """
-    html = _html_disque(PAGE_MANUELLE)
-    assert "setAttribute('data-theme'" in html, "aucune bascule de l'attribut data-theme"
-    assert re.search(r"function tgTheme\s*\(", html), "fonction de bascule tgTheme absente"
-    assert 'onclick="tgTheme()"' in html, "aucun contrôle ne déclenche la bascule"
+# `test_la_page_manuelle_bascule_reellement_lattribut` vérifiait ici le mécanisme
+# de bascule de `/life-architect/`, seule page du dépôt sans builder. Retirée
+# avec la page elle-même le 2026-09-29 (D13a, bêta morte) : sa cible n'existe
+# plus sur le disque, et aucune page restante n'est dans ce cas — les 6 pages de
+# nav ont un builder qui les régénère, les autres sont couvertes par les gardes
+# paramétrées sur PAGES_A_PALETTE / PAGES_A_BOOT ci-dessus.
 
 
 # --- La même garde une couche plus tôt : sur la sortie des générateurs -------
@@ -472,7 +473,6 @@ def test_le_generateur_emet_les_deux_palettes(page):
 # faire échouer l'extraction, pas rendre le test muet.
 BASCULEUR = {
     "index.html": "toggleTheme",
-    "life-architect/index.html": "tgTheme",
     "projects/index.html": "tgTheme",
     "explorer/index.html": "tgTheme",
     "highlights/index.html": "tgTheme",

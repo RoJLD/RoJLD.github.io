@@ -16,9 +16,11 @@ La suite est restée à 406 passed. La chaîne cherchée était toujours là ; l
 valeur lue était jetée. Un test de présence répond à « le code est-il écrit ? »,
 jamais à « la page s'affiche-t-elle dans le thème choisi ? ».
 
-La page `/life-architect/` est le cas le plus coûteux du dépôt : aucun builder
-ne la produit, donc `python tools/build_site.py` ne répare rien — une régression
-y survit jusqu'à ce qu'un humain ouvre la page dans le bon thème.
+La page `/life-architect/` était le cas le plus coûteux du dépôt : aucun builder
+ne la produisait, donc `python tools/build_site.py` ne réparait rien — une
+régression y survivait jusqu'à ce qu'un humain ouvre la page dans le bon thème.
+Retirée du site le 2026-09-29 (D13a, bêta morte) ; le harnais reste nécessaire
+pour les pages qui restent — elles aussi exécutées, pas seulement lues en texte.
 
 Le harnais extrait le `<script>` réel de la page servie, l'exécute dans node
 contre un DOM stubé, et rend l'état FINAL de `data-theme` sur la racine. C'est
