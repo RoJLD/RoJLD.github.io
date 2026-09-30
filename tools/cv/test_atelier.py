@@ -9,6 +9,7 @@ import atelier
 import cv_pdf
 import cv_target
 from tools.cockpit import server  # le module qui LIT les noms que les tests rebindent
+from tools.cockpit.pages import cv as pages_cv  # le module qui LIT _PROFILE, generate_pdf, etc.
 
 
 def test_html_to_pdf_bytes_smoke():
@@ -247,8 +248,18 @@ def _pointe_vers_une_copie(tmp_path, monkeypatch):
     """Fait viser à l'atelier une COPIE du vrai profil : le dépôt n'est jamais muté."""
     target = tmp_path / "profile.json"
     target.write_text(_REAL_PROFILE.read_text(encoding="utf-8"), encoding="utf-8")
-    monkeypatch.setattr(server, "_PROFILE", target)
+    monkeypatch.setattr(pages_cv, "_PROFILE", target)
     return target
+
+
+def test_le_module_qui_lit_le_profil_est_pages_cv_pas_la_facade(tmp_path, monkeypatch):
+    """Rebinder `_PROFILE` sur la façade ne détourne rien : le lecteur est pages.cv."""
+    copie = tmp_path / "profile.json"
+    copie.write_text(_REAL_PROFILE.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(atelier, "_PROFILE", copie)          # la façade seule
+    assert pages_cv._PROFILE != copie                          # le lecteur n'a pas bougé
+    monkeypatch.setattr(pages_cv, "_PROFILE", copie)
+    assert pages_cv._PROFILE == copie
 
 
 def test_cross_origin_mutation_is_refused(tmp_path, monkeypatch):
@@ -261,7 +272,7 @@ def test_cross_origin_mutation_is_refused(tmp_path, monkeypatch):
     """
     target = _pointe_vers_une_copie(tmp_path, monkeypatch)
     commits = []
-    monkeypatch.setattr(server, "_git_commit", lambda *a, **k: commits.append(a))
+    monkeypatch.setattr(pages_cv, "_git_commit", lambda *a, **k: commits.append(a))
 
     pwned = json.loads(target.read_text(encoding="utf-8"))
     pwned["identity"]["last_name"] = "PWNED"
@@ -1023,7 +1034,7 @@ def test_un_profil_contenant_le_marqueur_du_jeton_est_servi_intact(tmp_path, mon
                        indent=2, ensure_ascii=False)
     cible = tmp_path / "profile.json"
     cible.write_text(piege, encoding="utf-8")
-    monkeypatch.setattr(server, "_PROFILE", cible)
+    monkeypatch.setattr(pages_cv, "_PROFILE", cible)
     with _server() as base:
         for chemin, motif in (("/edit", r"var P = (.*);\n"),
                               ("/cms", r"var profile = JSON\.parse\((.*)\);\n")):
@@ -1169,7 +1180,7 @@ def test_internal_error_is_not_echoed_to_the_client(tmp_path, monkeypatch, capfd
     def boum(*a, **k):
         raise RuntimeError("C:/chemin/secret/interne — jeton=DEADBEEF")
 
-    monkeypatch.setattr(server, "save_profile_edit", boum)
+    monkeypatch.setattr(pages_cv, "save_profile_edit", boum)
     with _server() as base:
         code, body = _post(_port_of(base), "/save", {"json": "{}"})
     assert code == 500
@@ -1394,7 +1405,7 @@ def _page_avec_ce_profil(tmp_path, monkeypatch, contenu, chemin, nom):
     """Sert `chemin` avec un profil donné et rend la page (source d'attendu)."""
     cible = tmp_path / f"profile_{nom}.json"
     cible.write_text(contenu, encoding="utf-8")
-    monkeypatch.setattr(server, "_PROFILE", cible)
+    monkeypatch.setattr(pages_cv, "_PROFILE", cible)
     with _server() as base:
         code, page = _get(base, chemin)
     assert code == 200, (chemin, nom, code)
@@ -1572,7 +1583,7 @@ def test_une_erreur_interne_de_generate_ne_part_pas_au_client_mais_a_la_console(
     def boum(*a, **k):
         raise RuntimeError(f"C:/chemin/secret/interne — jeton={marqueur}")
 
-    monkeypatch.setattr(server, "generate_pdf", boum)
+    monkeypatch.setattr(pages_cv, "generate_pdf", boum)
     with _server() as base:
         code, corps = _post(_port_of(base), "/generate", {"job": "x", "lang": "fr"})
     assert code == 500, corps[:200]
@@ -1598,7 +1609,7 @@ def test_un_corps_non_utf8_est_refuse_et_n_atteint_jamais_le_pipeline(
     _pointe_vers_une_copie(tmp_path, monkeypatch)
     appels = []
     vrai = atelier.save_profile_edit
-    monkeypatch.setattr(server, "save_profile_edit",
+    monkeypatch.setattr(pages_cv, "save_profile_edit",
                         lambda *a, **k: (appels.append(a), vrai(*a, **k))[1])
     corps = b'{"json":"\xff\xfe\x80abc"}'
     with _server() as base:

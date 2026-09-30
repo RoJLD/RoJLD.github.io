@@ -16,7 +16,7 @@ from tools.cockpit.server import (  # noqa: E402,F401
     CSRF_HEADER, MAX_BODY_BYTES, _LOCAL_HOSTS, _bind, _hosts_autorises, _hostport_ok, _url_ok,
     REQUEST_TIMEOUT_S, LINGER_IDLE_S, LINGER_TOTAL_S,
 )
-from tools.cockpit.server import (  # noqa: E402,F401  — Tâche 3 : ces noms passent dans pages.cv
+from tools.cockpit.pages.cv import (  # noqa: E402,F401
     generate_pdf, generate_docx, generate_letter, save_profile_edit,
     ciblage_degrade, verdict_ciblage, _page, _PROFILE, _git_commit, _regen_bank,
 )
