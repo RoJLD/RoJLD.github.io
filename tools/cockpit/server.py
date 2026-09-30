@@ -150,6 +150,20 @@ def _url_ok(value: str, port: int) -> bool:
 
 
 from tools.cockpit.pages import cv as pages_cv  # noqa: E402
+from tools.cockpit.pages import accueil  # noqa: E402
+
+ROUTES_GET = {
+    "/": accueil.page_accueil,
+    "/cv/": pages_cv.page_atelier,
+    "/edit": pages_cv.page_edit,
+    "/cms": pages_cv.page_cms,
+}
+ROUTES_POST = {
+    "/generate": pages_cv.handle_generate,
+    "/generate-docx": pages_cv.handle_generate_docx,
+    "/generate-letter": pages_cv.handle_generate_letter,
+    "/save": pages_cv.handle_save,
+}
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -311,18 +325,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         # ENTIER et le jeton, qu'un rebinding DNS rendrait lisibles à un tiers.
         if not _hostport_ok(self.headers.get("Host"), self._port()):
             return self._refuse(403, "hote non autorise")
-        if self.path == "/" or self.path.startswith("/?"):
-            pages_cv.page_atelier(self)
-        elif self.path == "/edit":
-            pages_cv.page_edit(self)
-        elif self.path == "/cms":
-            pages_cv.page_cms(self)
-        elif urllib.parse.urlsplit(self.path).path in _STATIC_ALLOW:
+        chemin = urllib.parse.urlsplit(self.path).path
+        route = ROUTES_GET.get(chemin)
+        if route is not None:
+            return route(self)
+        if chemin in _STATIC_ALLOW:
             # urlsplit : `?v=1` (cache-busting) ne doit pas faire échouer l'allowlist
-            p = urllib.parse.urlsplit(self.path).path
-            self._send(200, _STATIC_ALLOW[p], (_ROOT / p.lstrip("/")).read_bytes())
-        else:
-            self._send(404, "text/plain", b"not found")
+            return self._send(200, _STATIC_ALLOW[chemin], (_ROOT / chemin.lstrip("/")).read_bytes())
+        self._send(404, "text/plain", b"not found")
 
     def do_POST(self):
         refus = self._guard_mutation()
@@ -350,15 +360,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             data = json.loads(body) if body else {}
         except json.JSONDecodeError:
             return self._send(400, "text/plain", b"bad json")
-        if self.path == "/generate":
-            return self._handle_generate(data)
-        if self.path == "/generate-docx":
-            return self._handle_generate_docx(data)
-        if self.path == "/generate-letter":
-            return self._handle_generate_letter(data)
-        if self.path == "/save":
-            return self._handle_save(data)
-        self._send(404, "text/plain", b"not found")
+        route = ROUTES_POST.get(self.path)
+        if route is None:
+            return self._send(404, "text/plain", b"not found")
+        return route(self, data)
 
     def token(self) -> str:
         return csrf_token()

@@ -1138,7 +1138,7 @@ def test_get_with_foreign_host_is_refused():
 
 def test_served_pages_carry_and_send_the_token():
     with _server() as base:
-        for path in ("/", "/edit", "/cms"):
+        for path in ("/cv/", "/edit", "/cms"):
             code, body = _get(base, path)
             assert code == 200, path
             assert atelier.csrf_token() in body, f"{path} ne porte pas le jeton"
@@ -1632,7 +1632,7 @@ def _routes_mutantes_declarees(port):
     figure doit exister ; ce qui n'y figure pas ne doit rien déclencher.
     """
     routes = set()
-    for chemin in ("/", "/edit", "/cms"):
+    for chemin in ("/cv/", "/edit", "/cms"):
         _, _, page = _reponse(port, chemin)
         html = page.decode("utf-8")
         routes |= set(re.findall(
