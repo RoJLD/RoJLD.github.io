@@ -123,6 +123,18 @@
     return buildCss(reg.get(reg.DEFAUT).style);
   }
 
+  // Miroir de cv_render._lien.
+  function lien(href, texte) {
+    return '<a href="' + esc(href) + '">' + esc(texte) + "</a>";
+  }
+
+  // Miroir de urllib.parse.urlsplit(url).netloc : hôte entre "://" et le premier
+  // "/", "?" ou "#" ; "" si l'URL ne porte pas de schéma "://" (comme Python).
+  function netloc(url) {
+    var m = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/([^/?#]*)/.exec(String(url == null ? "" : url));
+    return m ? m[1] : "";
+  }
+
   function renderHtml(cv, template) {
     cv = cv || {};
     var lang = cv.lang || "fr";
@@ -135,10 +147,19 @@
     p.push('<header class="cv-header">');
     p.push('<h1 class="cv-name">' + esc(idy.name || "") + "</h1>");
     if (idy.title) p.push('<p class="cv-title">' + esc(idy.title) + "</p>");
-    // Ligne de contact : localisation • email • linkedin • github (jamais le tél).
-    var contact = [idy.location || "", idy.email || "", idy.linkedin || "", idy.github || ""]
-      .filter(function (x) { return x; }).join(" • ");
-    if (contact) p.push('<p class="cv-contact">' + esc(contact) + "</p>");
+    // Ligne de contact : localisation • email • site • linkedin • github, en ancres
+    // cliquables (sauf la localisation, texte brut). Jamais le tél. Miroir de
+    // cv_render._contact_html — construit EN LIGNE ici (pas de fonction séparée,
+    // cf. commit review C3 : aucune contactHtml n'existait côté JS avant ce miroir).
+    var cvLinks = idy.links || {};
+    var contactParts = [];
+    if (idy.location) contactParts.push(esc(idy.location));
+    if (idy.email) contactParts.push(lien("mailto:" + idy.email, idy.email));
+    if (cvLinks.site) contactParts.push(lien(cvLinks.site, netloc(cvLinks.site) || cvLinks.site));
+    if (cvLinks.linkedin) contactParts.push(lien(cvLinks.linkedin, "LinkedIn"));
+    if (cvLinks.github) contactParts.push(lien(cvLinks.github, "GitHub"));
+    var contact = contactParts.join(" • ");
+    if (contact) p.push('<p class="cv-contact">' + contact + "</p>");
     p.push("</header>");
 
     (cv.sections || []).forEach(function (sec) {

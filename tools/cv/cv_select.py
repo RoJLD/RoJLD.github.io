@@ -403,6 +403,10 @@ def build_structured_cv(profile: dict[str, Any], experiences: list[dict[str, Any
             "location": _location_str(identity),          # tél JAMAIS projeté (public)
             "linkedin": _link_display(links.get("linkedin")),
             "github": _link_display(links.get("github")),
+            # D13b : URLs BRUTES (pas la forme affichable ci-dessus) pour les ancres
+            # <a href> du rendu HTML — `portfolio` → `site` (clé publique du CV).
+            "links": {"site": links.get("portfolio", ""), "linkedin": links.get("linkedin", ""),
+                      "github": links.get("github", "")},
         },
         "sections": sections,
         "skills_groups": skills_groups,

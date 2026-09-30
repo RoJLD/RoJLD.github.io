@@ -1,7 +1,13 @@
 """Tests du rendu HTML Σ-CV-ATELIER (sous-projet A)."""
 from __future__ import annotations
 
+import json
+import pathlib
+
 import cv_render
+import cv_select
+
+_REAL_PROFILE = pathlib.Path(__file__).resolve().parents[2] / "profile.json"
 
 
 def _cv(**over):
@@ -121,6 +127,28 @@ def test_le_handler_coerce_le_template_en_chaine(monkeypatch):
     assert "template" in vus, "generate_pdf n'a jamais ete appele — test vide"
     assert not isinstance(vus["template"], dict), \
         f"un dict a traverse la frontiere : {vus['template']!r}"
+
+
+# ── D13b (Tâche 7 cockpit L1) : liens cliquables dans le CV PDF ───────────────
+
+def test_le_html_du_cv_porte_des_ancres_cliquables():
+    """Mesuré le 2026-09-28 : les 8 PDF publics n'avaient AUCUN lien et ne citaient pas
+    robin-denis.com, alors que les CV de career-ops en portent 5.
+
+    Ruling C2 (revue contrôleur) : le bloc contact RÉEL porte aussi la localisation,
+    jointe par ` • ` (le brief proposait ` · ` et l'abandon de la localisation — les
+    deux assertions du bas gardent ce comportement réel vivant à côté des ancres).
+    """
+    prof = json.loads(_REAL_PROFILE.read_text(encoding="utf-8"))
+    cfg = {"relevance_key": "general", "min_relevance": 0.0}
+    scv = cv_select.build_structured_cv(prof, cv_select.select_experiences(prof, cfg), "fr", cfg)
+    html_ = cv_render.render_html(scv)
+    liens = prof["identity"]["links"]
+    assert f'href="{liens["portfolio"]}"' in html_ and ">robin-denis.com<" in html_
+    assert f'href="{liens["linkedin"]}"' in html_ and f'href="{liens["github"]}"' in html_
+    assert f'href="mailto:{scv["identity"]["email"]}"' in html_
+    assert scv["identity"]["location"] in html_               # C2 : localisation toujours rendue
+    assert scv["identity"]["location"] + " • " in html_        # C2 : séparateur réel " • "
 
 
 def _profil_bidon(monkeypatch, tmp=[]):

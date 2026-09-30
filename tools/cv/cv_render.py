@@ -9,6 +9,7 @@ séparément). CSS inline (contrainte GitHub Pages : aucune requête externe).
 from __future__ import annotations
 
 import html
+import urllib.parse
 from typing import Any
 
 CV_CSS = """\
@@ -82,6 +83,36 @@ def _css_du_template(template: "dict | str | None") -> str:
     return cv_templates.build_css(cv_templates.charger(cv_templates.DEFAUT)["style"])
 
 
+def _lien(href: str, texte: str) -> str:
+    return f'<a href="{_esc(href)}">{_esc(texte)}</a>'
+
+
+def _contact_html(identity: dict[str, Any]) -> str:
+    """Ligne de contact : localisation • email • site • linkedin • github. Le TÉLÉPHONE
+    n'y figure jamais (build_structured_cv ne le projette pas) : les préfabriqués sont
+    servis publiquement sur GitHub Pages.
+
+    D13b : email, site, linkedin, github deviennent des ancres <a href> cliquables (le
+    PDF les porte comme annotations de lien /Annots) ; la localisation reste du texte
+    brut (elle ne pointe nulle part). Miroir : assets/js/cv-render.js::renderHtml
+    (construit EN LIGNE côté JS, pas de fonction séparée — cf. commit review C3).
+    """
+    liens = identity.get("links") or {}
+    parts: list[str] = []
+    if identity.get("location"):
+        parts.append(_esc(identity["location"]))
+    if identity.get("email"):
+        parts.append(_lien("mailto:" + identity["email"], identity["email"]))
+    site = liens.get("site")
+    if site:
+        parts.append(_lien(site, urllib.parse.urlsplit(site).netloc or site))
+    if liens.get("linkedin"):
+        parts.append(_lien(liens["linkedin"], "LinkedIn"))
+    if liens.get("github"):
+        parts.append(_lien(liens["github"], "GitHub"))
+    return " • ".join(parts)
+
+
 def render_html(structured_cv: dict[str, Any],
                 template: "dict | str | None" = None) -> str:
     """Retourne le document HTML complet (doctype + <style> inline).
@@ -101,13 +132,11 @@ def render_html(structured_cv: dict[str, Any],
     parts.append(f'<h1 class="cv-name">{_esc(idy.get("name", ""))}</h1>')
     if idy.get("title"):
         parts.append(f'<p class="cv-title">{_esc(idy["title"])}</p>')
-    # Ligne de contact : localisation • email • linkedin • github. Le TÉLÉPHONE
-    # n'y figure jamais (build_structured_cv ne le projette pas) : les préfabriqués
-    # sont servis publiquement sur GitHub Pages.
-    contact = " • ".join(x for x in (idy.get("location", ""), idy.get("email", ""),
-                                     idy.get("linkedin", ""), idy.get("github", "")) if x)
+    # Ligne de contact : localisation • email • site • linkedin • github, en ancres
+    # cliquables (sauf la localisation). Le TÉLÉPHONE n'y figure jamais.
+    contact = _contact_html(idy)
     if contact:
-        parts.append(f'<p class="cv-contact">{_esc(contact)}</p>')
+        parts.append(f'<p class="cv-contact">{contact}</p>')
     parts.append("</header>")
 
     # Sections (expériences)
