@@ -3,11 +3,12 @@ depuis atelier.py, comportement inchangé). Aucun import de server."""
 from __future__ import annotations
 
 import json
+import pathlib
 import sys
 import traceback
 import urllib.parse
 from datetime import date
-from typing import Optional
+from typing import Callable, Optional
 
 from tools.cockpit import config
 from tools.cockpit.pages import layout
