@@ -1124,11 +1124,22 @@ def test_generate_route_is_guarded_too(tmp_path, monkeypatch):
 
 
 def test_get_with_foreign_host_is_refused():
-    """/edit et /cms embarquent le profil ENTIER *et* le jeton : un rebinding DNS
-    les rendrait lisibles par un tiers."""
+    """Toute route GET doit refuser un `Host` étranger — /edit et /cms
+    embarquent le profil ENTIER *et* le jeton, mais la garde du `Host` (do_GET)
+    s'applique AVANT le dispatch, pour TOUTES les routes.
+
+    M2 (revue finale opus) : la liste vient de `server.ROUTES_GET` (+
+    `server._STATIC_ALLOW`), pas d'une énumération à la main — une énumération
+    écrite en dur laisse une route neuve échapper SILENCIEUSEMENT à la garde :
+    mesuré, `/cv/` (qui porte le formulaire à jeton depuis la coquille du
+    cockpit) n'était pas dans la liste, et ni ce test ni aucun autre ne
+    l'aurait su si la garde avait régressé pour cette route précise."""
+    chemins = sorted(set(server.ROUTES_GET) | set(server._STATIC_ALLOW))
+    assert chemins, "aucune route GET declaree — ce test ne mesure plus rien"
+    assert "/cv/" in chemins, "la route de l'atelier manque a la liste derivee"
     with _server() as base:
         port = _port_of(base)
-        for path in ("/", "/edit", "/cms", "/assets/js/cms-model.js"):
+        for path in chemins:
             code, _ = _raw(port, path, {"Host": "evil.example.com",
                                         "Connection": "close"}, method="GET")
             assert code == 403, path
