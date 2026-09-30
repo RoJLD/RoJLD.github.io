@@ -338,7 +338,7 @@ textarea{width:100%;min-height:58vh;border:1px solid #ccd;border-radius:8px;padd
 .row{display:flex;gap:16px;align-items:center;margin:12px 0;flex-wrap:wrap}
 label.cb{font-size:13px}
 button{background:#4361ee;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;cursor:pointer}button:disabled{opacity:.5}
-#status{font-size:13px}#status.ok{color:#159957}
+#status{font-size:13px}#status.ok{color:#159957}#status.err{color:#c0392b;font-weight:600}
 #errs{color:#c0392b;font-size:13px;white-space:pre-wrap;margin-top:8px}
 </style></head><body>
 __NAV__
@@ -374,9 +374,17 @@ async function save(){
       if(s.review)parts.push(s.review.available?('revue '+(s.review.notes.length?s.review.notes.length+' note(s)':'RAS')):'revue LLM indispo');
       if(s.graph)parts.push('graphe '+s.graph.nodes+'n/'+s.graph.edges+'a');
       if(s.rebuild)parts.push(s.rebuild.skipped?'rebuild sauté':(s.rebuild.ok?'rebuild ok':'REBUILD ÉCHOUÉ'));
-      st.textContent=res.ok?('Gouverné \u2713 — '+parts.join(' · ')):'Refusé';st.className=res.ok?'ok':'';
-      if(!res.ok)er.textContent=(res.errors||[]).join(String.fromCharCode(10));
-      else if(s.review&&s.review.notes&&s.review.notes.length)er.textContent='Revue LLM:'+String.fromCharCode(10)+'- '+s.review.notes.join(String.fromCharCode(10)+'- ');
+      if(s.prefab)parts.push(s.prefab.ok?'banque préfab ok':'BANQUE PRÉFAB ÉCHOUÉE');
+      var echec=(s.rebuild&&s.rebuild.ok===false)||(s.prefab&&s.prefab.ok===false);
+      st.textContent=res.ok?('Gouverné \u2713 — '+parts.join(' · ')):'Refusé';
+      st.className=res.ok?(echec?'err':'ok'):'';
+      if(!res.ok){er.textContent=(res.errors||[]).join(String.fromCharCode(10));}
+      else{
+        var notes=[];
+        if(s.prefab&&s.prefab.ok===false)notes.push('Banque préfab NON régénérée (profil enregistré, les 8 PDF publics sont en retard) : '+s.prefab.error);
+        if(s.review&&s.review.notes&&s.review.notes.length)notes.push('Revue LLM:'+String.fromCharCode(10)+'- '+s.review.notes.join(String.fromCharCode(10)+'- '));
+        if(notes.length)er.textContent=notes.join(String.fromCharCode(10)+String.fromCharCode(10));
+      }
     } else if(res.ok){st.textContent='Enregistré. '+((res.actions||[]).join(', '));st.className='ok';}
     else{st.textContent='Refusé ('+res.errors.length+' erreur(s))';er.textContent=res.errors.join('\\n');}
   }catch(e){st.textContent='Erreur: '+e.message;}
@@ -557,12 +565,17 @@ $("save").onclick = function () {
         if (s.graph) parts.push("graphe " + s.graph.nodes + "n/" + s.graph.edges + "a");
         if (s.rebuild) parts.push(s.rebuild.skipped ? "rebuild sauté"
                                   : (s.rebuild.ok ? "rebuild ok" : "REBUILD ÉCHOUÉ"));
-        // Le rebuild est POST-écriture : son échec ne annule pas l'enregistrement,
-        // mais doit être dit franchement plutôt que confondu avec « sauté ».
-        setStatus("Enregistré ✓ — " + parts.join(" · "), s.rebuild && s.rebuild.ok === false ? "err" : "ok");
+        if (s.prefab) parts.push(s.prefab.ok ? "banque préfab ok" : "BANQUE PRÉFAB ÉCHOUÉE");
+        // Le rebuild ET la banque préfab sont POST-écriture : leur échec
+        // n'annule pas l'enregistrement, mais doit être dit franchement plutôt
+        // que confondu avec un succès.
+        var echec = (s.rebuild && s.rebuild.ok === false) || (s.prefab && s.prefab.ok === false);
+        setStatus("Enregistré ✓ — " + parts.join(" · "), echec ? "err" : "ok");
         var notes = [];
         if (s.rebuild && s.rebuild.ok === false)
           notes.push("Rebuild du site ÉCHOUÉ (profil bien enregistré) : " + s.rebuild.error);
+        if (s.prefab && s.prefab.ok === false)
+          notes.push("Banque préfab NON régénérée (profil enregistré, les 8 PDF publics sont en retard) : " + s.prefab.error);
         if (s.review && s.review.notes && s.review.notes.length)
           notes.push("Revue LLM:\\n- " + s.review.notes.join("\\n- "));
         $("errs").textContent = notes.join("\\n\\n");
