@@ -49,4 +49,5 @@ def carte_anthropos() -> dict:
     return {"titre": "Anthropos", "href": "/anthropos", "etat": etat, "lignes": [f"hub : {s['etat']} {s['code'] or ''} ({s['ms']} ms)"]}
 
 
+carte_anthropos.titre, carte_anthropos.href = "Anthropos", "/anthropos"   # nom affiché si la carte sort du budget
 accueil.CARTES.append(carte_anthropos)

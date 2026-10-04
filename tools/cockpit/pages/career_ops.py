@@ -294,4 +294,5 @@ def carte_career_ops() -> dict:
     return {"titre": "Ergon · career-ops", "href": "/career-ops", "etat": "ok", "lignes": [ligne, f"lu à {kpi['lu_a']}"]}
 
 
+carte_career_ops.titre, carte_career_ops.href = "Ergon · career-ops", "/career-ops"   # nom affiché si la carte sort du budget
 accueil.CARTES.append(carte_career_ops)

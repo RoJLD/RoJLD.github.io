@@ -70,3 +70,33 @@ def test_une_carte_en_erreur_est_affichee_pas_masquee(monkeypatch, tmp_path):
     monkeypatch.setattr(pages_cv, "_PROFILE", tmp_path / "absent.json")
     c = accueil.carte_profil()
     assert c["etat"] == "erreur" and "FileNotFoundError" in c["lignes"][0]
+
+
+def test_une_carte_lente_ne_retient_pas_l_accueil(monkeypatch):
+    """Mesuré 2026-10-04 : hub injoignable → GET / en 11,3 s (la résolution DNS d'un nom
+    .local échappe au délai d'urlopen). Une carte qui ne répond pas dans le budget est
+    affichée comme telle ; elle ne retient jamais la page."""
+    import time
+
+    def lente():
+        time.sleep(5)
+        return {"titre": "Lente", "href": "/lente", "etat": "ok", "lignes": ["trop tard"]}
+    lente.titre, lente.href = "Lente", "/lente"
+    monkeypatch.setattr(accueil, "CARTES", [accueil.carte_profil, lente])
+    monkeypatch.setattr(accueil, "DELAI_CARTES_S", 0.5)
+    t0 = time.monotonic()
+    with _Srv() as base:
+        code, body = _get(base, "/")
+    assert code == 200 and time.monotonic() - t0 < 3
+    assert "Profil" in body and "Lente" in body and "pas de réponse en 0.5 s" in body and "trop tard" not in body
+    assert body.index("Profil") < body.index("Lente")                      # ordre des cartes conservé
+
+
+def test_une_carte_qui_leve_s_affiche_en_erreur(monkeypatch):
+    def cassee():
+        raise RuntimeError("boum")
+    cassee.titre = "Cassée"
+    monkeypatch.setattr(accueil, "CARTES", [accueil.carte_profil, cassee])
+    with _Srv() as base:
+        code, body = _get(base, "/")
+    assert code == 200 and "Cassée" in body and "RuntimeError: boum" in body and 'class="carte erreur"' in body
