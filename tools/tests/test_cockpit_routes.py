@@ -9,8 +9,17 @@ SITE = Path(__file__).resolve().parents[2]
 if str(SITE) not in sys.path:
     sys.path.insert(0, str(SITE))
 
+import pytest  # noqa: E402
+
 from tools.cockpit import server  # noqa: E402
 from tools.cockpit.pages import accueil, cv as pages_cv  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _cartes_locales(monkeypatch):
+    """Les cartes réseau (career-ops, Anthropos) se testent dans leurs fichiers ;
+    l'accueil de L1 se teste avec la carte profil seule."""
+    monkeypatch.setattr(accueil, "CARTES", [accueil.carte_profil])
 
 
 class _Srv:
