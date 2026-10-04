@@ -170,6 +170,10 @@ ROUTES_POST.update({
     "/career-ops/copilote": pages_career_ops.post_copilote,
 })
 
+from tools.cockpit.pages import anthropos as pages_anthropos  # noqa: E402
+
+ROUTES_GET["/anthropos"] = pages_anthropos.page_anthropos
+
 
 class Handler(http.server.BaseHTTPRequestHandler):
     # HTTP/1.0 : la connexion se ferme après UNE requête, donc une instance de
