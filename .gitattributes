@@ -11,3 +11,6 @@
 # dépôt : on l'y inscrit.
 *.sh text eol=lf
 Dockerfile* text eol=lf
+
+# Les lanceurs PowerShell du cockpit sont lus par PowerShell 5.1 sous Windows : CRLF.
+*.ps1 text eol=crlf
