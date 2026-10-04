@@ -16,6 +16,7 @@ CV_DIR = TOOLS_DIR / "cv"
 LOCAL_JSON = Path(__file__).resolve().parent / "local.json"
 HUB_URL = os.environ.get("ANTHROPOS_HUB_URL", "http://anthropos.elysium.local")
 SITE_PUBLIC_URL = "https://robin-denis.com/"
+SITE_REPO = "RoJLD/RoJLD.github.io"
 
 
 def bootstrap_sys_path() -> None:
