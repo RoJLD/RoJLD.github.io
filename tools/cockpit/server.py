@@ -160,6 +160,20 @@ ROUTES_POST = {
     "/save": pages_cv.handle_save,
 }
 
+from tools.cockpit.pages import career_ops as pages_career_ops  # noqa: E402
+
+ROUTES_GET["/career-ops"] = pages_career_ops.page_career_ops
+ROUTES_POST.update({
+    "/career-ops/action": pages_career_ops.post_action,
+    "/career-ops/postule": pages_career_ops.post_postule,
+    "/career-ops/ouvrir-web": pages_career_ops.post_ouvrir_web,
+    "/career-ops/copilote": pages_career_ops.post_copilote,
+})
+
+from tools.cockpit.pages import anthropos as pages_anthropos  # noqa: E402
+
+ROUTES_GET["/anthropos"] = pages_anthropos.page_anthropos
+
 
 class Handler(http.server.BaseHTTPRequestHandler):
     # HTTP/1.0 : la connexion se ferme après UNE requête, donc une instance de

@@ -5,11 +5,22 @@ import json
 import pathlib
 import re
 
+import pytest
+
 import atelier
 import cv_pdf
 import cv_target
 from tools.cockpit import server  # le module qui LIT les noms que les tests rebindent
+from tools.cockpit.pages import accueil
 from tools.cockpit.pages import cv as pages_cv  # le module qui LIT _PROFILE, generate_pdf, etc.
+
+
+@pytest.fixture(autouse=True)
+def _cartes_locales(monkeypatch):
+    """L'accueil de l'atelier se teste avec la carte profil seule : les cartes réseau
+    (career-ops, Anthropos) sondent le poste et le cluster, et se testent dans leurs
+    fichiers. Sans cela, GET / attend les sondes et les gardes de famine (< 2 s) mentent."""
+    monkeypatch.setattr(accueil, "CARTES", [accueil.carte_profil])
 
 
 def test_html_to_pdf_bytes_smoke():
