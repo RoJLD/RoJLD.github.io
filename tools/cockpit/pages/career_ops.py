@@ -181,12 +181,12 @@ def _file_envoi(fj: dict) -> str:
 
 
 def _relances(rel: dict) -> str:
-    """Synthèse seule : le suivi des relances se travaille dans l'onglet Follow-ups du web."""
+    """Synthèse seule (entrées = relances en retard, --overdue-only) : le suivi des relances se travaille dans l'onglet Follow-ups du web."""
     m = rel.get("metadata", {})
     dates = [str(e["nextFollowupDate"]) for e in rel.get("entries", []) if e.get("nextFollowupDate")]
-    prochaine = f" · prochaine : {html.escape(min(dates))}" if dates else ""
+    ancienne = f" · la plus ancienne en retard : {html.escape(min(dates))}" if dates else ""
     return (f"<p>{m.get('overdue', 0)} en retard · {m.get('urgent', 0)} urgentes · {m.get('waiting', 0)} en attente "
-            f"(sur {m.get('totalTracked', 0)} suivies){prochaine}</p>"
+            f"(sur {m.get('totalTracked', 0)} suivies){ancienne}</p>"
             f"<p>{_ouvrir('/followups', 'Ouvrir les relances dans career-ops')}</p>")
 
 

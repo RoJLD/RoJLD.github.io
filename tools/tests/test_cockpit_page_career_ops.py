@@ -199,16 +199,18 @@ def test_le_panneau_candidatures_compte_par_statut_et_renvoie_au_pipeline(config
 
 
 def test_le_panneau_relances_resume_et_renvoie_aux_followups(configure, monkeypatch):
+    """lire_relances passe --overdue-only : les entrées sont les relances EN RETARD, donc la date
+    minimale est la plus ancienne en retard, jamais une « prochaine » échéance."""
     rel = copy.deepcopy(RELANCES)
     rel["metadata"].update({"overdue": 2, "urgent": 1, "waiting": 3, "totalTracked": 24})
-    rel["entries"] = [{"company": "Relancia", "urgency": "overdue", "nextFollowupDate": "2026-10-09"},
-                      {"company": "Autrefois", "urgency": "waiting", "nextFollowupDate": "2026-10-07"}]
+    rel["entries"] = [{"company": "Relancia", "urgency": "overdue", "nextFollowupDate": "2026-10-03"},
+                      {"company": "Autrefois", "urgency": "overdue", "nextFollowupDate": "2026-09-28"}]
     monkeypatch.setattr(co, "lire_relances", _lu(rel))
     with _Srv() as s:
         _, body = s.get("/career-ops")
     p = _panneau(body, "Relances dues")
     assert "2 en retard · 1 urgentes · 3 en attente (sur 24 suivies)" in p
-    assert "prochaine : 2026-10-07" in p
+    assert "la plus ancienne en retard : 2026-09-28" in p and "prochaine" not in p
     assert "<table" not in p and "Relancia" not in p and "Autrefois" not in p
     assert 'data-route="/career-ops/ouvrir-web"' in p and 'data-chemin="/followups"' in p
     assert "Ouvrir les relances dans career-ops" in p
