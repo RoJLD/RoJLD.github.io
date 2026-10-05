@@ -59,3 +59,26 @@ def test_parcours_complet_dans_un_navigateur(base):
         assert "hub injoignable" in page.locator("body").inner_text()
         assert erreurs == []
         b.close()
+
+
+def test_les_boutons_ouvrir_ouvrent_le_web_sur_la_bonne_route(base, monkeypatch, tmp_path):
+    """Clic réel : la route lance (ici : feint) le web, le JS ouvre url + chemin sans double « / ».
+    Un chemin forgé (autre hôte, schéma, double barre) est refusé côté navigateur."""
+    from playwright.sync_api import sync_playwright
+    from tools.cockpit import web
+    monkeypatch.setattr(co.config, "career_ops_root", lambda env=None, local_json=None: tmp_path)
+    monkeypatch.setattr(web, "ouvrir_web", lambda root, **k: {"ok": True, "deja": True, "url": base + "/", "problemes": []})
+    with sync_playwright() as p:
+        b = p.chromium.launch(); page = b.new_page(); erreurs = []
+        page.on("pageerror", lambda e: erreurs.append(str(e)))
+        page.goto(base + "/career-ops", wait_until="load")
+        for chemin in ("/followups", "/pipeline", "/pipeline/23"):
+            with page.context.expect_page() as nouvelle:
+                page.locator(f'[data-chemin="{chemin}"]').first.click()
+            assert nouvelle.value.url == base + chemin, (chemin, nouvelle.value.url)
+            nouvelle.value.close()
+        for forge in ("//evil.example", "/a//b", "https://evil.example/x", "pipeline", "/x:y", None, 5):
+            assert page.evaluate("c => cheminValide(c)", forge) is False, forge
+        assert page.evaluate("cheminValide('/pipeline/23')") is True
+        assert erreurs == []
+        b.close()

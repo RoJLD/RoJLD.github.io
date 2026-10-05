@@ -1,6 +1,10 @@
-"""Page career-ops : ce qui vit (entonnoir, à faire, relances, alertes, file d'envoi,
-dossiers), les workflows sans LLM, « J'ai postulé », l'interface web et le copilote à la
-demande. Chaque panneau nomme son état (« lu à HH:MM », source vieille de N h, erreur) — spec § 8.
+"""Page career-ops : ce que l'interface web de career-ops ne sait pas (entonnoir kpi.mjs, à faire
+dans l'ordre de send-queue, alertes agent-inbox, file d'envoi, dossiers), les workflows sans LLM,
+« J'ai postulé » et le copilote à la demande. Chaque panneau nomme son état (« lu à HH:MM »,
+source vieille de N h, erreur) — spec § 8.
+Recadrage 2026-10-05 : le web de career-ops (Pipeline, fiche d'offre, Follow-ups, CV, « Ask »)
+est l'interface de travail des candidatures ; la page n'en garde qu'une synthèse et un bouton
+qui l'ouvre sur la bonne route (`/followups`, `/pipeline`, `/pipeline/<n>`).
 « À faire » suit l'ordre de send-queue (amendement 2026-10-03) : la priorité appartient à la file."""
 from __future__ import annotations
 
@@ -12,12 +16,16 @@ from tools.cockpit import career_ops as co, config, copilote, web
 from tools.cockpit.pages import accueil, layout
 
 _JS = """
-async function envoyer(route, obj){
+function cheminValide(c){
+  return typeof c==='string' && c.startsWith('/') && !c.includes('//') && !c.includes(':');
+}
+function joindre(url, chemin){ return (url.endsWith('/')?url.slice(0,-1):url)+chemin; }
+async function envoyer(route, obj, chemin){
   const out=document.getElementById('sortie'); out.textContent='… en cours ('+route+')';
   const r=await fetch(route,{method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Token':TOKEN},body:JSON.stringify(obj)});
   let t=await r.text(); try{t=JSON.stringify(JSON.parse(t),null,2)}catch(e){}
   out.textContent=(r.ok?'OK ':'REFUS '+r.status+' ')+t;
-  if(r.ok){ try{const j=JSON.parse(t); if(j.url){window.open(j.url,'_blank');}}catch(e){} }
+  if(r.ok){ try{const j=JSON.parse(t); if(j.url){window.open(chemin?joindre(j.url,chemin):j.url,'_blank');}}catch(e){} }
 }
 document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{
   const id=b.dataset.action, ecrit=b.dataset.ecrit;
@@ -29,7 +37,13 @@ document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
   if(!confirm('Enregistrer le rapport '+n+' comme candidature ENVOYÉE ? (set-status écrit le tracker)')) return;
   envoyer('/career-ops/postule',{n:n,note:note});
 });
-document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>envoyer(b.dataset.route,{}));
+document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>{
+  const chemin=b.dataset.chemin;
+  if(chemin!==undefined && !cheminValide(chemin)){
+    document.getElementById('sortie').textContent='REFUS chemin invalide : '+chemin; return;
+  }
+  envoyer(b.dataset.route,{},chemin);
+});
 """
 
 _VIVACITE = {"active": "active", "expired": "disparue", "uncertain": "incertaine"}
@@ -99,6 +113,16 @@ def _entonnoir(kpi: dict) -> str:
     return out
 
 
+def _ouvrir(chemin: str, libelle: str) -> str:
+    """Bouton qui ouvre l'interface web de career-ops sur `chemin` (lancée au besoin, en loopback).
+    `chemin` ne vient que de constantes ou d'un entier : jamais d'une donnée de career-ops."""
+    return f'<button data-route="/career-ops/ouvrir-web" data-chemin="{_e(chemin)}">{html.escape(libelle)}</button>'
+
+
+def _ouvrir_rapport(n: int | None) -> str:
+    return _ouvrir(f"/pipeline/{int(n)}", "Ouvrir") if n else ""
+
+
 def _vivacite(item: dict) -> str:
     l = item.get("liveness")
     if not l:
@@ -110,7 +134,7 @@ def _a_faire_file(items: list[dict]) -> str:
     rows = []
     for it in items:
         n = co.numero_item(it)
-        bouton = f'<button data-n="{n}">J\'ai postulé</button>' if n else ""
+        bouton = (f'<button data-n="{n}">J\'ai postulé</button> ' + _ouvrir_rapport(n)) if n else ""
         feu = (it.get("decision") or {}).get("state")
         effort = (it.get("why") or {}).get("effort")
         rows.append(f"<tr><td>{_e(it.get('company'))}</td><td>{_e(it.get('role'))}</td><td>{_e(it.get('score'))}</td>"
@@ -127,7 +151,7 @@ def _a_faire_repli(lignes: list[dict], erreur: str) -> str:
     rows = []
     for l in co.a_faire(lignes):
         n = co.numero_rapport(l)
-        bouton = f'<button data-n="{n}">J\'ai postulé</button>' if n else ""
+        bouton = (f'<button data-n="{n}">J\'ai postulé</button> ' + _ouvrir_rapport(n)) if n else ""
         rows.append(f"<tr><td>{_e(l.get('company'))}</td><td>{_e(l.get('role'))}</td>"
                     f"<td>{_e(l.get('score'))}</td><td>{bouton}</td></tr>")
     tete = f'<p class="ko">File d\'envoi illisible ({html.escape(erreur)}) : repli sur le tri par note, sans priorité.</p>'
@@ -157,24 +181,22 @@ def _file_envoi(fj: dict) -> str:
 
 
 def _relances(rel: dict) -> str:
+    """Synthèse seule : le suivi des relances se travaille dans l'onglet Follow-ups du web."""
     m = rel.get("metadata", {})
-    ent = rel.get("entries", [])
-    rows = "".join(f"<tr><td>{html.escape(str(e.get('company')))}</td><td>{html.escape(str(e.get('urgency')))}</td>"
-                   f"<td>{html.escape(str(e.get('nextFollowupDate')))}</td></tr>" for e in ent)
+    dates = [str(e["nextFollowupDate"]) for e in rel.get("entries", []) if e.get("nextFollowupDate")]
+    prochaine = f" · prochaine : {html.escape(min(dates))}" if dates else ""
     return (f"<p>{m.get('overdue', 0)} en retard · {m.get('urgent', 0)} urgentes · {m.get('waiting', 0)} en attente "
-            f"(sur {m.get('totalTracked', 0)} suivies)</p>" + (f"<table>{rows}</table>" if rows else ""))
+            f"(sur {m.get('totalTracked', 0)} suivies){prochaine}</p>"
+            f"<p>{_ouvrir('/followups', 'Ouvrir les relances dans career-ops')}</p>")
 
 
 def _candidatures(lignes: list[dict]) -> str:
+    """Comptes par statut seuls : le pipeline se travaille dans le web de career-ops."""
     comptes: dict[str, int] = {}
     for l in lignes:
         comptes[str(l.get("status"))] = comptes.get(str(l.get("status")), 0) + 1
     tete = " · ".join(f"{html.escape(s)} : {n}" for s, n in sorted(comptes.items()))
-    rows = "".join(f"<tr><td>{co.numero_rapport(l) or ''}</td><td>{_e(l.get('company'))}</td><td>{_e(l.get('role'))}</td>"
-                   f"<td>{_e(l.get('score'))}</td><td>{_e(l.get('status'))}</td><td>{_e(l.get('date'))}</td>"
-                   f"<td>{_e(l.get('notes'))}</td></tr>" for l in lignes)
-    return (f"<p>{tete}</p><table><tr><th>#</th><th>Entreprise</th><th>Rôle</th><th>Note</th><th>Statut</th><th>Date</th>"
-            f"<th>Notes</th></tr>{rows}</table>")
+    return f"<p>{tete}</p><p>{_ouvrir('/pipeline', 'Ouvrir le pipeline dans career-ops')}</p>"
 
 
 def _workflows() -> str:
@@ -182,7 +204,7 @@ def _workflows() -> str:
     for c in co.COMMANDES.values():
         b.append(f'<button data-action="{c.id}" data-ecrit="{html.escape(c.ecrit)}" data-confirme="{1 if c.confirmation else 0}">'
                  f'{html.escape(c.id)}</button> <span class="muet">écrit : {html.escape(c.ecrit)} · {c.delai_s} s max</span><br>')
-    return ("".join(b) + '<p>Workflows agent (évaluer, CV sur mesure, lettre) : '
+    return ("".join(b) + '<p>Candidatures, CV sur mesure, candidature assistée et assistant « Ask » : interface web de career-ops. '
             '<button data-route="/career-ops/ouvrir-web">Ouvrir career-ops (interface web)</button> '
             '<button data-route="/career-ops/copilote">Ouvrir une session copilote</button></p>')
 

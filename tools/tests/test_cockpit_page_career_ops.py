@@ -122,7 +122,12 @@ def test_l_entonnoir_montre_les_pistes_quand_kpi_en_donne(configure, monkeypatch
     assert "Par piste" in body and "Job du week-end" in body
 
 
-def test_une_note_piegee_ne_recoit_jamais_le_jeton(configure):
+def test_une_donnee_piegee_ne_recoit_jamais_le_jeton(configure, monkeypatch):
+    """Le tracker n'est plus recopié : le piège `__TOKEN__` voyage désormais dans un rôle de la
+    file d'envoi, champ encore affiché par « À faire »."""
+    fq = copy.deepcopy(SEND_QUEUE)
+    fq["perTrack"][0]["items"][0]["role"] = "Quant __TOKEN__ piège"
+    monkeypatch.setattr(co, "lire_file", _lu(fq))
     with _Srv() as s:
         code, body = s.get("/career-ops")
     assert "__TOKEN__ piège" in body and body.count(server.csrf_token()) == 1
@@ -175,7 +180,88 @@ def test_md_vers_html_ne_se_tait_jamais():
     assert "Titre" in out and ("<pre>" in out or "<h1>" in out)
 
 
-def test_le_panneau_candidatures_compte_par_statut(configure):
+def _panneau(body, titre):
+    """Le HTML d'un panneau, de son <h2> au suivant."""
+    debut = body.index(f"<h2>{titre}")
+    return body[debut:body.index("</section>", debut)]
+
+
+def test_le_panneau_candidatures_compte_par_statut_et_renvoie_au_pipeline(configure):
+    """Le web de career-ops est l'interface des candidatures : le cockpit garde les comptes et
+    renvoie au pipeline, il ne recopie plus le tracker ligne à ligne."""
     with _Srv() as s:
         code, body = s.get("/career-ops")
-    assert "Evaluated : 3" in body and "Discarded : 1" in body and "Initech" in body
+    p = _panneau(body, "Candidatures (tracker)")
+    assert "Evaluated : 3" in p and "Discarded : 1" in p
+    assert "<table" not in p and "Initech" not in p
+    assert 'data-route="/career-ops/ouvrir-web"' in p and 'data-chemin="/pipeline"' in p
+    assert "Ouvrir le pipeline dans career-ops" in p
+
+
+def test_le_panneau_relances_resume_et_renvoie_aux_followups(configure, monkeypatch):
+    rel = copy.deepcopy(RELANCES)
+    rel["metadata"].update({"overdue": 2, "urgent": 1, "waiting": 3, "totalTracked": 24})
+    rel["entries"] = [{"company": "Relancia", "urgency": "overdue", "nextFollowupDate": "2026-10-09"},
+                      {"company": "Autrefois", "urgency": "waiting", "nextFollowupDate": "2026-10-07"}]
+    monkeypatch.setattr(co, "lire_relances", _lu(rel))
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    p = _panneau(body, "Relances dues")
+    assert "2 en retard · 1 urgentes · 3 en attente (sur 24 suivies)" in p
+    assert "prochaine : 2026-10-07" in p
+    assert "<table" not in p and "Relancia" not in p and "Autrefois" not in p
+    assert 'data-route="/career-ops/ouvrir-web"' in p and 'data-chemin="/followups"' in p
+    assert "Ouvrir les relances dans career-ops" in p
+
+
+def test_le_panneau_relances_sans_echeance_ne_montre_pas_de_prochaine_date(configure):
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    p = _panneau(body, "Relances dues")
+    assert "0 en retard" in p and "prochaine" not in p and 'data-chemin="/followups"' in p
+
+
+def test_chaque_ligne_a_faire_ouvre_son_rapport_dans_le_web(configure):
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    p = _panneau(body, "À faire maintenant")
+    for n in (23, 24):
+        assert f'data-chemin="/pipeline/{n}"' in p and f'data-n="{n}"' in p
+    assert p.count('data-route="/career-ops/ouvrir-web"') == 2
+    assert ">Ouvrir<" in p
+
+
+def test_le_repli_a_faire_ouvre_aussi_son_rapport_dans_le_web(configure, monkeypatch):
+    monkeypatch.setattr(co, "lire_file", lambda root, **k: {"ok": False, "donnees": None, "lu_a": "10:00", "erreur": "boom"})
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    p = _panneau(body, "À faire maintenant")
+    assert 'data-chemin="/pipeline/23"' in p and 'data-chemin="/pipeline/24"' in p
+
+
+def test_les_chemins_d_ouverture_sont_des_constantes_ou_un_entier(configure, monkeypatch):
+    """Aucune donnée de career-ops (société, notes, rapport mal formé) n'entre dans un chemin."""
+    tr = copy.deepcopy(TRACKER)
+    tr[0]["report"] = '[23"><script>x</script>](../reports/023-acme.md)'
+    monkeypatch.setattr(co, "lire_tracker", _lu(tr))
+    monkeypatch.setattr(co, "lire_file", lambda root, **k: {"ok": False, "donnees": None, "lu_a": "10:00", "erreur": "boom"})
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    import re
+    chemins = set(re.findall(r'data-chemin="([^"]*)"', body))
+    assert chemins and all(re.fullmatch(r"/(followups|pipeline(/\d+)?)", c) for c in chemins), chemins
+    assert "<script>x" not in body
+
+
+def test_le_js_n_ouvre_qu_un_chemin_local_sans_double_barre_ni_deux_points(configure):
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    assert "function cheminValide" in body and "dataset.chemin" in body
+
+
+def test_les_workflows_disent_ce_que_fait_le_web(configure):
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    p = _panneau(body, "Workflows")
+    assert "Candidatures, CV sur mesure, candidature assistée et assistant « Ask » : interface web de career-ops" in p
+    assert "Workflows agent (évaluer" not in p
