@@ -187,3 +187,9 @@ def test_les_fixtures_sont_fictives():
     vues |= {d["company"] for d in SEND_QUEUE["dead"]} | {f["company"] for f in WATCH["findings"]}
     assert vues <= fictives, vues - fictives
     assert all(re.fullmatch(r"\[\d+\]\(\.\./reports/\d+-[a-z]+\.md\)", l["report"]) for l in TRACKER)
+
+
+def test_kpi_declare_son_code_de_sortie_3_donnees_illisibles():
+    """kpi.mjs --json sort en 3 quand racine ou tracker sont illisibles (career-ops 9eee33e2) :
+    le sens du code est affiché, jamais un « code inconnu » ni un entonnoir vide."""
+    assert co.COMMANDES["kpi"].codes == {0: "fait", 2: "argument invalide", 3: "données illisibles (racine ou tracker)"}

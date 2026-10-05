@@ -32,7 +32,8 @@ class Commande:
 # Pas de `watch --dry-run` (amendement 2026-10-03) : il sonde toutes les annonces puis jette
 # les verdicts, alors que data/liveness-log.tsv nourrit le taux de disparition de send-queue et kpi.
 COMMANDES: dict[str, Commande] = {
-    "kpi": Commande("kpi", ("kpi.mjs", "--json"), "rien", False, 30, {0: "fait", 2: "argument invalide"}, "json"),
+    "kpi": Commande("kpi", ("kpi.mjs", "--json"), "rien", False, 30,
+                    {0: "fait", 2: "argument invalide", 3: "données illisibles (racine ou tracker)"}, "json"),
     "watch": Commande("watch", ("watch.mjs",),
                       "data/agent-inbox.md (constats dédupliqués), data/liveness-log.tsv (verdicts, ajout seul)", False, 300,
                       {0: "fait, constats écrits dans l'inbox",
