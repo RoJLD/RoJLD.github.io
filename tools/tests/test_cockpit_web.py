@@ -45,15 +45,62 @@ def test_port_pris_par_autre_chose_est_refuse(tmp_path, monkeypatch):
     monkeypatch.setattr(web, "node_exe", lambda: "node")
     monkeypatch.setattr(web, "est_career_ops_web", lambda opener=None: False)
     res = web.ouvrir_web(_root_pret(tmp_path), popen=lambda *a, **k: pytest.fail("ne doit pas lancer"),
-                         port_ouvert_fn=lambda p: True)
+                         port_ouvert_fn=lambda p: True, adresses_ecoute_fn=lambda p: {"127.0.0.1"})
     assert res["ok"] is False and any("3000" in m and "autre" in m for m in res["problemes"])
 
 
 def test_deja_lancee_on_ouvre_sans_relancer(tmp_path, monkeypatch):
     monkeypatch.setattr(web, "node_exe", lambda: "node")
     monkeypatch.setattr(web, "est_career_ops_web", lambda opener=None: True)
-    res = web.ouvrir_web(_root_pret(tmp_path), popen=lambda *a, **k: pytest.fail("ne doit pas lancer"), port_ouvert_fn=lambda p: True)
+    res = web.ouvrir_web(_root_pret(tmp_path), popen=lambda *a, **k: pytest.fail("ne doit pas lancer"),
+                         port_ouvert_fn=lambda p: True, adresses_ecoute_fn=lambda p: {"127.0.0.1"})
     assert res == {"ok": True, "deja": True, "url": "http://127.0.0.1:3000/", "problemes": []}
+
+
+def test_instance_hors_loopback_n_est_pas_reutilisee(tmp_path, monkeypatch):
+    """`npm run dev` nu écoute en 0.0.0.0 : /api/run (claude -p) joignable du LAN, le garde d'origine
+    de la 0.10 ne couvre pas un en-tête Host forgé. Le cockpit ne réutilise pas cette instance et
+    nomme la cause. Adresse inconnue = refus."""
+    monkeypatch.setattr(web, "node_exe", lambda: "node")
+    monkeypatch.setattr(web, "est_career_ops_web", lambda opener=None: True)
+    root = _root_pret(tmp_path)
+    for adresses in ({"0.0.0.0"}, {"127.0.0.1", "0.0.0.0"}, set()):
+        res = web.ouvrir_web(root, popen=lambda *a, **k: pytest.fail("ne doit pas lancer"),
+                             port_ouvert_fn=lambda p: True, adresses_ecoute_fn=lambda p, a=adresses: a)
+        assert res["ok"] is False and res["deja"] is False and any("loopback" in m for m in res["problemes"]), adresses
+    e = web.etat_web(root, port_ouvert_fn=lambda p: True, adresses_ecoute_fn=lambda p: {"0.0.0.0"})
+    assert e["hors_loopback"] is True
+
+
+def test_instance_en_loopback_ipv4_ou_ipv6_est_reutilisee(tmp_path, monkeypatch):
+    monkeypatch.setattr(web, "node_exe", lambda: "node")
+    monkeypatch.setattr(web, "est_career_ops_web", lambda opener=None: True)
+    root = _root_pret(tmp_path)
+    for adresses in ({"127.0.0.1"}, {"::1"}, {"127.0.0.1", "::1"}):
+        e = web.etat_web(root, port_ouvert_fn=lambda p: True, adresses_ecoute_fn=lambda p, a=adresses: a)
+        assert e["hors_loopback"] is False, adresses
+
+
+def test_port_ferme_n_est_pas_hors_loopback_et_ne_sonde_pas_les_adresses(tmp_path, monkeypatch):
+    monkeypatch.setattr(web, "node_exe", lambda: "node")
+    e = web.etat_web(_root_pret(tmp_path), port_ouvert_fn=lambda p: False,
+                     adresses_ecoute_fn=lambda p: pytest.fail("port fermé : rien à lire"))
+    assert e["hors_loopback"] is False
+
+
+def test_adresses_ecoute_lit_get_nettcpconnection(monkeypatch):
+    monkeypatch.setattr(web.sys, "platform", "win32")
+    vus = []
+    def run(argv, **kw):
+        vus.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout="127.0.0.1\r\n::1\r\n\r\n", stderr="")
+    assert web.adresses_ecoute(3000, run=run) == {"127.0.0.1", "::1"}
+    assert "Get-NetTCPConnection -LocalPort 3000 -State Listen" in vus[0][-1]
+    def casse(argv, **kw):
+        raise OSError("powershell absent")
+    assert web.adresses_ecoute(3000, run=casse) == set()          # mesure impossible = inconnu, pas loopback
+    monkeypatch.setattr(web.sys, "platform", "linux")
+    assert web.adresses_ecoute(3000, run=run) == set()
 
 
 def test_lancement_par_web_local_en_loopback_avec_career_ops_root(tmp_path, monkeypatch):
