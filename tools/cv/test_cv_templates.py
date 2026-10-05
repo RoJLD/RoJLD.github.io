@@ -40,9 +40,13 @@ def test_sobre_regenere_le_css_a_l_octet():
 
 def test_fixture_non_vide():
     """Garde anti-vacuité : une fixture vide ferait passer le test précédent
-    contre un moteur qui ne produit rien."""
-    assert len(LEGACY_CSS) == 1483
-    assert LEGACY_CSS.count("{") >= 23
+    contre un moteur qui ne produit rien.
+
+    Longueur/nombre d'accolades mis à jour au fix round 1 (revue D13b) : la fixture
+    porte désormais la règle `.cv-contact a { color: inherit; text-decoration: none; }`
+    (24 blocs au lieu de 23, +57 octets)."""
+    assert len(LEGACY_CSS) == 1540
+    assert LEGACY_CSS.count("{") >= 24
 
 
 def test_build_css_est_pur():
@@ -212,6 +216,31 @@ def test_generate_pdf_transmet_le_template(monkeypatch):
     monkeypatch.setattr(atelier.cv_pdf, "html_to_pdf_bytes", lambda h: b"%PDF-")
     atelier.generate_pdf("fiche", {}, "fr", template="ats")
     assert vu["template"] == "ats"
+
+
+# ── Fix round 1 (revue Tâche 7 / D13b) ────────────────────────────────────────
+#
+# Les 4 ancres <a> de la ligne de contact (site/linkedin/github/email, ajoutées en
+# D13b) n'avaient aucune règle CSS ciblant <a> : elles héritaient du bleu +
+# soulignement par défaut du navigateur/Chromium — régression VISIBLE sur les
+# 8 PDF publics déjà commités (2debf77) et sur l'aperçu atelier. `build_css()` doit
+# désormais émettre une règle qui neutralise ça, uniformément pour tous les
+# templates (règle littérale, non paramétrée — même statut que `* { box-sizing:
+# border-box; }` : elle ne dépend d'aucun token de `style`).
+
+def test_cv_contact_a_herite_la_couleur_et_perd_le_soulignement():
+    """`.cv-contact a { color: inherit; text-decoration: none; }` doit être émise
+    par `build_css()`, donc traverser jusqu'au HTML rendu (chemin réel de la banque
+    et de l'aperçu atelier : `render_html(scv)` sans template explicite passe par
+    `cv_templates.build_css(charger(DEFAUT)["style"])`)."""
+    import cv_render
+    import cv_select
+
+    prof = json.loads((ROOT / "profile.json").read_text(encoding="utf-8"))  # lecture seule, copie en mémoire
+    cfg = {"relevance_key": "general", "min_relevance": 0.0}
+    scv = cv_select.build_structured_cv(prof, cv_select.select_experiences(prof, cfg), "fr", cfg)
+    html_ = cv_render.render_html(scv)
+    assert ".cv-contact a { color: inherit; text-decoration: none; }" in html_
 
 
 def test_render_html_accepte_un_template_charge():

@@ -23,3 +23,7 @@ tools/cv/parity_cases.json
 .env
 .env.*
 !.env.example
+
+# 2026-09-29 — cockpit : l'emplacement de career-ops sur le poste. Un chemin du poste
+# n'a rien à faire dans un dépôt public ; test_cockpit_config le vérifie.
+tools/cockpit/local.json

@@ -8,6 +8,8 @@ import re
 import atelier
 import cv_pdf
 import cv_target
+from tools.cockpit import server  # le module qui LIT les noms que les tests rebindent
+from tools.cockpit.pages import cv as pages_cv  # le module qui LIT _PROFILE, generate_pdf, etc.
 
 
 def test_html_to_pdf_bytes_smoke():
@@ -246,8 +248,18 @@ def _pointe_vers_une_copie(tmp_path, monkeypatch):
     """Fait viser à l'atelier une COPIE du vrai profil : le dépôt n'est jamais muté."""
     target = tmp_path / "profile.json"
     target.write_text(_REAL_PROFILE.read_text(encoding="utf-8"), encoding="utf-8")
-    monkeypatch.setattr(atelier, "_PROFILE", target)
+    monkeypatch.setattr(pages_cv, "_PROFILE", target)
     return target
+
+
+def test_le_module_qui_lit_le_profil_est_pages_cv_pas_la_facade(tmp_path, monkeypatch):
+    """Rebinder `_PROFILE` sur la façade ne détourne rien : le lecteur est pages.cv."""
+    copie = tmp_path / "profile.json"
+    copie.write_text(_REAL_PROFILE.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(atelier, "_PROFILE", copie)          # la façade seule
+    assert pages_cv._PROFILE != copie                          # le lecteur n'a pas bougé
+    monkeypatch.setattr(pages_cv, "_PROFILE", copie)
+    assert pages_cv._PROFILE == copie
 
 
 def test_cross_origin_mutation_is_refused(tmp_path, monkeypatch):
@@ -260,7 +272,7 @@ def test_cross_origin_mutation_is_refused(tmp_path, monkeypatch):
     """
     target = _pointe_vers_une_copie(tmp_path, monkeypatch)
     commits = []
-    monkeypatch.setattr(atelier, "_git_commit", lambda *a, **k: commits.append(a))
+    monkeypatch.setattr(pages_cv, "_git_commit", lambda *a, **k: commits.append(a))
 
     pwned = json.loads(target.read_text(encoding="utf-8"))
     pwned["identity"]["last_name"] = "PWNED"
@@ -524,7 +536,7 @@ def test_le_plafond_refuse_toujours_sans_lire_le_corps(tmp_path, monkeypatch):
     OUVERT. Un serveur qui attendrait le corps resterait bloqué jusqu'au délai de
     garde ; ici la réponse doit être immédiate."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 5.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 5.0)
     with _server() as base:
         port = _port_of(base)
         t0 = time.monotonic()
@@ -568,7 +580,7 @@ def test_le_refus_part_sans_attendre_le_corps(tmp_path, monkeypatch):
     séparément que la RÉPONSE, elle, part avant que le moindre octet de corps
     n'arrive. Mesure : temps jusqu'au premier octet, corps jamais émis."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 5.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 5.0)
     with _server() as base:
         port = _port_of(base)
         cas = [
@@ -602,9 +614,9 @@ def test_le_client_n_attend_pas_la_fin_du_nettoyage(tmp_path, monkeypatch):
     portée à 5 s pour que « sain » (~0,01 s) et « muet » (5 s) restent
     incomparables même sur une machine chargée."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "LINGER_IDLE_S", 5.0)
-    monkeypatch.setattr(atelier, "LINGER_TOTAL_S", 30.0)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 30.0)
+    monkeypatch.setattr(server, "LINGER_IDLE_S", 5.0)
+    monkeypatch.setattr(server, "LINGER_TOTAL_S", 30.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 30.0)
     with _server() as base:
         port = _port_of(base)
         t0 = time.monotonic()
@@ -653,9 +665,9 @@ def test_la_fermeture_courtoise_lache_un_client_silencieux(tmp_path, monkeypatch
     """Borne d'INACTIVITÉ : rien n'arrive et le client ne ferme pas son canal
     d'écriture — le serveur ne peut pas attendre un EOF qui ne viendra jamais."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "LINGER_IDLE_S", 0.3)
-    monkeypatch.setattr(atelier, "LINGER_TOTAL_S", 30.0)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 30.0)
+    monkeypatch.setattr(server, "LINGER_IDLE_S", 0.3)
+    monkeypatch.setattr(server, "LINGER_TOTAL_S", 30.0)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 30.0)
     with _server() as base:
         port = _port_of(base)
         base_fils = threading.active_count()
@@ -673,9 +685,9 @@ def test_la_fermeture_courtoise_a_un_plafond_dur(tmp_path, monkeypatch):
     C'est le slowloris d'après-refus : un octet toutes les 50 ms suffit à rendre
     la borne d'inactivité inopérante. Seul `LINGER_TOTAL_S` rend le fil."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "LINGER_IDLE_S", 0.3)
-    monkeypatch.setattr(atelier, "LINGER_TOTAL_S", 0.8)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 30.0)
+    monkeypatch.setattr(server, "LINGER_IDLE_S", 0.3)
+    monkeypatch.setattr(server, "LINGER_TOTAL_S", 0.8)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 30.0)
     with _server() as base:
         port = _port_of(base)
         base_fils = threading.active_count()
@@ -841,7 +853,7 @@ def test_une_connexion_muette_est_relachee(tmp_path, monkeypatch):
     """…et la borne reste indispensable : sinon chaque connexion muette immobilise
     un fil pour toujours (épuisement du pool, la famine par un autre chemin)."""
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "REQUEST_TIMEOUT_S", 0.6)
+    monkeypatch.setattr(server, "REQUEST_TIMEOUT_S", 0.6)
     with _server() as base:
         port = _port_of(base)
         t0 = time.monotonic()
@@ -1022,7 +1034,7 @@ def test_un_profil_contenant_le_marqueur_du_jeton_est_servi_intact(tmp_path, mon
                        indent=2, ensure_ascii=False)
     cible = tmp_path / "profile.json"
     cible.write_text(piege, encoding="utf-8")
-    monkeypatch.setattr(atelier, "_PROFILE", cible)
+    monkeypatch.setattr(pages_cv, "_PROFILE", cible)
     with _server() as base:
         for chemin, motif in (("/edit", r"var P = (.*);\n"),
                               ("/cms", r"var profile = JSON\.parse\((.*)\);\n")):
@@ -1052,12 +1064,12 @@ def test_main_tire_un_jeton_neuf_au_demarrage(monkeypatch):
     retirant `reset_csrf_token()` : la page servait le jeton d'import à
     l'identique, et les 38 tests restaient VERTS.
     """
-    monkeypatch.setattr(atelier, "_TOKEN", atelier._TOKEN)   # rotation annulée au teardown
+    monkeypatch.setattr(server, "_TOKEN", server._TOKEN)   # rotation annulée au teardown
     avant = atelier.csrf_token()
     crees, vrai = [], atelier.make_server
     # `main` fixe le port ; on le force éphémère pour ne pas heurter un atelier
     # qui tournerait vraiment. Le serveur construit reste le VRAI `make_server`.
-    monkeypatch.setattr(atelier, "make_server",
+    monkeypatch.setattr(server, "make_server",
                         lambda port=0: (crees.append(vrai(0)), crees[-1])[1])
     threading.Thread(target=atelier.main, args=(0,), daemon=True).start()
     debut = time.monotonic()
@@ -1112,11 +1124,22 @@ def test_generate_route_is_guarded_too(tmp_path, monkeypatch):
 
 
 def test_get_with_foreign_host_is_refused():
-    """/edit et /cms embarquent le profil ENTIER *et* le jeton : un rebinding DNS
-    les rendrait lisibles par un tiers."""
+    """Toute route GET doit refuser un `Host` étranger — /edit et /cms
+    embarquent le profil ENTIER *et* le jeton, mais la garde du `Host` (do_GET)
+    s'applique AVANT le dispatch, pour TOUTES les routes.
+
+    M2 (revue finale opus) : la liste vient de `server.ROUTES_GET` (+
+    `server._STATIC_ALLOW`), pas d'une énumération à la main — une énumération
+    écrite en dur laisse une route neuve échapper SILENCIEUSEMENT à la garde :
+    mesuré, `/cv/` (qui porte le formulaire à jeton depuis la coquille du
+    cockpit) n'était pas dans la liste, et ni ce test ni aucun autre ne
+    l'aurait su si la garde avait régressé pour cette route précise."""
+    chemins = sorted(set(server.ROUTES_GET) | set(server._STATIC_ALLOW))
+    assert chemins, "aucune route GET declaree — ce test ne mesure plus rien"
+    assert "/cv/" in chemins, "la route de l'atelier manque a la liste derivee"
     with _server() as base:
         port = _port_of(base)
-        for path in ("/", "/edit", "/cms", "/assets/js/cms-model.js"):
+        for path in chemins:
             code, _ = _raw(port, path, {"Host": "evil.example.com",
                                         "Connection": "close"}, method="GET")
             assert code == 403, path
@@ -1126,7 +1149,7 @@ def test_get_with_foreign_host_is_refused():
 
 def test_served_pages_carry_and_send_the_token():
     with _server() as base:
-        for path in ("/", "/edit", "/cms"):
+        for path in ("/cv/", "/edit", "/cms"):
             code, body = _get(base, path)
             assert code == 200, path
             assert atelier.csrf_token() in body, f"{path} ne porte pas le jeton"
@@ -1168,13 +1191,109 @@ def test_internal_error_is_not_echoed_to_the_client(tmp_path, monkeypatch, capfd
     def boum(*a, **k):
         raise RuntimeError("C:/chemin/secret/interne — jeton=DEADBEEF")
 
-    monkeypatch.setattr(atelier, "save_profile_edit", boum)
+    monkeypatch.setattr(pages_cv, "save_profile_edit", boum)
     with _server() as base:
         code, body = _post(_port_of(base), "/save", {"json": "{}"})
     assert code == 500
     assert "secret" not in body and "DEADBEEF" not in body, body
     assert json.loads(body)["ok"] is False
     assert "DEADBEEF" in capfd.readouterr().err, "la trace n'a pas été journalisée"
+
+
+# ── La sauvegarde gouvernée régénère la banque de CV préfabriqués ───────────
+#
+# Mesuré le 2026-09-28 : `govern_save` réécrivait profile.json, l'historique et
+# le graphe, mais ne touchait jamais `cv/prefab` — une édition via `/cms`
+# laissait les 8 PDF publics diverger silencieusement du profil.
+
+def _payload_gouverne(target):
+    return {"json": target.read_text(encoding="utf-8"), "govern": True, "rebuild": False}
+
+
+def test_une_sauvegarde_gouvernee_regenere_la_banque_de_cv(tmp_path, monkeypatch):
+    """Mesuré le 2026-09-28 : govern_save ne régénérait pas cv/prefab — une édition /cms
+    laissait les 8 PDF publics diverger du profil."""
+    target = _pointe_vers_une_copie(tmp_path, monkeypatch)   # rebinde pages_cv._PROFILE
+    monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)          # historique/graphe sous tmp
+    appels = []
+    monkeypatch.setattr(pages_cv, "_regen_bank", lambda: appels.append(1))
+    with _server() as base:
+        status, body = _post(_port_of(base), "/save", _payload_gouverne(target))
+    rep = json.loads(body)
+    assert status == 200 and rep["ok"] is True
+    assert rep["stages"]["prefab"] == {"ok": True} and appels == [1]
+
+
+def test_un_gate_de_banque_qui_refuse_est_rapporte_pas_masque(tmp_path, monkeypatch):
+    """build_cv_bank.main lève SystemExit sur profil invalide : rapporté dans
+    stages.prefab, jamais masqué. M1 (revue finale opus) : `_regen_bank`
+    convertit SystemExit en RuntimeError (point unique du correctif) — le
+    message ORIGINAL du gate doit survivre à la conversion, intact."""
+    target = _pointe_vers_une_copie(tmp_path, monkeypatch)
+    monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)
+
+    def _refuse():
+        raise SystemExit("[cv-bank] profile.json invalide, aucun PDF généré")
+    monkeypatch.setattr(pages_cv, "_regen_bank", _refuse)
+    with _server() as base:
+        status, body = _post(_port_of(base), "/save", _payload_gouverne(target))
+    rep = json.loads(body)
+    assert status == 200 and rep["stages"]["write"] == {"ok": True}
+    assert rep["stages"]["prefab"]["ok"] is False
+    assert "profile.json invalide" in rep["stages"]["prefab"]["error"], rep["stages"]["prefab"]
+
+
+def test_une_sauvegarde_refusee_ne_regenere_rien(tmp_path, monkeypatch):
+    _pointe_vers_une_copie(tmp_path, monkeypatch)
+    monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)
+    appels = []
+    monkeypatch.setattr(pages_cv, "_regen_bank", lambda: appels.append(1))
+    corps = {"json": "{pas du json", "govern": True, "rebuild": False}
+    with _server() as base:
+        status, body = _post(_port_of(base), "/save", corps)
+    rep = json.loads(body)
+    assert rep["ok"] is False and "prefab" not in rep.get("stages", {}) and appels == []
+
+
+# ── M1 (revue finale opus) : SystemExit du gate sur /save AVEC regen:true ──────
+#
+# `/save` avec `regen: true` (case "Régénérer la banque préfab" de /edit, HORS
+# pipeline gouverné) appelait `_regen_bank()` sans le `except (Exception,
+# SystemExit)` du chemin gouverné. `SystemExit` N'EST PAS une `Exception` (elle
+# hérite de `BaseException`) : elle traverse le `except Exception:` du handler,
+# remonte jusqu'au fil HTTP qui la reçoit non rattrapée — et `threading`
+# l'IGNORE EN SILENCE (aucune trace, le fil meurt). Le client ne reçoit ALORS
+# AUCUNE réponse (RemoteDisconnected / « Failed to fetch » côté navigateur),
+# alors que `profile.json` est déjà écrit à ce stade.
+
+def test_un_gate_de_banque_qui_refuse_sur_save_simple_ne_perd_pas_la_reponse(tmp_path, monkeypatch):
+    """M1 : `_regen_bank` doit convertir SystemExit en exception ordinaire —
+    seul point de correctif — pour que la réponse HTTP arrive TOUJOURS, même
+    quand `regen: true` est demandé hors du pipeline gouverné.
+
+    Monkeypatcher `pages_cv._regen_bank` directement court-circuiterait le
+    correctif (qui VIT dans `_regen_bank`) : on patche `build_cv_bank.main`,
+    ce que `_regen_bank` appelle réellement, pour que sa conversion interne
+    SystemExit -> RuntimeError soit effectivement exercée."""
+    import build_cv_bank
+    target = _pointe_vers_une_copie(tmp_path, monkeypatch)
+    prof = json.loads(target.read_text(encoding="utf-8"))
+    prof["identity"]["last_name"] = "Denis-Regen"
+
+    def _refuse():
+        raise SystemExit("[cv-bank] profile.json invalide, aucun PDF généré")
+    monkeypatch.setattr(build_cv_bank, "main", _refuse)
+    with _server() as base:
+        port = _port_of(base)
+        h = _entetes_legitimes(port)
+        payload = json.dumps({"json": json.dumps(prof), "regen": True}).encode("utf-8")
+        h["Content-Length"] = str(len(payload))
+        code, incident = _tir(port, "/save", h, payload)
+    assert code is not None, (
+        f"reponse PERDUE (SystemExit non rattrapee, le fil HTTP est mort en silence) "
+        f"— incident={incident}")
+    # le profil est ecrit AVANT le regen : le crash du fil ne doit pas le perdre
+    assert json.loads(target.read_text(encoding="utf-8"))["identity"]["last_name"] == "Denis-Regen"
 
 
 # ╔══════════════════════════════════════════════════════════════════════════╗
@@ -1256,7 +1375,7 @@ def test_le_jeton_anti_csrf_est_imprevisible(monkeypatch):
     l'artefact livré (43 caractères, 43 positions à 16-45 valeurs) — pour rougir
     sur une dégénérescence, jamais sur un changement de forme légitime.
     """
-    monkeypatch.setattr(atelier, "_TOKEN", atelier._TOKEN)   # rotation annulée au teardown
+    monkeypatch.setattr(server, "_TOKEN", server._TOKEN)   # rotation annulée au teardown
     tirs = [atelier.reset_csrf_token() for _ in range(64)]
 
     assert len(set(tirs)) == len(tirs), (
@@ -1287,7 +1406,7 @@ def test_le_jeton_d_une_session_precedente_n_ouvre_plus_rien(tmp_path, monkeypat
     toujours.
     """
     _pointe_vers_une_copie(tmp_path, monkeypatch)
-    monkeypatch.setattr(atelier, "_TOKEN", atelier._TOKEN)
+    monkeypatch.setattr(server, "_TOKEN", server._TOKEN)
 
     atelier.reset_csrf_token()
     with _server() as base:
@@ -1346,6 +1465,41 @@ def test_deux_ateliers_lances_separement_ne_tirent_pas_le_meme_jeton():
             f"des interpréteurs neufs servent le même jeton {quand} : {tirs}")
 
 
+def test_la_facade_se_lance_par_script_hors_du_depot_kleos(tmp_path):
+    """Review Focus 1 — `docker-entrypoint.sh` fait `exec python /site/tools/cv/atelier.py`
+    depuis `/site` ; l'image Kleos ne pose AUCUN `PYTHONPATH` vers le dépôt.
+
+    Contrairement à `test_deux_ateliers_lances_separement_ne_tirent_pas_le_meme_jeton`
+    ci-dessus, qui insère `tools/cv` sur `sys.path` LUI-MÊME avant `import atelier` (donc
+    n'exerce jamais le bootstrap de la façade), ce test lance la façade PAR CHEMIN,
+    depuis un `cwd` HORS du dépôt et avec un environnement sans `PYTHONPATH` : seule la
+    ligne `sys.path.insert(0, str(_SITE))` de `tools/cv/atelier.py` peut faire résoudre
+    `tools.cockpit.server`. Avec `-c`, `''` sur `sys.path` résout au `cwd` — un `cwd`
+    dans le dépôt masquerait un bootstrap cassé via le paquet-espace-de-noms `tools`,
+    donc `cwd=tmp_path` (hors dépôt) est la seule garantie que c'est la façade, et
+    pas un accident de `cwd`, qui a résolu l'import.
+
+    `runpy.run_path(..., run_name=...)` sans `"__main__"` : le bloc `if __name__ ==
+    "__main__": sys.exit(main())` de la façade n'exécute JAMAIS `main()` — aucun port
+    n'est lié, aucun serveur ne démarre.
+    """
+    import os
+    import subprocess
+    import sys as _sys
+    facade = str(pathlib.Path(atelier.__file__).resolve())
+    programme = (
+        "import runpy\n"
+        "ns = runpy.run_path(r'" + facade + "', run_name='facade_sous_test')\n"
+        "print(ns['make_server'].__module__)\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    r = subprocess.run([_sys.executable, "-c", programme],
+                       cwd=str(tmp_path), env=env,
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, f"stdout={r.stdout!r} stderr={r.stderr[-2000:]!r}"
+    assert r.stdout.strip() == "tools.cockpit.server", r.stdout
+
+
 # ── V1 : le profil est une DONNÉE, jamais du balisage ────────────────────────
 
 _PIEGES_BALISAGE = ["</script><script>alert(1)</script>",
@@ -1358,7 +1512,7 @@ def _page_avec_ce_profil(tmp_path, monkeypatch, contenu, chemin, nom):
     """Sert `chemin` avec un profil donné et rend la page (source d'attendu)."""
     cible = tmp_path / f"profile_{nom}.json"
     cible.write_text(contenu, encoding="utf-8")
-    monkeypatch.setattr(atelier, "_PROFILE", cible)
+    monkeypatch.setattr(pages_cv, "_PROFILE", cible)
     with _server() as base:
         code, page = _get(base, chemin)
     assert code == 200, (chemin, nom, code)
@@ -1536,7 +1690,7 @@ def test_une_erreur_interne_de_generate_ne_part_pas_au_client_mais_a_la_console(
     def boum(*a, **k):
         raise RuntimeError(f"C:/chemin/secret/interne — jeton={marqueur}")
 
-    monkeypatch.setattr(atelier, "generate_pdf", boum)
+    monkeypatch.setattr(pages_cv, "generate_pdf", boum)
     with _server() as base:
         code, corps = _post(_port_of(base), "/generate", {"job": "x", "lang": "fr"})
     assert code == 500, corps[:200]
@@ -1562,7 +1716,7 @@ def test_un_corps_non_utf8_est_refuse_et_n_atteint_jamais_le_pipeline(
     _pointe_vers_une_copie(tmp_path, monkeypatch)
     appels = []
     vrai = atelier.save_profile_edit
-    monkeypatch.setattr(atelier, "save_profile_edit",
+    monkeypatch.setattr(pages_cv, "save_profile_edit",
                         lambda *a, **k: (appels.append(a), vrai(*a, **k))[1])
     corps = b'{"json":"\xff\xfe\x80abc"}'
     with _server() as base:
@@ -1585,7 +1739,7 @@ def _routes_mutantes_declarees(port):
     figure doit exister ; ce qui n'y figure pas ne doit rien déclencher.
     """
     routes = set()
-    for chemin in ("/", "/edit", "/cms"):
+    for chemin in ("/cv/", "/edit", "/cms"):
         _, _, page = _reponse(port, chemin)
         html = page.decode("utf-8")
         routes |= set(re.findall(

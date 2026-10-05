@@ -155,6 +155,6 @@ def test_save_profile_edit_still_works(tmp_path):
 
 
 def test_atelier_handle_save_has_govern_branch():
-    import atelier
+    from tools.cockpit.pages import cv as pages_cv
     import inspect
-    assert "govern_save" in inspect.getsource(atelier.Handler._handle_save)
+    assert "govern_save" in inspect.getsource(pages_cv.handle_save)

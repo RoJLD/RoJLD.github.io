@@ -18,6 +18,7 @@
     ".cv-name { font-size: 17pt; font-weight: 700; margin: 0; }\n" +
     ".cv-title { font-size: 10.5pt; color: #4361ee; margin: 1px 0 0; }\n" +
     ".cv-contact { font-size: 8.5pt; color: #555; margin-top: 3px; }\n" +
+    ".cv-contact a { color: inherit; text-decoration: none; }\n" +
     ".cv-section { margin-bottom: 7px; page-break-inside: avoid; }\n" +
     ".cv-exp-head { display: flex; justify-content: space-between; font-weight: 600; }\n" +
     ".cv-exp-company { color: #16213e; }\n" +
@@ -84,6 +85,9 @@
       ".cv-name { font-size: " + h1 + "; font-weight: 700; margin: 0; }\n" +
       ".cv-title { font-size: " + h2 + "; color: " + accent + "; margin: 1px 0 0; }\n" +
       ".cv-contact { font-size: " + tiny + "; color: " + muted + "; margin-top: 3px; }\n" +
+      // Fix round 1 (revue D13b) : regle LITTERALE (aucun token `style`), miroir de
+      // cv_templates.build_css.
+      ".cv-contact a { color: inherit; text-decoration: none; }\n" +
       ".cv-section { margin-bottom: " + sectionGap + "; page-break-inside: avoid; }\n" +
       ".cv-exp-head { display: flex; justify-content: space-between; font-weight: 600; }\n" +
       ".cv-exp-company { color: " + ink2 + "; }\n" +
@@ -123,6 +127,18 @@
     return buildCss(reg.get(reg.DEFAUT).style);
   }
 
+  // Miroir de cv_render._lien.
+  function lien(href, texte) {
+    return '<a href="' + esc(href) + '">' + esc(texte) + "</a>";
+  }
+
+  // Miroir de urllib.parse.urlsplit(url).netloc : hôte entre "://" et le premier
+  // "/", "?" ou "#" ; "" si l'URL ne porte pas de schéma "://" (comme Python).
+  function netloc(url) {
+    var m = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/([^/?#]*)/.exec(String(url == null ? "" : url));
+    return m ? m[1] : "";
+  }
+
   function renderHtml(cv, template) {
     cv = cv || {};
     var lang = cv.lang || "fr";
@@ -135,10 +151,22 @@
     p.push('<header class="cv-header">');
     p.push('<h1 class="cv-name">' + esc(idy.name || "") + "</h1>");
     if (idy.title) p.push('<p class="cv-title">' + esc(idy.title) + "</p>");
-    // Ligne de contact : localisation • email • linkedin • github (jamais le tél).
-    var contact = [idy.location || "", idy.email || "", idy.linkedin || "", idy.github || ""]
-      .filter(function (x) { return x; }).join(" • ");
-    if (contact) p.push('<p class="cv-contact">' + esc(contact) + "</p>");
+    // Ligne de contact : localisation • email • site • linkedin • github, en ancres
+    // cliquables (sauf la localisation, texte brut). Jamais le tél. Miroir de
+    // cv_render._contact_html — construit EN LIGNE ici (pas de fonction séparée,
+    // cf. commit review C3 : aucune contactHtml n'existait côté JS avant ce miroir).
+    // Fix round 2 (revue) : le texte VISIBLE de linkedin/github est idy.linkedin/
+    // idy.github (forme d'affichage linkDisplay, ex. "linkedin.com/in/…"), pas un
+    // libellé générique — le href garde l'URL complète (cvLinks).
+    var cvLinks = idy.links || {};
+    var contactParts = [];
+    if (idy.location) contactParts.push(esc(idy.location));
+    if (idy.email) contactParts.push(lien("mailto:" + idy.email, idy.email));
+    if (cvLinks.site) contactParts.push(lien(cvLinks.site, netloc(cvLinks.site) || cvLinks.site));
+    if (cvLinks.linkedin) contactParts.push(lien(cvLinks.linkedin, idy.linkedin || cvLinks.linkedin));
+    if (cvLinks.github) contactParts.push(lien(cvLinks.github, idy.github || cvLinks.github));
+    var contact = contactParts.join(" • ");
+    if (contact) p.push('<p class="cv-contact">' + contact + "</p>");
     p.push("</header>");
 
     (cv.sections || []).forEach(function (sec) {

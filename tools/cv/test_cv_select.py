@@ -157,3 +157,21 @@ def test_real_profile_quant_selection_nonempty():
     cv = cv_select.build_structured_cv(prof, exps, "fr")
     assert cv["identity"]["name"]
     assert all(s["bullets"] for s in cv["sections"])  # chaque section a des bullets FR
+
+
+# ── D13b (Tâche 7 cockpit L1) : identity.links portés dans le CV structuré ────
+
+_REAL_PROFILE = pathlib.Path(__file__).resolve().parents[2] / "profile.json"
+
+
+def test_le_cv_structure_porte_les_liens_de_l_identite():
+    """Ruling C1 (revue contrôleur) : `identity.links` doit atteindre `out["identity"]`
+    dans le dict RETOURNÉ par build_structured_cv (le brief écrivait sur l'ALIAS
+    `identity` du profil appelant, jamais lu par la valeur de retour — et aurait muté
+    le profil de l'appelant)."""
+    prof = json.loads(_REAL_PROFILE.read_text(encoding="utf-8"))
+    cfg = {"relevance_key": "general", "min_relevance": 0.0}
+    scv = cv_select.build_structured_cv(prof, cv_select.select_experiences(prof, cfg), "fr", cfg)
+    assert scv["identity"]["links"] == {"site": prof["identity"]["links"]["portfolio"],
+                                        "linkedin": prof["identity"]["links"]["linkedin"],
+                                        "github": prof["identity"]["links"]["github"]}

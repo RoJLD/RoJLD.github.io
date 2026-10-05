@@ -49,6 +49,7 @@ import json
 import os
 import pathlib
 import sys
+import urllib.parse
 from typing import Any
 
 from docx import Document
@@ -257,6 +258,14 @@ def _join(parts, sep: str = " • ") -> str:
     return sep.join(x for x in parts if x)
 
 
+def _site_display(url: str) -> str:
+    """Texte affichable du site : l'hôte sans schéma. Miroir de
+    `cv_render._contact_html` (D13b) — l'oracle `test_the_contact_line_is_the_one_
+    the_shipped_prefab_pdf_carries` exige la MÊME ligne de contact que le PDF
+    public, qui porte désormais le lien du site."""
+    return urllib.parse.urlsplit(url).netloc or url if url else ""
+
+
 # ══ M5 — construction du document ═════════════════════════════════════════════
 
 def build_docx(structured_cv: dict[str, Any], private: dict[str, Any] | None = None):
@@ -308,7 +317,15 @@ def build_docx(structured_cv: dict[str, Any], private: dict[str, Any] | None = N
         # CV EN réellement envoyé (« 6-month internship • Available from early 2026 »).
         p = _para(doc, align=WD_ALIGN_PARAGRAPH.CENTER)
         _run(p, availability, italic=True)
+    # D13b (fix round 1, Tâche 7) : le PDF public (l'oracle) porte désormais aussi
+    # le lien du site — la ligne de contact .docx doit SUIVRE ce format (jamais
+    # l'inverse : cf. le docstring de
+    # test_the_contact_line_is_the_one_the_shipped_prefab_pdf_carries).
+    # Fix round 2 (revue) : linkedin/github restent leur forme d'affichage
+    # `_link_display` (comme avant D13b) — ce renderer ne crée jamais d'hyperlien,
+    # un libellé générique nu perdrait l'adresse pour le recruteur/l'ATS.
     contact = _join([idy.get("location"), idy.get("email"), phone,
+                     _site_display((idy.get("links") or {}).get("site", "")),
                      idy.get("linkedin"), idy.get("github")])
     if contact:
         p = _para(doc, align=WD_ALIGN_PARAGRAPH.CENTER)

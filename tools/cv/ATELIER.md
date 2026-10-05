@@ -16,7 +16,8 @@ souverain d'ELYSIUM (`career/core/llm_client.py`, SIGIL-1714).
 | CV ATS | `POST /generate-docx` | `.docx` (texte réel, 0 tableau) | verdict de ciblage |
 | Lettre ancrée | `POST /generate-letter` | PDF | ciblage **puis** ancrage |
 
-Trois pages : `/` atelier · `/cms` édition structurée du profil · `/edit` JSON brut.
+Pages : `/` accueil (coquille du cockpit) · `/cv/` atelier (fiche → CV/.docx/lettre)
+· `/cms` édition structurée du profil · `/edit` JSON brut.
 
 ### Les deux refus, à ne pas confondre
 
@@ -69,8 +70,9 @@ d'un coup et ce qui les remplace est hors du processus. Déploiement cluster (pr
 ```bash
 python tools/cv/atelier.py
 ```
-→ ouvre `http://127.0.0.1:8010`. Colle une fiche de poste dans la zone de texte,
-choisis la langue, clique **Générer le CV ciblé (PDF)**.
+→ ouvre `http://127.0.0.1:8010` (accueil du cockpit), puis `http://127.0.0.1:8010/cv/`
+pour l'atelier. Colle une fiche de poste dans la zone de texte, choisis la langue,
+clique **Générer le CV ciblé (PDF)**.
 
 ## Critère de succès (ce qui prouve que le ciblage a réellement eu lieu)
 

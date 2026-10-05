@@ -172,7 +172,10 @@ def test_le_corpus_scanne_couvre_TOUT_le_site_publie():
     assert scannees == attendues, (
         f"pages publiées hors du scan : {sorted(attendues - scannees)} ; "
         f"pages scannées qui ne sont pas servies : {sorted(scannees - attendues)}")
-    assert "life-architect/index.html" in scannees
+    # `life-architect/index.html` en formait le témoin nommé jusqu'au 2026-09-29
+    # (D13a : bêta morte, retirée du site). La propriété exercée ci-dessus (scan
+    # == découverte) ne dépend d'aucun nom de page — seulement de leur égalité —
+    # et reste tenue sans lui.
 
 
 @pytest.mark.parametrize("page", published_pages(), ids=lambda p: p.relative_to(ROOT).as_posix())

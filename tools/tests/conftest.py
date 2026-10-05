@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pathlib
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -22,3 +23,8 @@ import oracle_node  # noqa: E402
 def node_requis():
     """Porte des oracles de comportement — cf. `oracle_node.porte`."""
     return oracle_node.porte()
+
+
+_SITE = Path(__file__).resolve().parents[2]
+if str(_SITE) not in sys.path:
+    sys.path.insert(0, str(_SITE))  # `from tools.cockpit import …` dans les tests

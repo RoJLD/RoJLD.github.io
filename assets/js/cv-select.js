@@ -209,6 +209,9 @@
         location: locationStr(identity),      // tél JAMAIS projeté (public)
         linkedin: linkDisplay(links.linkedin),
         github: linkDisplay(links.github),
+        // D13b : URLs BRUTES (pas la forme affichable ci-dessus) pour les ancres
+        // <a href> du rendu HTML — portfolio -> site (clé publique du CV).
+        links: { site: links.portfolio || "", linkedin: links.linkedin || "", github: links.github || "" },
       },
       sections: sections,
       skills_groups: groups,

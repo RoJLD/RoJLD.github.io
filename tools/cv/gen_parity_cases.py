@@ -78,6 +78,19 @@ cases.append(("partial_sections", {
     "certifications": ["A"], "interests": [], "footer": {},
 }))
 
+# 7 : D13b (Tâche 7 cockpit L1) — identity.links (site/linkedin/github) contenant
+#     un & et un " : l'échappement dans les ancres <a href> est ce qui diverge en
+#     premier entre les deux implémentations (mesuré Track 2).
+cases.append(("identity_links_escaping", {
+    "lang": "fr",
+    "identity": {"name": "Robin Denis", "email": 'r&"d@x.io', "location": 'Paris & "Cité"',
+                 "links": {"site": 'https://a&b"c.io', "linkedin": 'https://linkedin.com/in/a&b"c',
+                           "github": 'https://github.com/a&b"c'}},
+    "sections": [],
+    "skills_top": [],
+    "footer": {"updated": "2026-09-29"},
+}))
+
 render_cases = [{"name": n, "cv": cv, "html_py": cv_render.render_html(cv)} for n, cv in cases]
 
 # ── PIPELINE : parité de la PROJECTION (ordre + structured_cv + HTML) ─────────

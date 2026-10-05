@@ -1,7 +1,13 @@
 """Tests du rendu HTML Σ-CV-ATELIER (sous-projet A)."""
 from __future__ import annotations
 
+import json
+import pathlib
+
 import cv_render
+import cv_select
+
+_REAL_PROFILE = pathlib.Path(__file__).resolve().parents[2] / "profile.json"
 
 
 def _cv(**over):
@@ -99,14 +105,15 @@ def test_le_handler_coerce_le_template_en_chaine(monkeypatch):
     est connue.
     """
     import atelier
+    from tools.cockpit.pages import cv as pages_cv  # le module qui LIT les noms que les tests rebindent
     vus = {}
 
     def faux_generate_pdf(job, profile, lang, template=None, **_):
         vus["template"] = template
         return ({"relevance_key": "x", "min_relevance": 0.5}, b"%PDF-")
 
-    monkeypatch.setattr(atelier, "generate_pdf", faux_generate_pdf)
-    monkeypatch.setattr(atelier, "_PROFILE", _profil_bidon(monkeypatch))
+    monkeypatch.setattr(pages_cv, "generate_pdf", faux_generate_pdf)
+    monkeypatch.setattr(pages_cv, "_PROFILE", _profil_bidon(monkeypatch))
 
     handler = atelier.Handler.__new__(atelier.Handler)
     handler._send = lambda *a, **k: None
@@ -120,6 +127,46 @@ def test_le_handler_coerce_le_template_en_chaine(monkeypatch):
     assert "template" in vus, "generate_pdf n'a jamais ete appele — test vide"
     assert not isinstance(vus["template"], dict), \
         f"un dict a traverse la frontiere : {vus['template']!r}"
+
+
+# ── D13b (Tâche 7 cockpit L1) : liens cliquables dans le CV PDF ───────────────
+
+def test_le_html_du_cv_porte_des_ancres_cliquables():
+    """Mesuré le 2026-09-28 : les 8 PDF publics n'avaient AUCUN lien et ne citaient pas
+    robin-denis.com, alors que les CV de career-ops en portent 5.
+
+    Ruling C2 (revue contrôleur) : le bloc contact RÉEL porte aussi la localisation,
+    jointe par ` • ` (le brief proposait ` · ` et l'abandon de la localisation — les
+    deux assertions du bas gardent ce comportement réel vivant à côté des ancres).
+    """
+    prof = json.loads(_REAL_PROFILE.read_text(encoding="utf-8"))
+    cfg = {"relevance_key": "general", "min_relevance": 0.0}
+    scv = cv_select.build_structured_cv(prof, cv_select.select_experiences(prof, cfg), "fr", cfg)
+    html_ = cv_render.render_html(scv)
+    liens = prof["identity"]["links"]
+    assert f'href="{liens["portfolio"]}"' in html_ and ">robin-denis.com<" in html_
+    assert f'href="{liens["linkedin"]}"' in html_ and f'href="{liens["github"]}"' in html_
+    assert f'href="mailto:{scv["identity"]["email"]}"' in html_
+    assert scv["identity"]["location"] in html_               # C2 : localisation toujours rendue
+    assert scv["identity"]["location"] + " • " in html_        # C2 : séparateur réel " • "
+
+
+def test_les_ancres_linkedin_github_affichent_l_adresse_pas_un_libelle():
+    """Fix round 2 (revue) : le round 1 avait remplacé le texte VISIBLE des ancres
+    LinkedIn/GitHub par des libellés génériques (« LinkedIn »/« GitHub »), perdant
+    l'adresse pour un recruteur qui imprime le PDF ou le lit sans souris. Ruling du
+    contrôleur : le texte visible revient à la forme d'affichage `_link_display`
+    (celle déjà portée par `identity["linkedin"]`/`identity["github"]`) ; le `href`
+    garde l'URL complète (identity["links"])."""
+    prof = json.loads(_REAL_PROFILE.read_text(encoding="utf-8"))
+    cfg = {"relevance_key": "general", "min_relevance": 0.0}
+    scv = cv_select.build_structured_cv(prof, cv_select.select_experiences(prof, cfg), "fr", cfg)
+    html_ = cv_render.render_html(scv)
+    liens = prof["identity"]["links"]
+    assert f'href="{liens["linkedin"]}">{scv["identity"]["linkedin"]}</a>' in html_
+    assert f'href="{liens["github"]}">{scv["identity"]["github"]}</a>' in html_
+    assert ">LinkedIn<" not in html_
+    assert ">GitHub<" not in html_
 
 
 def _profil_bidon(monkeypatch, tmp=[]):
