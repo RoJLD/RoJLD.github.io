@@ -86,13 +86,13 @@ def node_version(exe: str, runner=subprocess.run) -> tuple[int, ...] | None:
     return tuple(int(x) for x in m.groups()) if m else None
 
 
-def prerequis(env=None, runner=subprocess.run) -> dict:
-    """Chaque manque est nommé avec son remède (spec § 8) — jamais un entonnoir vide."""
-    root = config.career_ops_root(env=env)
+def prerequis(env=None, runner=subprocess.run, local_json=None) -> dict:
+    """Chaque manque est nommé avec sa cause et son remède (spec § 8) — jamais un entonnoir vide."""
+    root, raison = config.resoudre_career_ops(env, config.LOCAL_JSON if local_json is None else local_json)
     problemes = []
     if root is None:
-        problemes.append("career-ops non configuré : poser CAREER_OPS_ROOT, ou écrire tools/cockpit/local.json "
-                         '({"career_ops_root": "<dossier contenant tracker.mjs>"})')
+        problemes.append(f"career-ops non configuré : {raison}. Remède : poser CAREER_OPS_ROOT, ou écrire "
+                         'tools/cockpit/local.json ({"career_ops_root": "<dossier contenant tracker.mjs>"})')
     exe = node_exe()
     version = node_version(exe, runner) if exe else None
     if exe is None:

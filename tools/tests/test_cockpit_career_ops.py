@@ -129,11 +129,25 @@ def test_la_file_garde_l_ordre_de_send_queue_pas_la_note():
     assert co.numero_item({"num": "abc"}) is None and co.numero_item({}) is None and co.file_a_envoyer({}) == []
 
 
+def _node_20(*a, **k):
+    return subprocess.CompletedProcess(a, 0, stdout="v20.1.0\n", stderr="")
+
+
 def test_prerequis_nomme_chaque_manque(tmp_path):
-    p = co.prerequis(env={}, runner=lambda *a, **k: subprocess.CompletedProcess(a, 0, stdout="v20.1.0\n", stderr=""))
-    assert p["ok"] is False and any("CAREER_OPS_ROOT" in m for m in p["problemes"])
+    # local_json explicite : sans lui, le test lisait le VRAI local.json du checkout et
+    # rougissait sur le poste même de Robin, là où le fichier existe.
+    p = co.prerequis(env={}, runner=_node_20, local_json=tmp_path / "absent.json")
+    assert p["ok"] is False and any("ni CAREER_OPS_ROOT ni" in m for m in p["problemes"])
     if p["node"]:
         assert any("< 22.5" in m for m in p["problemes"])
+
+
+def test_prerequis_dit_pourquoi_un_local_json_present_est_refuse(tmp_path):
+    lj = tmp_path / "local.json"
+    lj.write_text("{pas du json", encoding="utf-8")
+    p = co.prerequis(env={}, runner=_node_20, local_json=lj)
+    manque = next(m for m in p["problemes"] if "non configuré" in m)
+    assert "illisible" in manque and "CAREER_OPS_ROOT" in manque   # la cause, puis le remède
 
 
 def test_lire_texte_et_dossiers(root):

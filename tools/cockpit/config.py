@@ -31,17 +31,31 @@ def bootstrap_sys_path() -> None:
 bootstrap_sys_path()
 
 
-def career_ops_root(env=None, local_json: Path = LOCAL_JSON) -> Path | None:
-    """Dossier de career-ops, ou None. Jamais d'exception : l'absence est un état affiché."""
+def resoudre_career_ops(env=None, local_json: Path = LOCAL_JSON) -> tuple[Path | None, str | None]:
+    """(dossier de career-ops, None), ou (None, cause précise). Jamais d'exception : l'absence
+    est un état affiché, et sa cause aussi — « non configuré » seul renvoyait à écrire un
+    local.json qui existait déjà."""
     env = os.environ if env is None else env
     cand = (env.get("CAREER_OPS_ROOT") or "").strip()
-    if not cand and local_json.is_file():
-        try:
-            data = json.loads(local_json.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return None
-        cand = str(data.get("career_ops_root", "")).strip() if isinstance(data, dict) else ""
+    source = "CAREER_OPS_ROOT"
     if not cand:
-        return None
+        if not local_json.is_file():
+            return None, f"ni CAREER_OPS_ROOT ni {local_json}"
+        source = local_json.name
+        try:
+            # utf-8-sig : Windows PowerShell 5.1 (`Set-Content -Encoding utf8`) écrit un BOM que json refuse
+            data = json.loads(local_json.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError) as exc:
+            return None, f"{local_json} illisible ({exc})"
+        cand = str(data.get("career_ops_root", "")).strip() if isinstance(data, dict) else ""
+        if not cand:
+            return None, f'{local_json} sans clé "career_ops_root"'
     p = Path(cand).expanduser()
-    return p if (p / "tracker.mjs").is_file() else None
+    if not (p / "tracker.mjs").is_file():
+        return None, f"{p} ({source}) ne contient pas tracker.mjs"
+    return p, None
+
+
+def career_ops_root(env=None, local_json: Path = LOCAL_JSON) -> Path | None:
+    """Dossier de career-ops, ou None (la cause : `resoudre_career_ops`)."""
+    return resoudre_career_ops(env, local_json)[0]
