@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -17,6 +18,11 @@ LOCAL_JSON = Path(__file__).resolve().parent / "local.json"
 HUB_URL = os.environ.get("ANTHROPOS_HUB_URL", "http://anthropos.elysium.local")
 SITE_PUBLIC_URL = "https://robin-denis.com/"
 SITE_REPO = "RoJLD/RoJLD.github.io"
+# Le cockpit tourne sous pythonw (lancer.ps1), sans console : chaque enfant console (node, git,
+# gh, powershell, taskkill) en recevait une neuve. Mesuré le 2026-10-07 : `node --version`
+# 56 → 360-470 ms, `kpi.mjs` 300 → 860-950 ms, la carte career-ops sortait de ses 2 s.
+# Tout lancement d'arrière-plan passe ce drapeau (tools/tests/test_cockpit_sans_console.py).
+SANS_CONSOLE = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
 
 
 def bootstrap_sys_path() -> None:

@@ -79,7 +79,7 @@ def node_exe() -> str | None:
 
 def node_version(exe: str, runner=subprocess.run) -> tuple[int, ...] | None:
     try:
-        out = runner([exe, "--version"], capture_output=True, text=True, timeout=10).stdout.strip()
+        out = runner([exe, "--version"], capture_output=True, text=True, timeout=10, **config.SANS_CONSOLE).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return None
     m = re.match(r"v(\d+)\.(\d+)\.(\d+)", out)
@@ -108,7 +108,7 @@ def prerequis(env=None, runner=subprocess.run, local_json=None) -> dict:
 def _tuer_arbre(proc) -> None:
     """Au délai, tuer TOUT l'arbre (scan lance chromium) : proc.kill() ne tuerait que node."""
     if sys.platform == "win32":
-        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True)
+        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, **config.SANS_CONSOLE)
     else:
         proc.kill()
     try:
@@ -124,7 +124,7 @@ def lancer(argv: list[str], root: Path, delai_s: int, *, popen=subprocess.Popen,
         return {"code": None, "stdout": "", "stderr": "node introuvable", "duree_s": 0.0, "interrompu": False}
     t0 = time.monotonic()
     proc = popen([exe, *argv], cwd=str(root), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                 stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace")
+                 stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", **config.SANS_CONSOLE)
     try:
         out, err = proc.communicate(timeout=delai_s)
         interrompu = False

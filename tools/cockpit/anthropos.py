@@ -61,17 +61,17 @@ def etat_site_public(*, opener=urllib.request.urlopen, runner=subprocess.run, si
     """Trois sondes, trois états d'échec : jamais un OK fusionné."""
     res = {"https": sonder(config.SITE_PUBLIC_URL, opener=opener, timeout=timeout), "git": {}, "pages": {}}
     try:
-        head = runner(["git", "-C", str(site_root), "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10).stdout.strip()
-        dist = runner(["git", "-C", str(site_root), "ls-remote", "origin", "refs/heads/main"], capture_output=True, text=True, timeout=20).stdout.split()
+        head = runner(["git", "-C", str(site_root), "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10, **config.SANS_CONSOLE).stdout.strip()
+        dist = runner(["git", "-C", str(site_root), "ls-remote", "origin", "refs/heads/main"], capture_output=True, text=True, timeout=20, **config.SANS_CONSOLE).stdout.split()
         res["git"] = {"ok": True, "head_local": head[:9], "main_distant": (dist[0] if dist else "?")[:9], "a_jour": bool(dist) and dist[0] == head}
     except (OSError, subprocess.SubprocessError) as exc:
         res["git"] = {"ok": False, "erreur": f"{type(exc).__name__}: {exc}"}
     try:
         b = runner(["gh", "api", f"repos/{config.SITE_REPO}/pages/builds/latest", "--jq", "{status,commit,updated_at}"],
-                   capture_output=True, text=True, timeout=20)
+                   capture_output=True, text=True, timeout=20, **config.SANS_CONSOLE)
         build = json.loads(b.stdout) if b.returncode == 0 and b.stdout.strip() else None
         p = runner(["gh", "pr", "list", "--repo", config.SITE_REPO, "--state", "open", "--json", "number,title"],
-                   capture_output=True, text=True, timeout=20)
+                   capture_output=True, text=True, timeout=20, **config.SANS_CONSOLE)
         res["pages"] = {"ok": build is not None, "build": build, "pr_ouvertes": json.loads(p.stdout) if p.returncode == 0 and p.stdout.strip() else None,
                         "erreur": None if build is not None else (b.stderr.strip()[-200:] or "gh api sans réponse")}
     except (OSError, subprocess.SubprocessError, ValueError) as exc:
