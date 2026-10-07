@@ -45,17 +45,29 @@ def projeter(*, ecrire: bool, forcer: bool = False, root: Path | None = None, pr
         res["erreurs"].append(f"complément privé : {exc}")
         return res
 
-    corps = cv_md.rendre(profile, comp)
+    try:
+        corps = cv_md.rendre(profile, comp)
+    except (KeyError, TypeError, AttributeError, IndexError, ValueError) as exc:
+        res["erreurs"].append(f"profile.json ne se rend pas en cv.md : {type(exc).__name__}: {exc}")
+        return res
+
     cv_path = root / "cv.md"
-    actuel = derive.lire(cv_path)
-    cv = {"etat": derive.etat(actuel, corps), "diff": derive.diff(actuel, corps),
-          "ecrit": False, "sauvegarde": None, "erreur": None}
-    if ecrire:
-        try:
-            cv.update(derive.ecrire(cv_path, corps, forcer=forcer, sauvegardes=root / "data" / "cv-sauvegardes"))
-        except derive.DeriveRefusee as exc:
-            cv["erreur"] = MOTIFS.get(exc.args[0], f"écriture refusée ({exc.args[0]})")
-    res["cv_md"] = cv
+    try:
+        actuel = derive.lire(cv_path)
+    except OSError as exc:
+        cv = {"etat": "illisible", "diff": "", "ecrit": False, "sauvegarde": None, "erreur": f"cv.md illisible : {exc}"}
+        res["cv_md"] = cv
+    else:
+        cv = {"etat": derive.etat(actuel, corps), "diff": derive.diff(actuel, corps),
+              "ecrit": False, "sauvegarde": None, "erreur": None}
+        if ecrire:
+            try:
+                cv.update(derive.ecrire(cv_path, corps, forcer=forcer, sauvegardes=root / "data" / "cv-sauvegardes"))
+            except derive.DeriveRefusee as exc:
+                cv["erreur"] = MOTIFS.get(exc.args[0], f"écriture refusée ({exc.args[0]})")
+            except OSError as exc:
+                cv["erreur"] = f"écriture de cv.md impossible : {exc}"
+        res["cv_md"] = cv
 
     yml = {"changements": [], "ecrit": False, "erreur": None}
     yml_path = root / "config" / "profile.yml"
@@ -72,6 +84,8 @@ def projeter(*, ecrire: bool, forcer: bool = False, root: Path | None = None, pr
         yml["erreur"] = f"{yml_path} absent"
     except profile_yml.CleIntrouvable as exc:
         yml["erreur"] = f"clé introuvable dans profile.yml : {exc.args[0]}"
+    except OSError as exc:
+        yml["erreur"] = f"profile.yml inaccessible : {exc}"
     res["profile_yml"] = yml
     res["ok"] = cv["erreur"] is None and yml["erreur"] is None
     return res

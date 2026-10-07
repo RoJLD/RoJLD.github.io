@@ -133,3 +133,31 @@ def test_cli_rapport(monkeypatch, capsys, co_root):
     assert projection.main(["--rapport"]) == 0
     sortie = capsys.readouterr().out
     assert "cv.md : sans_entete" in sortie and "+# Ada Lovelace — CV" in sortie
+
+
+def test_une_ecriture_refusee_par_le_systeme_est_nommee(monkeypatch, co_root):
+    def ecrit_qui_leve(chemin, octets):
+        raise PermissionError("verrouillé")
+    monkeypatch.setattr(derive, "ecrire_atomique", ecrit_qui_leve)
+    r = _p(co_root, ecrire=True, forcer=True)
+    assert r["ok"] is False and "écriture de cv.md impossible" in r["cv_md"]["erreur"]
+
+
+def test_un_cv_md_illisible_est_nomme(monkeypatch, co_root):
+    vrai_lire = derive.lire
+    def lire_selective(path):
+        if path.name == "cv.md":
+            raise PermissionError("verrouillé")
+        return vrai_lire(path)
+    monkeypatch.setattr(derive, "lire", lire_selective)
+    r = _p(co_root, ecrire=False)
+    assert r["ok"] is False and r["cv_md"]["etat"] == "illisible" and "cv.md illisible" in r["cv_md"]["erreur"]
+
+
+def test_un_profil_de_forme_invalide_est_nomme(co_root):
+    root, profil = co_root
+    profil_invalide = dict(PROFIL)
+    profil_invalide["experiences"] = [{"title": "X", "bullets": ["x"]}]
+    profil.write_text(json.dumps(profil_invalide, ensure_ascii=False), encoding="utf-8")
+    r = _p(co_root, ecrire=False)
+    assert r["ok"] is False and r["cv_md"] is None and r["erreurs"][0].startswith("profile.json ne se rend pas en cv.md")
