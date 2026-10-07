@@ -28,13 +28,18 @@ def preavis_jours(disponibilite, aujourdhui: date) -> int | None:
     return max((date(int(m.group(1)), int(m.group(2)), 1) - aujourdhui).days, 0)
 
 
+def _texte(v) -> str:
+    """'' pour une valeur absente ou null : jamais le mot « None »."""
+    return "" if v is None else str(v)
+
+
 def valeurs(profile: dict, complement: dict, aujourdhui: date) -> dict:
     ide = profile.get("identity", {})
     liens, lieu = ide.get("links", {}), ide.get("location") or {}
     loc = t(complement.get("location"), "en") or ", ".join(x for x in (lieu.get("city"), lieu.get("country")) if x)
-    return {"full_name": f"{ide.get('first_name', '')} {ide.get('last_name', '')}".strip(),
-            "email": str(ide.get("email", "")), "phone": str(complement.get("phone", "")), "location": loc,
-            "linkedin": lien_court(liens.get("linkedin")), "portfolio_url": str(liens.get("portfolio", "")),
+    return {"full_name": f"{ide.get('first_name') or ''} {ide.get('last_name') or ''}".strip(),
+            "email": _texte(ide.get("email")), "phone": _texte(complement.get("phone")), "location": loc,
+            "linkedin": lien_court(liens.get("linkedin")), "portfolio_url": _texte(liens.get("portfolio")),
             "github": lien_court(liens.get("github")),
             "notice_period_days": preavis_jours(ide.get("availability"), aujourdhui)}
 
@@ -70,6 +75,8 @@ def projeter(texte: str, vals: dict) -> tuple[str, list[str]]:
         if len(idx) != 1:
             raise CleIntrouvable(f"candidate.{cle}" + (" (en double)" if idx else ""))
         i = idx[0]
+        if vals[cle] in ("", None):      # absent du profil : la ligne de Robin reste telle quelle (comme le préavis)
+            continue
         if _lue(lignes[i]) != str(vals[cle]):
             lignes[i] = f"  {cle}: {_quoter(vals[cle])}{_fin(lignes[i])}"
             changements.append(f"candidate.{cle}")

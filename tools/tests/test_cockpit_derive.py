@@ -26,7 +26,7 @@ def test_entete_puis_separer_rend_le_corps_et_son_empreinte():
 
 
 def test_crlf_et_bom_ne_comptent_pas_comme_une_modification():
-    crlf = "﻿" + derive.avec_entete(CORPS).replace("\n", "\r\n")
+    crlf = "\ufeff" + derive.avec_entete(CORPS).replace("\n", "\r\n")
     assert derive.etat(crlf, CORPS) == "a_jour"
 
 
@@ -80,6 +80,17 @@ def test_ecrire_refuse_un_cv_modifie_a_la_main(tmp_path, contenu, etat):
         derive.ecrire(p, CORPS, forcer=False, sauvegardes=tmp_path / "s")
     assert exc.value.args[0] == etat and p.read_bytes() == contenu.encode("utf-8")
     assert not (tmp_path / "s").exists()
+
+
+def test_forcer_sur_un_cv_modifie_sauvegarde_les_octets_modifies_puis_ecrit(tmp_path):
+    p = tmp_path / "cv.md"
+    modifie = derive.avec_entete(CORPS).replace("ligne", "LIGNE").encode("utf-8")
+    p.write_bytes(modifie)
+    r = derive.ecrire(p, CORPS, forcer=True, sauvegardes=tmp_path / "s", maintenant=T0)
+    sauvegarde = tmp_path / "s" / "cv.20261007T120000.md"
+    assert r == {"etat": "modifie", "ecrit": True, "sauvegarde": str(sauvegarde)}
+    assert sauvegarde.read_bytes() == modifie
+    assert derive.etat(derive.lire(p), CORPS) == "a_jour"
 
 
 def test_forcer_sauvegarde_puis_ecrit(tmp_path):

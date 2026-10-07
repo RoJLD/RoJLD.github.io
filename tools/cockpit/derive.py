@@ -24,7 +24,7 @@ class DeriveRefusee(RuntimeError):
 
 
 def normaliser(texte: str) -> str:
-    return texte.lstrip("﻿").replace("\r\n", "\n")
+    return texte.lstrip("\ufeff").replace("\r\n", "\n")
 
 
 def empreinte(corps: str) -> str:

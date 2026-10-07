@@ -203,7 +203,7 @@ def test_le_vrai_profile_json_reste_valide():
 
 
 def test_aucun_fichier_suivi_du_site_ne_nomme_un_poste_cv_seulement():
-    """D19 : certaines postes ne vivent que dans le complément privé de career-ops. Le dépôt
+    """D19 : certains postes ne vivent que dans le complément privé de career-ops. Le dépôt
     du site est servi sur robin-denis.com : aucun fichier texte suivi ne doit les nommer."""
     import subprocess
     noms = ["Delta" + "com", "AS" + "AHI"]          # composés : ce test ne se dénonce pas lui-même
@@ -217,3 +217,33 @@ def test_aucun_fichier_suivi_du_site_ne_nomme_un_poste_cv_seulement():
             contenu = p.read_text(encoding="utf-8", errors="ignore")
             fautifs += [f"{rel}: {n}" for n in noms if n in contenu]
     assert not fautifs, fautifs
+
+
+# ── F3 (revue finale D8) : les formes que le rendu cv.md lit sans les revérifier ──────────
+
+def test_un_mois_hors_calendrier_est_refuse():
+    p = _valid_profile(); p["experiences"][0]["end"] = "2021-00"
+    assert any("job1" in e and "YYYY-MM" in e for e in validate(p))
+    p["experiences"][0]["end"] = "2021-13"
+    assert any("job1" in e and "YYYY-MM" in e for e in validate(p))
+
+
+def test_le_debut_d_une_experience_doit_etre_yyyy_mm():
+    p = _valid_profile(); p["experiences"][0]["start"] = "2021-00"
+    assert any("experience 'job1'" in e and "start" in e for e in validate(p))
+    p["experiences"][0]["start"] = "2021-02"
+    assert validate(p) == []
+
+
+def test_les_puces_d_une_experience_sont_des_listes_de_textes():
+    p = _valid_profile(); p["experiences"][0]["bullets"] = {"fr": "un texte", "en": ["a"]}
+    assert any("experience 'job1'" in e and "bullets" in e for e in validate(p))
+    p["experiences"][0]["bullets"] = {"fr": ["a"], "en": [{"x": 1}]}
+    assert any("experience 'job1'" in e and "bullets" in e for e in validate(p))
+
+
+def test_les_cours_d_une_formation_sont_une_liste():
+    p = _valid_profile(); p["education"][0]["courses"] = "Analyse"
+    assert any("education 'ece'" in e and "courses" in e for e in validate(p))
+    p["education"][0]["courses"] = [{"fr": "Analyse", "en": "Analysis"}, "Algèbre"]
+    assert validate(p) == []

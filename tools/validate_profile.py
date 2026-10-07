@@ -74,7 +74,7 @@ def _skill_iter(profile):
             yield cat, s
 
 
-_YYYY_MM = re.compile(r"^\d{4}-\d{2}$")
+_YYYY_MM = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 _GROUPES_CV = {"academic", "personal", "other"}
 
 
@@ -89,9 +89,21 @@ def _validate_cv(profile, errors):
     if str((profile.get("identity") or {}).get("phone") or "").strip():
         errors.append("identity.phone doit rester vide : profile.json est servi sur robin-denis.com ; "
                       "le téléphone vit dans le complément privé de career-ops (D19)")
+    for e in profile.get("experiences", []):
+        eid = e.get("id")
+        if e.get("start") is not None and not _YYYY_MM.match(str(e["start"])):
+            errors.append(f"experience '{eid}': start {e['start']!r} doit être 'YYYY-MM' (lu par le rendu cv.md)")
+        puces = e.get("bullets")
+        if isinstance(puces, dict):
+            for lang in ("fr", "en"):
+                v = puces.get(lang)
+                if lang in puces and not (isinstance(v, list) and all(isinstance(x, str) for x in v)):
+                    errors.append(f"experience '{eid}'.bullets.{lang} : liste de textes attendue")
     for e in profile.get("education", []):
         if "location" in e and not _texte_ou_bilingue(e["location"]):
             errors.append(f"education '{e.get('id')}'.location : texte ou {{fr, en}} attendu")
+        if "courses" in e and not isinstance(e["courses"], list):
+            errors.append(f"education '{e.get('id')}'.courses : liste attendue")
     for p in profile.get("projects", []):
         cv, pid = p.get("cv"), p.get("id")
         if cv is None:

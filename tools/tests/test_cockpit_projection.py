@@ -160,4 +160,52 @@ def test_un_profil_de_forme_invalide_est_nomme(co_root):
     profil_invalide["experiences"] = [{"title": "X", "bullets": ["x"]}]
     profil.write_text(json.dumps(profil_invalide, ensure_ascii=False), encoding="utf-8")
     r = _p(co_root, ecrire=False)
+    # F3 : la validation intercepte la forme avant le rendu ; erreur nommée, aucune levée.
+    assert r["ok"] is False and r["cv_md"] is None and r["erreurs"][0].startswith("profile.json invalide")
+
+
+def test_une_forme_que_la_validation_laisse_passer_est_nommee_par_le_rendu(monkeypatch, co_root):
+    """Filet de la ligne suivante : si la validation est aveugle, le rendu nomme encore l'erreur."""
+    monkeypatch.setattr(projection.validate_profile, "validate", lambda *a, **k: [])
+    root, profil = co_root
+    profil_invalide = dict(PROFIL)
+    profil_invalide["experiences"] = [{"title": "X", "bullets": ["x"]}]
+    profil.write_text(json.dumps(profil_invalide, ensure_ascii=False), encoding="utf-8")
+    r = _p(co_root, ecrire=False)
     assert r["ok"] is False and r["cv_md"] is None and r["erreurs"][0].startswith("profile.json ne se rend pas en cv.md")
+
+
+def test_un_profil_qui_ne_valide_pas_est_refuse_et_nomme(co_root):
+    root, profil = co_root
+    invalide = json.loads(json.dumps(PROFIL))
+    invalide["experiences"][0]["start"] = "2021-00"
+    profil.write_text(json.dumps(invalide, ensure_ascii=False), encoding="utf-8")
+    avant = (root / "cv.md").read_bytes()
+    r = _p(co_root, ecrire=True, forcer=True)
+    assert r["ok"] is False and r["cv_md"] is None and r["erreurs"][0].startswith("profile.json invalide")
+    assert "start" in r["erreurs"][0] and (root / "cv.md").read_bytes() == avant
+
+
+def test_un_cv_md_pas_en_utf8_est_nomme_sans_lever(co_root):
+    root, _ = co_root
+    (root / "cv.md").write_bytes("# café\n".encode("cp1252"))
+    r = _p(co_root, ecrire=True, forcer=True)
+    assert r["ok"] is False and r["cv_md"]["etat"] == "illisible" and r["cv_md"]["ecrit"] is False
+    assert r["cv_md"]["erreur"].startswith("cv.md illisible : pas en UTF-8")
+
+
+def test_un_profile_yml_pas_en_utf8_est_nomme_sans_lever(co_root):
+    root, _ = co_root
+    (root / "config" / "profile.yml").write_bytes(YML.replace("Ada", "Adé").encode("cp1252"))
+    r = _p(co_root, ecrire=True, forcer=True)
+    assert r["ok"] is False and r["profile_yml"]["ecrit"] is False
+    assert r["profile_yml"]["erreur"].startswith("profile.yml illisible : pas en UTF-8")
+
+
+def test_cli_ecrire_refuse_puis_forcer_reussit(monkeypatch, capsys, co_root):
+    reel, (root, profil) = projection.projeter, co_root      # capturé avant le remplacement : pas de récursion
+    monkeypatch.setattr(projection, "projeter", lambda **k: reel(root=root, profile_path=profil,
+                                                                 aujourdhui=AUJ, ignore_fn=OUI, **k))
+    assert projection.main(["--ecrire"]) == 1
+    assert "REFUS" in capsys.readouterr().err
+    assert projection.main(["--ecrire", "--forcer"]) == 0

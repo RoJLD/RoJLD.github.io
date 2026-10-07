@@ -14,6 +14,7 @@ from datetime import date
 from pathlib import Path
 
 from tools.cockpit import complement as comp_mod
+from tools import validate_profile
 from tools.cockpit import config, cv_md, derive, profile_yml
 
 PROFILE = config.SITE_ROOT / "profile.json"
@@ -23,6 +24,10 @@ MOTIFS = {
     "sans_entete": "cv.md n'a jamais été généré par le cockpit : valider le rapport d'import "
                    "(spec D8 § 4), puis remplacer quand même (l'ancien est sauvegardé)",
 }
+
+
+def _cause(exc: Exception) -> str:
+    return f"pas en UTF-8 ({exc})" if isinstance(exc, UnicodeDecodeError) else str(exc)
 
 
 def projeter(*, ecrire: bool, forcer: bool = False, root: Path | None = None, profile_path: Path = PROFILE,
@@ -39,6 +44,10 @@ def projeter(*, ecrire: bool, forcer: bool = False, root: Path | None = None, pr
     except (OSError, ValueError) as exc:
         res["erreurs"].append(f"profile.json illisible : {exc}")
         return res
+    invalide = validate_profile.validate(profile) if isinstance(profile, dict) else ["racine : objet attendu"]
+    if invalide:      # sans `root` : pas de contrôle disque des liens, la forme seulement
+        res["erreurs"].append("profile.json invalide : " + "; ".join(invalide[:5]))
+        return res
     try:
         comp = comp_mod.charger(root, ignore_fn=ignore_fn)
     except (comp_mod.ComplementAbsent, comp_mod.ComplementInvalide) as exc:
@@ -54,8 +63,9 @@ def projeter(*, ecrire: bool, forcer: bool = False, root: Path | None = None, pr
     cv_path = root / "cv.md"
     try:
         actuel = derive.lire(cv_path)
-    except OSError as exc:
-        cv = {"etat": "illisible", "diff": "", "ecrit": False, "sauvegarde": None, "erreur": f"cv.md illisible : {exc}"}
+    except (OSError, ValueError) as exc:
+        cv = {"etat": "illisible", "diff": "", "ecrit": False, "sauvegarde": None,
+              "erreur": f"cv.md illisible : {_cause(exc)}"}
         res["cv_md"] = cv
     else:
         cv = {"etat": derive.etat(actuel, corps), "diff": derive.diff(actuel, corps),
@@ -84,6 +94,8 @@ def projeter(*, ecrire: bool, forcer: bool = False, root: Path | None = None, pr
         yml["erreur"] = f"{yml_path} absent"
     except profile_yml.CleIntrouvable as exc:
         yml["erreur"] = f"clé introuvable dans profile.yml : {exc.args[0]}"
+    except UnicodeDecodeError as exc:
+        yml["erreur"] = f"profile.yml illisible : {_cause(exc)}"
     except OSError as exc:
         yml["erreur"] = f"profile.yml inaccessible : {exc}"
     res["profile_yml"] = yml

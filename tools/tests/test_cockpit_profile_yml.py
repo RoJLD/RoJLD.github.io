@@ -74,6 +74,28 @@ def test_cle_en_double_refus_nomme():
         profile_yml.projeter(double, profile_yml.valeurs(PROFIL, COMPLEMENT, AUJ))
 
 
+def test_un_lien_absent_du_profil_laisse_la_ligne_telle_quelle():
+    sans = {**PROFIL, "identity": {**PROFIL["identity"], "links": {"portfolio": "https://ada.example.org/",
+                                                                     "github": "https://github.com/ada"}}}
+    texte, changes = profile_yml.projeter(YML, profile_yml.valeurs(sans, COMPLEMENT, AUJ))
+    assert texte == YML and changes == []
+
+
+def test_un_email_null_laisse_la_ligne_telle_quelle():
+    sans = {**PROFIL, "identity": {**PROFIL["identity"], "email": None}}
+    vals = profile_yml.valeurs(sans, COMPLEMENT, AUJ)
+    assert vals["email"] == ""
+    texte, changes = profile_yml.projeter(YML, vals)
+    assert texte == YML and changes == [] and "None" not in texte
+
+
+def test_une_valeur_vide_n_empeche_pas_le_refus_d_une_cle_introuvable():
+    sans_cle = YML.replace('  linkedin: "linkedin.com/in/ada"\n', "")
+    sans = {**PROFIL, "identity": {**PROFIL["identity"], "links": {}}}
+    with pytest.raises(profile_yml.CleIntrouvable, match="linkedin"):
+        profile_yml.projeter(sans_cle, profile_yml.valeurs(sans, COMPLEMENT, AUJ))
+
+
 def test_sans_bloc_candidate():
     with pytest.raises(profile_yml.CleIntrouvable, match="candidate"):
         profile_yml.projeter("target_roles:\n  primary: []\n", profile_yml.valeurs(PROFIL, COMPLEMENT, AUJ))
