@@ -17,6 +17,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from tools.cockpit import config
+
 PORT_WEB = 3000
 HOTE_WEB = "127.0.0.1"
 URL_WEB = f"http://{HOTE_WEB}:{PORT_WEB}/"
@@ -53,7 +55,7 @@ def adresses_ecoute(port: int, run=subprocess.run) -> set[str]:
     try:
         cp = run(["powershell", "-NoProfile", "-Command",
                   f"(Get-NetTCPConnection -LocalPort {int(port)} -State Listen -ErrorAction SilentlyContinue).LocalAddress"],
-                 capture_output=True, text=True, timeout=10)
+                 capture_output=True, text=True, timeout=10, **config.SANS_CONSOLE)
     except (OSError, subprocess.SubprocessError):
         return set()
     return {ligne.strip() for ligne in (cp.stdout or "").splitlines() if ligne.strip()}

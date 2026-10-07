@@ -157,8 +157,8 @@ def _regen_bank() -> None:
 
 def _git_commit(repo_root: pathlib.Path, paths: list[str], message: str) -> None:
     import subprocess
-    subprocess.run(["git", "-C", str(repo_root), "add", *paths], check=True)
-    subprocess.run(["git", "-C", str(repo_root), "commit", "-m", message], check=True)
+    subprocess.run(["git", "-C", str(repo_root), "add", *paths], check=True, **config.SANS_CONSOLE)
+    subprocess.run(["git", "-C", str(repo_root), "commit", "-m", message], check=True, **config.SANS_CONSOLE)
 
 
 # ── ciblage dégradé : le rendre VISIBLE DANS LE PRODUIT ───────────────────────
