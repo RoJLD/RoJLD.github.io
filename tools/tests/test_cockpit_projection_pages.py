@@ -93,3 +93,22 @@ def test_le_docx_prend_le_telephone_du_complement(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "career_ops_root", lambda env=None, local_json=None: tmp_path)
     monkeypatch.setattr(complement, "est_ignore", lambda root, rel=complement.REL, run=None: True)
     assert page_cv._overlay_prive() == {"phone": "+44 0", "availability": {"fr": "", "en": ""}}
+
+
+def _res_illisible():
+    return {"ok": False, "erreurs": [],
+            "cv_md": {"etat": "illisible", "diff": "", "ecrit": False, "sauvegarde": None,
+                      "erreur": "cv.md illisible : verrouillé"},
+            "profile_yml": {"changements": [], "ecrit": False, "erreur": None}}
+
+
+def test_un_cv_md_illisible_est_dit_avec_son_erreur(configure, monkeypatch):
+    monkeypatch.setattr(projection, "projeter", lambda **k: _res_illisible())
+    with _Srv() as s:
+        _, body = s.get("/career-ops")
+    assert "cv.md illisible : verrouillé" in body and 'data-projeter="ecrire"' not in body
+
+
+def test_la_carte_dit_illisible(configure, monkeypatch):
+    monkeypatch.setattr(projection, "projeter", lambda **k: _res_illisible())
+    assert "cv.md : illisible" in page.carte_career_ops()["lignes"]

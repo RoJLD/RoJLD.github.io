@@ -232,9 +232,10 @@ def _dossiers(ds: list[dict]) -> str:
 ETATS_CV = {"a_jour": "cv.md à jour", "en_retard": "cv.md en retard sur profile.json",
             "modifie": "cv.md modifié à la main depuis la dernière projection",
             "sans_entete": "cv.md jamais généré : rapport d'import à valider (spec D8 § 4)",
-            "absent": "cv.md absent"}
+            "absent": "cv.md absent",
+            "illisible": "cv.md illisible (voir l'erreur ci-dessous)"}
 ETATS_COURTS = {"a_jour": "à jour", "en_retard": "en retard", "modifie": "modifié à la main",
-                "sans_entete": "jamais généré", "absent": "absent"}
+                "sans_entete": "jamais généré", "absent": "absent", "illisible": "illisible"}
 
 
 def libelle_etat_cv(res: dict) -> str:
@@ -251,13 +252,15 @@ def etat_court_cv(res: dict) -> str:
 
 def _cv_career_ops(res: dict) -> str:
     cv, y = res.get("cv_md") or {}, res.get("profile_yml") or {}
-    classe = ' class="ko"' if res.get("erreurs") or cv.get("etat") in ("modifie", "sans_entete") else ""
+    classe = ' class="ko"' if res.get("erreurs") or cv.get("etat") in ("modifie", "sans_entete", "illisible") else ""
     morceaux = [f"<p{classe}>{html.escape(libelle_etat_cv(res))}</p>"]
+    if cv.get("erreur"):
+        morceaux.append(f'<p class="ko">{html.escape(cv["erreur"])}</p>')
     if y.get("changements"):
         morceaux.append(f"<p>profile.yml : {html.escape(', '.join(y['changements']))} à projeter</p>")
     if y.get("erreur"):
         morceaux.append(f'<p class="ko">{html.escape(y["erreur"])}</p>')
-    if not res.get("erreurs"):
+    if not res.get("erreurs") and cv.get("etat") != "illisible":
         boutons = ('<button data-projeter="diff">Voir le diff</button> '
                    '<button data-projeter="ecrire">Projeter vers career-ops</button>')
         if cv.get("etat") in ("modifie", "sans_entete"):
