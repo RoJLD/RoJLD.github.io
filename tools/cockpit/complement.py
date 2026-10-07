@@ -1,5 +1,5 @@
 """Complément privé du CV (spec D8 § 3, décision D19) : téléphone, adresse, disponibilité et
-expériences « CV seulement » (Deltacom, Upsell/ASAHI).
+expériences « CV seulement » (non listées dans profile.json public).
 
 Il vit dans `<career-ops>/data/cv_private.json` : ignoré par la couche code de career-ops
 (`.gitignore` : `/data`), suivi par la couche perso (`~/.career-ops-perso.git`). Jamais dans
