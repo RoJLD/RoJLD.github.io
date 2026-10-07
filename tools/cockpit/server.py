@@ -168,6 +168,7 @@ ROUTES_POST.update({
     "/career-ops/postule": pages_career_ops.post_postule,
     "/career-ops/ouvrir-web": pages_career_ops.post_ouvrir_web,
     "/career-ops/copilote": pages_career_ops.post_copilote,
+    "/career-ops/projeter": pages_career_ops.post_projeter,
 })
 
 from tools.cockpit.pages import anthropos as pages_anthropos  # noqa: E402
