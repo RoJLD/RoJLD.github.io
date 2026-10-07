@@ -73,3 +73,47 @@ def test_local_json_est_ignore_par_git_et_jamais_suivi():
     assert ignore.returncode == 0, f"{rel} n'est pas dans .gitignore : il finirait en ligne"
     suivi = subprocess.run(["git", "-C", str(SITE), "ls-files", rel], capture_output=True, text=True)
     assert suivi.stdout.strip() == "", f"{rel} est suivi par git"
+
+
+def test_un_local_json_avec_bom_est_lu(tmp_path):
+    """Windows PowerShell 5.1 : `Set-Content -Encoding utf8` écrit un BOM (EF BB BF) que
+    json.loads refuse. Mesuré le 2026-10-06 : le local.json du human-test en portait un, et le
+    cockpit affichait « non configuré » avec le fichier sous les yeux."""
+    d = _faux_career_ops(tmp_path)
+    lj = tmp_path / "local.json"
+    lj.write_bytes(b"\xef\xbb\xbf" + json.dumps({"career_ops_root": str(d)}).encode("utf-8"))
+    assert config.career_ops_root(env={}, local_json=lj) == d
+
+
+@pytest.mark.parametrize("cas, attendu", [
+    ("rien", "ni CAREER_OPS_ROOT ni"),
+    ("illisible", "illisible"),
+    ("sans_cle", 'sans clé "career_ops_root"'),
+    ("pas_objet", 'sans clé "career_ops_root"'),
+    ("env_sans_tracker", "(CAREER_OPS_ROOT) ne contient pas tracker.mjs"),
+    ("json_sans_tracker", "(local.json) ne contient pas tracker.mjs"),
+])
+def test_la_raison_nomme_la_cause_et_pas_seulement_le_remede(tmp_path, cas, attendu):
+    """« non configuré » seul renvoyait à écrire un local.json qui existait déjà : chaque cas
+    d'échec porte sa cause, que la page affiche (spec § 8)."""
+    lj = tmp_path / "local.json"
+    vide = tmp_path / "vide"
+    vide.mkdir()
+    env = {}
+    if cas == "illisible":
+        lj.write_text("{pas du json", encoding="utf-8")
+    elif cas == "sans_cle":
+        lj.write_text('{"autre": 1}', encoding="utf-8")
+    elif cas == "pas_objet":
+        lj.write_text("[1, 2]", encoding="utf-8")
+    elif cas == "env_sans_tracker":
+        env = {"CAREER_OPS_ROOT": str(vide)}
+    elif cas == "json_sans_tracker":
+        lj.write_text(json.dumps({"career_ops_root": str(vide)}), encoding="utf-8")
+    racine, raison = config.resoudre_career_ops(env=env, local_json=lj)
+    assert racine is None and attendu in raison, raison
+
+
+def test_la_raison_est_none_quand_career_ops_est_trouve(tmp_path):
+    d = _faux_career_ops(tmp_path)
+    assert config.resoudre_career_ops(env={"CAREER_OPS_ROOT": str(d)}, local_json=tmp_path / "absent.json") == (d, None)
