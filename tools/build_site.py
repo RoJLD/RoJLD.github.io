@@ -555,6 +555,43 @@ def gen_i18n_status(profile, lang):
     return f"\n        status: {js_str(_bi(profile['identity']['status'], lang))},\n"
 
 
+# ── Textes fixes de l'accueil (édition du site, A1) ───────────────────────────
+# Menu, titres de section, libellés : jadis écrits à la main dans `const i18n`
+# d'index.html, ils vivent dans site_texts.json, éditable depuis le cockpit.
+SITE_TEXTS = ROOT / "site_texts.json"
+
+
+def load_site_texts(path=None):
+    p = Path(path) if path else SITE_TEXTS
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def valider_site_texts(textes):
+    """Erreurs de forme : deux langues, mêmes clés, clés d'identifiant, valeurs textes non vides."""
+    if not isinstance(textes, dict) or set(textes) != {"fr", "en"}:
+        return ['site_texts.json : objet {"fr": {...}, "en": {...}} attendu']
+    erreurs = []
+    if set(textes["fr"]) != set(textes["en"]):
+        erreurs.append("site_texts.json : clés différentes entre fr et en : "
+                       f"{sorted(set(textes['fr']) ^ set(textes['en']))}")
+    for lang in ("fr", "en"):
+        for k, v in textes[lang].items():
+            if not re.fullmatch(r"[A-Za-z_]\w*", k):
+                erreurs.append(f"site_texts.json : clé invalide {k!r}")
+            if not isinstance(v, str) or not v.strip():
+                erreurs.append(f"site_texts.json : {lang}.{k} doit être un texte non vide")
+    return erreurs
+
+
+def gen_i18n_textes(profile, lang):
+    """Signature commune des générateurs i18n ; la source est site_texts.json, pas le profil."""
+    textes = load_site_texts()
+    erreurs = valider_site_texts(textes)
+    if erreurs:
+        raise BuildError(" ; ".join(erreurs[:5]))
+    return "\n" + "".join(f"        {k}: {js_str(v)},\n" for k, v in textes[lang].items())
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -571,6 +608,7 @@ HTML_SECTIONS = {
 }
 # name région i18n -> fonction gen(profile, lang) (marqueur /* BUILD:i18n_name_<lang> */)
 I18N_SECTIONS = {
+    "textes": gen_i18n_textes,
     "blog": gen_i18n_blog,
     "langs": gen_i18n_langs,
     "ints": gen_i18n_ints,

@@ -345,14 +345,36 @@
 // ═══════════════════════════════════════════
 const i18n = {
     fr: {
-        nav_exp: "Expérience", nav_edu: "Formation", nav_skills: "Compétences", nav_demos: "Démos", nav_projects: "Projets",
-/* BUILD:i18n_status_fr */
-        status: "Disponible dès maintenant · Quant developer / researcher",
-/* /BUILD:i18n_status_fr */
+/* BUILD:i18n_textes_fr */
+        nav_exp: "Expérience",
+        nav_edu: "Formation",
+        nav_skills: "Compétences",
+        nav_demos: "Démos",
+        nav_projects: "Projets",
         hero_tag: "Ingénierie Financière & Quantitative",
         pill_cv: "CV",
         sec_parcours: "Mon Parcours",
         journey_hint: "↔ glisser pour parcourir la frise",
+        sec_exp: "Expérience Professionnelle",
+        sec_edu: "Formation",
+        sec_skills: "Compétences",
+        sk_lang: "Langages",
+        sk_infra: "Infrastructure",
+        lbl_certs: "Certifications",
+        sec_demos: "Démos Interactives",
+        bs_vol: "Volatilité (σ)",
+        bs_mat: "Maturité (T)",
+        code_src: "💻 Code source",
+        sec_testi: "Recommandations",
+        sec_blog: "Articles & Notes",
+        blog_soon: "À venir",
+        sec_interests: "Langues & Centres d'intérêt",
+        lbl_interests: "Centres d'intérêt",
+        fab_tip: "Télécharger mon CV",
+/* /BUILD:i18n_textes_fr */
+/* BUILD:i18n_status_fr */
+        status: "Disponible dès maintenant · Quant developer / researcher",
+/* /BUILD:i18n_status_fr */
 /* BUILD:i18n_modals_fr */
         mproj_pfe_hedging_name: "Couverture dynamique en assurance/banque (PFE × EY)", mproj_pfe_hedging_summary: "Projet de fin d'études en partenariat EY : modélisation et pilotage de stratégies de couverture dynamique sur portefeuilles dérivés, avec points hebdomadaires EY et livrables (note de cadrage, état de l'art, prototype, soutenance).",
         mproj_pfe_hedging_impact: "Projet de fin d'études, chef de projet",
@@ -369,7 +391,6 @@ const i18n = {
         ht_j7_year: "Fév 2026", ht_j7_label: "ELYSIUM", ht_j7_sub: "Architecture IA (perso)",
         ht_j8_label: "Diplôme Ingénieur",
 /* /BUILD:i18n_journey_fr */
-        sec_exp: "Expérience Professionnelle",
 /* BUILD:i18n_exp_fr */
         exp1_title: "Quantitative Researcher DeFi",
         exp1_org: "ALTEN, Lab R&D, Sèvres",
@@ -391,7 +412,6 @@ const i18n = {
         exp3_b3: "Analyse des risques de marché, liquidité, contrepartie et opérationnels",
         exp3_b4: "Calculs actuariels, amélioration d'outils et automatisation (Excel, VBA, Access)",
 /* /BUILD:i18n_exp_fr */
-        sec_edu: "Formation",
 /* BUILD:i18n_edu_fr */
         edu1_title: "ECE Paris, Cycle Ingénieur", edu1_org: "Majeure Ingénierie Financière et Quantitative",
         edu1_courses_label: "Cours clés",
@@ -405,16 +425,10 @@ const i18n = {
         edu1_pfe_desc: "Modélisation et pilotage de stratégies de couverture dynamique en assurance et en banque",
         edu2_title: "Classes Préparatoires MPSI – MP", edu2_org: "Mathématiques, Physique et Sciences de l'Ingénieur",
 /* /BUILD:i18n_edu_fr */
-        sec_skills: "Compétences", sk_lang: "Langages", sk_infra: "Infrastructure",
-        lbl_certs: "Certifications",
-        sec_demos: "Démos Interactives",
-        bs_vol: "Volatilité (σ)", bs_mat: "Maturité (T)",
 /* BUILD:i18n_demos_fr */
         bs_desc: "Pricing d'options européennes en temps réel avec affichage du delta. Ajuste les paramètres pour voir l'impact sur le prix.",
         mc_desc: "Trajectoires d'un mouvement brownien géométrique pour le pricing d'options par simulation.",
 /* /BUILD:i18n_demos_fr */
-        code_src: "💻 Code source",
-        sec_testi: "Recommandations",
 /* BUILD:i18n_testi_fr */
         testi1: "Robin figure parmi les 2% des meilleurs profils de notre communauté de 40 000 étudiants. Son engagement, ses résultats et son professionnalisme en font un candidat d'exception. Il a démontré un dynamisme remarquable et une bonne autonomie, avec des retours positifs sur sa présentation et son adaptabilité.",
         testi2: "Sa vision analytique et sa capacité à travailler en autonomie comme en équipe font de lui un excellent candidat. Il allie des compétences techniques solides (VBA, SQL, Access) à une bonne compréhension des enjeux métiers. Robin s'est très vite imposé comme un collaborateur sérieux, curieux et extrêmement impliqué.",
@@ -426,22 +440,18 @@ const i18n = {
         testi2_doc1: "📄 Reco. académique",
         testi2_doc2: "📄 Reco. professionnelle",
 /* /BUILD:i18n_testi_fr */
-        sec_blog: "Articles & Notes",
 /* BUILD:i18n_blog_fr */
         blog1_date: "Mars 2026", blog1_title: "Couverture dynamique : théorie vs pratique en assurance",
         blog1_desc: "Retour d'expérience sur mon PFE avec EY : comment les modèles théoriques se confrontent aux contraintes opérationnelles du hedging.",
         blog2_date: "Avril 2026", blog2_title: "Analyse on-chain : détecter les signaux faibles en DeFi",
         blog2_desc: "Méthodologie de collecte et d'analyse de métriques on-chain (TVL, APY, Volume) pour identifier des patterns sur protocoles émergents.",
 /* /BUILD:i18n_blog_fr */
-        blog_soon: "À venir",
-        sec_interests: "Langues & Centres d'intérêt",
 /* BUILD:i18n_langs_fr */
         lang_fr: "Français", lang_fr_lvl: "Langue maternelle",
         lang_en: "Anglais", lang_en_lvl: "Courant (C1)",
         lang_es: "Espagnol", lang_es_lvl: "Intermédiaire (B1)",
         lang_cn: "Chinois", lang_cn_lvl: "Notions (A1)",
 /* /BUILD:i18n_langs_fr */
-        lbl_interests: "Centres d'intérêt",
 /* BUILD:i18n_ints_fr */
         int_1: "♟️ Échecs",
         int_2: "📚 Finance quantitative",
@@ -454,18 +464,39 @@ const i18n = {
 /* BUILD:i18n_footer_fr */
         footer: "Robin Denis · Dernière mise à jour Septembre 2026",
 /* /BUILD:i18n_footer_fr */
-        fab_tip: "Télécharger mon CV",
         radar_labels: ['Quant Finance','Machine Learning','Data Engineering','Dev Full Stack','Risk Mgmt','Gestion Projet']
     },
     en: {
-        nav_exp: "Experience", nav_edu: "Education", nav_skills: "Skills", nav_demos: "Demos", nav_projects: "Projects",
-/* BUILD:i18n_status_en */
-        status: "Available now · Quant developer / researcher",
-/* /BUILD:i18n_status_en */
+/* BUILD:i18n_textes_en */
+        nav_exp: "Experience",
+        nav_edu: "Education",
+        nav_skills: "Skills",
+        nav_demos: "Demos",
+        nav_projects: "Projects",
         hero_tag: "Financial & Quantitative Engineering",
         pill_cv: "Resume",
         sec_parcours: "My Journey",
         journey_hint: "↔ drag to explore the timeline",
+        sec_exp: "Professional Experience",
+        sec_edu: "Education",
+        sec_skills: "Skills",
+        sk_lang: "Languages",
+        sk_infra: "Infrastructure",
+        lbl_certs: "Certifications",
+        sec_demos: "Interactive Demos",
+        bs_vol: "Volatility (σ)",
+        bs_mat: "Maturity (T)",
+        code_src: "💻 Source code",
+        sec_testi: "Recommendations",
+        sec_blog: "Articles & Notes",
+        blog_soon: "Coming soon",
+        sec_interests: "Languages & Interests",
+        lbl_interests: "Interests",
+        fab_tip: "Download my resume",
+/* /BUILD:i18n_textes_en */
+/* BUILD:i18n_status_en */
+        status: "Available now · Quant developer / researcher",
+/* /BUILD:i18n_status_en */
 /* BUILD:i18n_modals_en */
         mproj_pfe_hedging_name: "Dynamic hedging in insurance/banking (Capstone × EY)", mproj_pfe_hedging_summary: "Capstone project in partnership with EY: modeling and steering of dynamic hedging strategies on derivative portfolios, with weekly EY check-ins and deliverables (scoping note, literature review, prototype, defense).",
         mproj_pfe_hedging_impact: "Capstone project, project lead",
@@ -482,7 +513,6 @@ const i18n = {
         ht_j7_year: "Feb 2026", ht_j7_label: "ELYSIUM", ht_j7_sub: "AI architecture (personal)",
         ht_j8_label: "Engineering Degree",
 /* /BUILD:i18n_journey_en */
-        sec_exp: "Professional Experience",
 /* BUILD:i18n_exp_en */
         exp1_title: "DeFi Quantitative Researcher",
         exp1_org: "ALTEN, Lab R&D, Sèvres",
@@ -504,7 +534,6 @@ const i18n = {
         exp3_b3: "Analyzed market, liquidity, counterparty and operational risks",
         exp3_b4: "Performed actuarial calculations, improved tools and automated processes (Excel, VBA, Access)",
 /* /BUILD:i18n_exp_en */
-        sec_edu: "Education",
 /* BUILD:i18n_edu_en */
         edu1_title: "ECE Paris, Engineering Program", edu1_org: "Major in Financial & Quantitative Engineering",
         edu1_courses_label: "Key courses",
@@ -518,16 +547,10 @@ const i18n = {
         edu1_pfe_desc: "Modeling and management of dynamic hedging strategies in insurance and banking",
         edu2_title: "Preparatory Classes MPSI – MP", edu2_org: "Mathematics, Physics & Engineering Sciences",
 /* /BUILD:i18n_edu_en */
-        sec_skills: "Skills", sk_lang: "Languages", sk_infra: "Infrastructure",
-        lbl_certs: "Certifications",
-        sec_demos: "Interactive Demos",
-        bs_vol: "Volatility (σ)", bs_mat: "Maturity (T)",
 /* BUILD:i18n_demos_en */
         bs_desc: "Real-time European option pricing with delta display. Adjust parameters to see the impact on price.",
         mc_desc: "Geometric Brownian Motion paths for option pricing via Monte Carlo simulation.",
 /* /BUILD:i18n_demos_en */
-        code_src: "💻 Source code",
-        sec_testi: "Recommendations",
 /* BUILD:i18n_testi_en */
         testi1: "Robin ranks among the top 2% of our 40,000-student community. His commitment, results, and professionalism make him an exceptional candidate. He demonstrated remarkable drive and autonomy, with positive feedback on his presentation and adaptability.",
         testi2: "His analytical vision and ability to work independently or as a team make him an excellent candidate. He combines strong technical skills (VBA, SQL, Access) with a solid understanding of business challenges. Robin quickly established himself as a serious, curious and highly dedicated team member.",
@@ -539,22 +562,18 @@ const i18n = {
         testi2_doc1: "📄 Academic reference",
         testi2_doc2: "📄 Professional reference",
 /* /BUILD:i18n_testi_en */
-        sec_blog: "Articles & Notes",
 /* BUILD:i18n_blog_en */
         blog1_date: "March 2026", blog1_title: "Dynamic Hedging: Theory vs Practice in Insurance",
         blog1_desc: "Lessons from my capstone project with EY: how theoretical models face operational constraints in portfolio hedging.",
         blog2_date: "April 2026", blog2_title: "On-Chain Analytics: Detecting Weak Signals in DeFi",
         blog2_desc: "Methodology for collecting and analyzing on-chain metrics (TVL, APY, Volume) to identify patterns on emerging protocols.",
 /* /BUILD:i18n_blog_en */
-        blog_soon: "Coming soon",
-        sec_interests: "Languages & Interests",
 /* BUILD:i18n_langs_en */
         lang_fr: "French", lang_fr_lvl: "Native",
         lang_en: "English", lang_en_lvl: "Fluent (C1)",
         lang_es: "Spanish", lang_es_lvl: "Intermediate (B1)",
         lang_cn: "Chinese", lang_cn_lvl: "Beginner (A1)",
 /* /BUILD:i18n_langs_en */
-        lbl_interests: "Interests",
 /* BUILD:i18n_ints_en */
         int_1: "♟️ Chess",
         int_2: "📚 Quantitative finance",
@@ -567,7 +586,6 @@ const i18n = {
 /* BUILD:i18n_footer_en */
         footer: "Robin Denis · Last updated September 2026",
 /* /BUILD:i18n_footer_en */
-        fab_tip: "Download my resume",
         radar_labels: ['Quant Finance','Machine Learning','Data Engineering','Full Stack Dev','Risk Mgmt','Project Mgmt']
     }
 };
