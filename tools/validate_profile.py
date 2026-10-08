@@ -74,7 +74,73 @@ def _skill_iter(profile):
             yield cat, s
 
 
-_YYYY_MM = re.compile(r"^\d{4}-\d{2}$")
+_YYYY_MM = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+_GROUPES_CV = {"academic", "personal", "other"}
+
+
+def _texte_ou_bilingue(v) -> bool:
+    return (isinstance(v, str) and v.strip() != "") or (
+        isinstance(v, dict) and isinstance(v.get("fr"), str) and isinstance(v.get("en"), str))
+
+
+def _validate_cv(profile, errors):
+    """Champs de présentation du CV (spec D8 § 5), lus par tools/cockpit/cv_md.py — et la
+    règle de D19 : profile.json est servi sur robin-denis.com, le téléphone n'y entre jamais."""
+    if str((profile.get("identity") or {}).get("phone") or "").strip():
+        errors.append("identity.phone doit rester vide : profile.json est servi sur robin-denis.com ; "
+                      "le téléphone vit dans le complément privé de career-ops (D19)")
+    for e in profile.get("experiences", []):
+        eid = e.get("id")
+        if e.get("start") is not None and not _YYYY_MM.match(str(e["start"])):
+            errors.append(f"experience '{eid}': start {e['start']!r} doit être 'YYYY-MM' (lu par le rendu cv.md)")
+        puces = e.get("bullets")
+        if isinstance(puces, dict):
+            for lang in ("fr", "en"):
+                v = puces.get(lang)
+                if lang in puces and not (isinstance(v, list) and all(isinstance(x, str) for x in v)):
+                    errors.append(f"experience '{eid}'.bullets.{lang} : liste de textes attendue")
+    for e in profile.get("education", []):
+        if "location" in e and not _texte_ou_bilingue(e["location"]):
+            errors.append(f"education '{e.get('id')}'.location : texte ou {{fr, en}} attendu")
+        if "courses" in e and not isinstance(e["courses"], list):
+            errors.append(f"education '{e.get('id')}'.courses : liste attendue")
+    for p in profile.get("projects", []):
+        cv, pid = p.get("cv"), p.get("id")
+        if cv is None:
+            continue
+        if not isinstance(cv, dict):
+            errors.append(f"project '{pid}'.cv : objet attendu")
+            continue
+        if cv.get("group") not in _GROUPES_CV:
+            errors.append(f"project '{pid}'.cv.group invalide {cv.get('group')!r} (academic, personal, other)")
+        if "title" in cv and not _texte_ou_bilingue(cv["title"]):
+            errors.append(f"project '{pid}'.cv.title : texte ou {{fr, en}} attendu")
+        for cle in ("start", "end"):
+            v = cv.get(cle)
+            if v is not None and not _YYYY_MM.match(str(v)):
+                errors.append(f"project '{pid}'.cv.{cle} : 'YYYY-MM' attendu, lu {v!r}")
+        if cv.get("end") and not cv.get("start"):
+            errors.append(f"project '{pid}'.cv.end sans start")
+        puces = cv.get("bullets")
+        if puces is not None and not (isinstance(puces, dict)
+                                      and all(isinstance(puces.get(lang), list) for lang in ("fr", "en"))):
+            errors.append(f'project \'{pid}\'.cv.bullets : {{"fr": [...], "en": [...]}} attendu')
+    bloc = profile.get("cv")
+    if bloc is None:
+        return
+    if not isinstance(bloc, dict):
+        errors.append("cv : objet attendu")
+        return
+    for i, s in enumerate(bloc.get("skills", [])):
+        label = s.get("label") if isinstance(s, dict) else None
+        if not (isinstance(label, dict) and "fr" in label and "en" in label):
+            errors.append(f"cv.skills[{i}].label : {{fr, en}} attendu")
+        items = s.get("items") if isinstance(s, dict) else None
+        if not (isinstance(items, list) or _texte_ou_bilingue(items)):
+            errors.append(f"cv.skills[{i}].items : liste ou texte attendu")
+    for i, x in enumerate(bloc.get("interests", [])):
+        if not _texte_ou_bilingue(x):
+            errors.append(f"cv.interests[{i}] : texte ou {{fr, en}} attendu")
 
 
 def _validate_temporal_truths(profile, today, errors):
@@ -201,6 +267,7 @@ def validate(profile: dict, root=None, today=None) -> list[str]:
     if not (profile.get("skills", {}) or {}).get("radar_scores"):
         errors.append("skills.radar_scores empty or missing")
 
+    _validate_cv(profile, errors)
     _validate_links(profile, root, errors)
 
     return errors

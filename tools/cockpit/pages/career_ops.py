@@ -12,7 +12,7 @@ import html
 import json
 from pathlib import Path
 
-from tools.cockpit import career_ops as co, config, copilote, web
+from tools.cockpit import career_ops as co, config, copilote, projection, web
 from tools.cockpit.pages import accueil, layout
 
 _JS = """
@@ -43,6 +43,20 @@ document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>{
     document.getElementById('sortie').textContent='REFUS chemin invalide : '+chemin; return;
   }
   envoyer(b.dataset.route,{},chemin);
+});
+async function projeter(obj){
+  const out=document.getElementById('sortie'); out.textContent='… projection';
+  const r=await fetch('/career-ops/projeter',{method:'POST',headers:{'Content-Type':'application/json','X-Atelier-Token':TOKEN},body:JSON.stringify(obj)});
+  let j={}; try{j=await r.json()}catch(e){}
+  const cv=j.cv_md||{}, y=j.profile_yml||{};
+  const lignes=[...(j.erreurs||[]), 'cv.md : '+(cv.etat||'?')+(cv.ecrit?' — écrit':'')+(cv.sauvegarde?' — sauvegarde '+cv.sauvegarde:''),
+    cv.erreur||'', 'profile.yml : '+((y.changements||[]).join(', ')||'rien à changer')+(y.ecrit?' — écrit':''), y.erreur||''];
+  out.textContent=(r.ok?'OK ':'REFUS '+r.status+' ')+lignes.filter(Boolean).join('\\n')+(cv.diff?'\\n\\n'+cv.diff:'');
+}
+document.querySelectorAll('[data-projeter]').forEach(b=>b.onclick=()=>{
+  const m=b.dataset.projeter;
+  if(m==='forcer' && !confirm('Remplacer cv.md ? Ses modifications à la main sont sauvegardées dans data/cv-sauvegardes, puis écrasées.')) return;
+  projeter({ecrire:m!=='diff', forcer:m==='forcer'});
 });
 """
 
@@ -215,6 +229,46 @@ def _dossiers(ds: list[dict]) -> str:
     return f"<table>{rows}</table>" if rows else "<p>Aucun dossier dans output/.</p>"
 
 
+ETATS_CV = {"a_jour": "cv.md à jour", "en_retard": "cv.md en retard sur profile.json",
+            "modifie": "cv.md modifié à la main depuis la dernière projection",
+            "sans_entete": "cv.md jamais généré : rapport d'import à valider (spec D8 § 4)",
+            "absent": "cv.md absent",
+            "illisible": "cv.md illisible (voir l'erreur ci-dessous)"}
+ETATS_COURTS = {"a_jour": "à jour", "en_retard": "en retard", "modifie": "modifié à la main",
+                "sans_entete": "jamais généré", "absent": "absent", "illisible": "illisible"}
+
+
+def libelle_etat_cv(res: dict) -> str:
+    if res.get("erreurs"):
+        return res["erreurs"][0]
+    return ETATS_CV.get((res.get("cv_md") or {}).get("etat"), "état inconnu")
+
+
+def etat_court_cv(res: dict) -> str:
+    if res.get("erreurs"):
+        return "non projeté (voir la page career-ops)"
+    return ETATS_COURTS.get((res.get("cv_md") or {}).get("etat"), "état inconnu")
+
+
+def _cv_career_ops(res: dict) -> str:
+    cv, y = res.get("cv_md") or {}, res.get("profile_yml") or {}
+    classe = ' class="ko"' if res.get("erreurs") or cv.get("etat") in ("modifie", "sans_entete", "illisible") else ""
+    morceaux = [f"<p{classe}>{html.escape(libelle_etat_cv(res))}</p>"]
+    if cv.get("erreur"):
+        morceaux.append(f'<p class="ko">{html.escape(cv["erreur"])}</p>')
+    if y.get("changements"):
+        morceaux.append(f"<p>profile.yml : {html.escape(', '.join(y['changements']))} à projeter</p>")
+    if y.get("erreur"):
+        morceaux.append(f'<p class="ko">{html.escape(y["erreur"])}</p>')
+    if not res.get("erreurs") and cv.get("etat") != "illisible":
+        boutons = ('<button data-projeter="diff">Voir le diff</button> '
+                   '<button data-projeter="ecrire">Projeter vers career-ops</button>')
+        if cv.get("etat") in ("modifie", "sans_entete"):
+            boutons += ' <button data-projeter="forcer">Remplacer quand même (sauvegarde)</button>'
+        morceaux.append(f"<p>{boutons}</p>")
+    return "".join(morceaux)
+
+
 def page_career_ops(h) -> None:
     pre = co.prerequis()
     # « Ergon » (ἔργον, l'œuvre) = la facette carrière d'Anthropos dans le canon (SIGIL-1707).
@@ -236,6 +290,7 @@ def page_career_ops(h) -> None:
     corps += _panneau("Candidatures (tracker)", _candidatures(tr["donnees"] or []), tr["lu_a"], erreur=tr["erreur"])
     corps += _panneau("Alertes (agent-inbox.md)", md_vers_html(inbox["texte"]), age_h=inbox["age_h"], erreur=inbox["erreur"])
     corps += _panneau("Workflows", _workflows())
+    corps += _panneau("CV pour career-ops (profile.json → cv.md)", _cv_career_ops(projection.projeter(ecrire=False, root=root)))
     corps += _panneau("File d'envoi (send-queue)", _file_envoi(fi["donnees"] or {}), fi["lu_a"], erreur=fi["erreur"])
     corps += _panneau("Dossiers (output/)", _dossiers(co.lire_dossiers(root)))
     corps += f"<script>{_JS}</script>"
@@ -313,8 +368,23 @@ def carte_career_ops() -> dict:
     app = next((k for k in kpi["donnees"].get("kpis", []) if k["key"] == "application_rate"), None)
     ligne = (f"Passage à la candidature : {app['numerator']} / {app['denominator']}" if app and app["state"] == "computable"
              else "Passage à la candidature : verrouillé")
-    return {"titre": "Ergon · career-ops", "href": "/career-ops", "etat": "ok", "lignes": [ligne, f"lu à {kpi['lu_a']}"]}
+    cv = etat_court_cv(projection.projeter(ecrire=False, root=Path(pre["career_ops_root"])))
+    return {"titre": "Ergon · career-ops", "href": "/career-ops", "etat": "ok",
+            "lignes": [ligne, f"cv.md : {cv}", f"lu à {kpi['lu_a']}"]}
 
 
 carte_career_ops.titre, carte_career_ops.href = "Ergon · career-ops", "/career-ops"   # nom affiché si la carte sort du budget
 accueil.CARTES.append(carte_career_ops)
+
+
+def post_projeter(h, data: dict) -> None:
+    ecrire, forcer = data.get("ecrire") is True, data.get("forcer") is True
+    if forcer and not ecrire:
+        return _json(h, 400, {"ok": False, "erreurs": ["forcer exige ecrire"]})
+    try:
+        with co.verrou_action("projection"):
+            res = projection.projeter(ecrire=ecrire, forcer=forcer)
+    except co.ActionEnCours as exc:
+        return _json(h, 409, {"ok": False, "erreurs": [f"action déjà en cours : {exc}"]})
+    code = 200 if res["ok"] else (503 if res["erreurs"] else 409)
+    return _json(h, code, res)

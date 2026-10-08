@@ -1221,6 +1221,14 @@ def _payload_gouverne(target):
     return {"json": target.read_text(encoding="utf-8"), "govern": True, "rebuild": False}
 
 
+def _sans_career_ops(monkeypatch):
+    """Revue finale D8 : l'étape `career_ops` de la sauvegarde gouvernée résout le VRAI career-ops
+    (CAREER_OPS_ROOT / local.json) et y réécrirait cv.md et profile.yml. Neutralisée, comme `_regen_bank`."""
+    from tools.cockpit import projection
+    monkeypatch.setattr(projection, "etape_sauvegarde",
+                        lambda: {"ok": True, "etat": "a_jour", "ecrit": False, "yml": [], "message": ""})
+
+
 def test_une_sauvegarde_gouvernee_regenere_la_banque_de_cv(tmp_path, monkeypatch):
     """Mesuré le 2026-09-28 : govern_save ne régénérait pas cv/prefab — une édition /cms
     laissait les 8 PDF publics diverger du profil."""
@@ -1228,6 +1236,7 @@ def test_une_sauvegarde_gouvernee_regenere_la_banque_de_cv(tmp_path, monkeypatch
     monkeypatch.setattr(pages_cv, "_ROOT", tmp_path)          # historique/graphe sous tmp
     appels = []
     monkeypatch.setattr(pages_cv, "_regen_bank", lambda: appels.append(1))
+    _sans_career_ops(monkeypatch)
     with _server() as base:
         status, body = _post(_port_of(base), "/save", _payload_gouverne(target))
     rep = json.loads(body)
@@ -1246,6 +1255,7 @@ def test_un_gate_de_banque_qui_refuse_est_rapporte_pas_masque(tmp_path, monkeypa
     def _refuse():
         raise SystemExit("[cv-bank] profile.json invalide, aucun PDF généré")
     monkeypatch.setattr(pages_cv, "_regen_bank", _refuse)
+    _sans_career_ops(monkeypatch)
     with _server() as base:
         status, body = _post(_port_of(base), "/save", _payload_gouverne(target))
     rep = json.loads(body)

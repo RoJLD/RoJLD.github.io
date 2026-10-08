@@ -39,12 +39,26 @@ def generate_docx(job_posting: str, profile: dict, lang: str = "fr",
                   complete_fn: Optional[Callable[[str], str]] = None) -> tuple[dict, bytes]:
     """Même pipeline ciblé, rendu en **.docx ATS** (texte réel, zéro tableau).
 
-    L'overlay privé (téléphone, disponibilité) est chargé depuis `~/.elysium/` :
-    absent, le document se rend sans — jamais un gabarit à sa place.
+    L'overlay privé (téléphone, disponibilité) vient de `_overlay_prive()` : absent, le
+    document se rend sans — jamais un gabarit à sa place.
     """
     import cv_docx                                    # dépendance python-docx : paresseux
     cfg, scv = cv_target.targeted_structured_cv(job_posting, profile, lang, complete_fn=complete_fn)
-    return cfg, cv_docx.render_docx_bytes(scv, private=cv_docx.load_private_overlay())
+    return cfg, cv_docx.render_docx_bytes(scv, private=_overlay_prive())
+
+
+def _overlay_prive() -> dict:
+    """Téléphone et disponibilité : le complément privé de career-ops (D19) quand il existe,
+    sinon la résolution historique de cv_docx (`$CV_PRIVATE_OVERLAY` > `~/.elysium/`).
+    Le complément est passé en dict : `load_private_overlay` refuse tout chemin situé dans un
+    arbre git, et career-ops en est un (son `/data` est ignoré, ce que le chargeur vérifie)."""
+    import cv_docx
+    from tools.cockpit import complement
+    root = config.career_ops_root()
+    if root is not None and complement.chemin(root).is_file():
+        c = complement.charger(root)
+        return {"phone": c["phone"], "availability": c["availability"]}
+    return cv_docx.load_private_overlay()
 
 
 def generate_letter(job_posting: str, profile: dict, lang: str = "fr",
@@ -389,13 +403,15 @@ async function save(){
       if(s.graph)parts.push('graphe '+s.graph.nodes+'n/'+s.graph.edges+'a');
       if(s.rebuild)parts.push(s.rebuild.skipped?'rebuild sauté':(s.rebuild.ok?'rebuild ok':'REBUILD ÉCHOUÉ'));
       if(s.prefab)parts.push(s.prefab.ok?'banque préfab ok':'BANQUE PRÉFAB ÉCHOUÉE');
-      var echec=(s.rebuild&&s.rebuild.ok===false)||(s.prefab&&s.prefab.ok===false);
+      if(s.career_ops)parts.push(s.career_ops.saute?'cv.md career-ops sauté':(s.career_ops.ok?'cv.md career-ops ok':'CV.MD CAREER-OPS NON PROJETÉ'));
+      var echec=(s.rebuild&&s.rebuild.ok===false)||(s.prefab&&s.prefab.ok===false)||(s.career_ops&&s.career_ops.ok===false);
       st.textContent=res.ok?('Gouverné \u2713 — '+parts.join(' · ')):'Refusé';
       st.className=res.ok?(echec?'err':'ok'):'';
       if(!res.ok){er.textContent=(res.errors||[]).join(String.fromCharCode(10));}
       else{
         var notes=[];
         if(s.prefab&&s.prefab.ok===false)notes.push('Banque préfab NON régénérée (profil enregistré, les 8 PDF publics sont en retard) : '+s.prefab.error);
+        if(s.career_ops&&s.career_ops.ok===false)notes.push('cv.md de career-ops NON projeté (profil enregistré) : '+s.career_ops.message);
         if(s.review&&s.review.notes&&s.review.notes.length)notes.push('Revue LLM:'+String.fromCharCode(10)+'- '+s.review.notes.join(String.fromCharCode(10)+'- '));
         if(notes.length)er.textContent=notes.join(String.fromCharCode(10)+String.fromCharCode(10));
       }
@@ -580,16 +596,21 @@ $("save").onclick = function () {
         if (s.rebuild) parts.push(s.rebuild.skipped ? "rebuild sauté"
                                   : (s.rebuild.ok ? "rebuild ok" : "REBUILD ÉCHOUÉ"));
         if (s.prefab) parts.push(s.prefab.ok ? "banque préfab ok" : "BANQUE PRÉFAB ÉCHOUÉE");
+        if (s.career_ops) parts.push(s.career_ops.saute ? "cv.md career-ops sauté"
+                                     : (s.career_ops.ok ? "cv.md career-ops ok" : "CV.MD CAREER-OPS NON PROJETÉ"));
         // Le rebuild ET la banque préfab sont POST-écriture : leur échec
         // n'annule pas l'enregistrement, mais doit être dit franchement plutôt
         // que confondu avec un succès.
-        var echec = (s.rebuild && s.rebuild.ok === false) || (s.prefab && s.prefab.ok === false);
+        var echec = (s.rebuild && s.rebuild.ok === false) || (s.prefab && s.prefab.ok === false)
+                    || (s.career_ops && s.career_ops.ok === false);
         setStatus("Enregistré ✓ — " + parts.join(" · "), echec ? "err" : "ok");
         var notes = [];
         if (s.rebuild && s.rebuild.ok === false)
           notes.push("Rebuild du site ÉCHOUÉ (profil bien enregistré) : " + s.rebuild.error);
         if (s.prefab && s.prefab.ok === false)
           notes.push("Banque préfab NON régénérée (profil enregistré, les 8 PDF publics sont en retard) : " + s.prefab.error);
+        if (s.career_ops && s.career_ops.ok === false)
+          notes.push("cv.md de career-ops NON projeté (profil enregistré) : " + s.career_ops.message);
         if (s.review && s.review.notes && s.review.notes.length)
           notes.push("Revue LLM:\\n- " + s.review.notes.join("\\n- "));
         $("errs").textContent = notes.join("\\n\\n");
@@ -733,6 +754,10 @@ def handle_save(h, data):              # ex 1095-1123 ; `_PROFILE`, `_ROOT`, `sa
                 except (Exception, SystemExit) as exc:
                     traceback.print_exc()
                     report["stages"]["prefab"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+                # D8 : cv.md et profile.yml de career-ops suivent profile.json. Jamais d'écrasement
+                # (forcer=False) ; un refus s'affiche à côté du succès, le profil reste enregistré.
+                from tools.cockpit import projection
+                report["stages"]["career_ops"] = projection.etape_sauvegarde()
             return h._send(200, "application/json; charset=utf-8",
                            json.dumps(report, ensure_ascii=False).encode("utf-8"))
         res = save_profile_edit(str(data.get("json", "")), _PROFILE)
