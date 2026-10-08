@@ -174,6 +174,7 @@ def test_les_pages_de_l_apercu_bloquent_les_scripts_tiers(srv):
     csp = r.getheader("Content-Security-Policy") or ""
     assert "script-src 'self' 'unsafe-inline'" in csp and "plausible" not in csp
     assert "frame-ancestors http://127.0.0.1:8010" in csp
+    assert "https://" not in csp.split("frame-ancestors")[0]   # aucun script tiers : le jeton ouvre la publication
 
 
 class _H:
@@ -215,3 +216,16 @@ def test_publier_rejoue_les_verifications(srv, monkeypatch):
 
 def test_le_suivi_pages_refuse_un_sha_invalide(srv):
     assert _req(srv, "GET", "/__cockpit/publication/pages?sha=;rm")[0] == 400
+
+
+def test_une_erreur_imprevue_de_publication_rend_un_500_nomme(srv, monkeypatch):
+    from tools.cockpit import publication
+
+    def casse(*a, **k):
+        raise OSError("disque plein")
+    monkeypatch.setattr(publication, "verifier", casse)
+    code, corps = _req(srv, "POST", "/__cockpit/publication/verifier", {})
+    assert code == 500 and "OSError: disque plein" in json.loads(corps)["erreur"]
+    monkeypatch.setattr(publication, "etat", casse)
+    code, corps = _req(srv, "GET", "/__cockpit/publication")
+    assert code == 500 and "OSError: disque plein" in json.loads(corps)["erreur"]

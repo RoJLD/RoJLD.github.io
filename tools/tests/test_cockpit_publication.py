@@ -144,3 +144,72 @@ def test_suivi_pages(monkeypatch):
     def absent(argv, **k):
         raise FileNotFoundError("gh")
     assert pub.suivi_pages("abc1234", run=absent)["statut"] == "inconnu"
+
+
+def test_un_commit_local_hors_perimetre_est_refuse(depot):
+    site, _ = depot
+    (site / "tools" / "outil.py").write_text("x = 3\n", encoding="utf-8")
+    _g(site, "commit", "-q", "-am", "outil local")
+    (site / "profile.json").write_text('{"b": 1}\n', encoding="utf-8")
+    e = pub.etat(site)
+    assert len(e["commits_locaux"]) == 1 and e["commits_locaux"][0].endswith("outil local")
+    assert e["fichiers_commits"] == ["tools/outil.py"]
+    res = pub.publier(site, "msg")
+    assert res["ok"] is False and any("tools/outil.py" in m for m in res["refus"])
+
+
+def test_un_renommage_depuis_hors_perimetre_est_refuse(depot):
+    site, _ = depot
+    (site / "articles").mkdir()
+    _g(site, "mv", "tools/outil.py", "articles/outil.html")
+    res = pub.publier(site, "msg")
+    assert res["ok"] is False and any("tools/outil.py" in m for m in res["refus"])
+
+
+def test_le_commit_ne_prend_que_les_fichiers_verifies(depot):
+    site, origin = depot
+    (site / "profile.json").write_text('{"c": 1}\n', encoding="utf-8")
+
+    def run(argv, **k):
+        if "commit" in argv:      # un autre processus indexe un fichier entre l'état et le commit
+            (site / "tools" / "outil.py").write_text("x = 9\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(site), "add", "tools/outil.py"], check=True)
+        return subprocess.run(argv, **k)
+    assert pub.publier(site, "msg", run=run)["ok"] is True
+    assert _g(origin, "show", "--name-only", "--format=", "main").split() == ["profile.json"]
+
+
+def test_un_nouveau_fichier_du_perimetre_est_publie(depot):
+    site, origin = depot
+    (site / "articles").mkdir()
+    (site / "articles" / "neuf.html").write_text("<p>neuf</p>\n", encoding="utf-8")
+    assert pub.publier(site, "msg")["ok"] is True
+    assert "articles/neuf.html" in _g(origin, "show", "--name-only", "--format=", "main").split()
+
+
+def test_un_delai_depasse_au_push_est_rapporte(depot):
+    site, _ = depot
+    (site / "profile.json").write_text('{"d": 1}\n', encoding="utf-8")
+
+    def run(argv, **k):
+        if "push" in argv:
+            raise subprocess.TimeoutExpired(argv, 180)
+        return subprocess.run(argv, **k)
+    res = pub.publier(site, "msg", run=run)
+    assert res["ok"] is False and res["etape"] == "push" and res["commit_local"] is True
+    assert "délai dépassé" in res["erreur"] and "état du push inconnu" in res["erreur"]
+
+
+def test_un_delai_depasse_dans_une_verification_est_un_echec_nomme(tmp_path):
+    def run(argv, **k):
+        raise subprocess.TimeoutExpired(argv, 600)
+    res = pub.verifier(tmp_path, run=run)
+    assert [r["ok"] for r in res[:4]] == [False] * 4
+    assert all("délai dépassé" in r["detail"] for r in res[:4])
+
+
+def test_un_git_status_en_echec_n_est_pas_un_arbre_propre(tmp_path):
+    def run(argv, **k):
+        return subprocess.CompletedProcess(argv, 128, stdout="", stderr="fatal: not a git repository")
+    e = pub.etat(tmp_path, run=run)
+    assert any("git status a échoué" in m and "not a git repository" in m for m in pub.refus(e))

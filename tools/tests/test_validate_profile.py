@@ -202,21 +202,37 @@ def test_le_vrai_profile_json_reste_valide():
     assert validate(json.loads((REPO / "profile.json").read_text(encoding="utf-8"))) == []
 
 
-def test_aucun_fichier_suivi_du_site_ne_nomme_un_poste_cv_seulement():
-    """D19 : certains postes ne vivent que dans le complément privé de career-ops. Le dépôt
-    du site est servi sur robin-denis.com : aucun fichier texte suivi ne doit les nommer."""
+NOMS_CV_SEULEMENT = ["Delta" + "com", "AS" + "AHI"]   # composés : ce test ne se dénonce pas lui-même
+
+
+def _fichiers_publiables_nommant(repo, noms):
+    """Fichiers texte PUBLIABLES — suivis, ou nouveaux non ignorés (ce que « Publier » peut committer)."""
     import subprocess
-    noms = ["Delta" + "com", "AS" + "AHI"]          # composés : ce test ne se dénonce pas lui-même
-    suivis = subprocess.run(["git", "-C", str(REPO), "ls-files"], capture_output=True, text=True,
-                            check=True).stdout.splitlines()
+    publiables = subprocess.run(["git", "-C", str(repo), "ls-files", "--cached", "--others", "--exclude-standard"],
+                                capture_output=True, text=True, check=True).stdout.splitlines()
     texte_ext = {".json", ".html", ".md", ".js", ".py", ".txt", ".yml", ".yaml", ".csv", ".xml"}
     fautifs = []
-    for rel in suivis:
-        p = REPO / rel
+    for rel in publiables:
+        p = Path(repo) / rel
         if p.suffix.lower() in texte_ext and p.is_file():
             contenu = p.read_text(encoding="utf-8", errors="ignore")
             fautifs += [f"{rel}: {n}" for n in noms if n in contenu]
+    return fautifs
+
+
+def test_aucun_fichier_suivi_du_site_ne_nomme_un_poste_cv_seulement():
+    """D19 : certains postes ne vivent que dans le complément privé de career-ops. Le dépôt
+    du site est servi sur robin-denis.com : aucun fichier texte suivi ou nouveau non ignoré
+    ne doit les nommer."""
+    fautifs = _fichiers_publiables_nommant(REPO, NOMS_CV_SEULEMENT)
     assert not fautifs, fautifs
+
+
+def test_un_nouveau_fichier_non_suivi_est_aussi_controle(tmp_path):
+    import subprocess
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / "neuf.html").write_text("<p>" + NOMS_CV_SEULEMENT[0] + "</p>", encoding="utf-8")
+    assert _fichiers_publiables_nommant(tmp_path, NOMS_CV_SEULEMENT) == ["neuf.html: " + NOMS_CV_SEULEMENT[0]]
 
 
 # ── F3 (revue finale D8) : les formes que le rendu cv.md lit sans les revérifier ──────────

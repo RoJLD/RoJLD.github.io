@@ -57,6 +57,7 @@
     return {
       fichiers: (e.fichiers || []).map(function (f) { return f.statut + " " + f.chemin; }),
       horsPerimetre: e.hors_perimetre || [],
+      commits: e.commits_locaux || [],
       refus: (rep && rep.refus) || []
     };
   }
@@ -231,6 +232,8 @@
         if (s === "built") { zone.textContent += " — en ligne : " + (r.json.url || ""); return; }
         if (s === "errored" || essais <= 0) return;
         win.setTimeout(function () { suivre(sha, zone, essais - 1); }, 5000);
+      }).catch(function (e) {
+        zone.textContent = "GitHub Pages : échec réseau : " + e;
       });
     }
 
@@ -244,9 +247,18 @@
       ligne(panneau, "Chargement de l'état…");
       appel("GET", "/__cockpit/publication").then(function (r) {
         panneau.textContent = "";
+        if (!r.ok || !r.json.etat) {
+          ligne(panneau, "Impossible de lire l'état : " + (r.json.erreur || ("réponse " + r.statut)), "ko");
+          return;
+        }
         var rep = r.json, res = resumeEtat(rep), verifs = null;
         ligne(panneau, "Fichiers à publier : " + (res.fichiers.length || "aucun"));
         res.fichiers.forEach(function (f) { ligne(panneau, "• " + f); });
+        if (res.commits.length) {
+          ligne(panneau, "Commits locaux non poussés : " + res.commits.length);
+          res.commits.forEach(function (c) { ligne(panneau, "• " + c); });
+          ((rep.etat || {}).fichiers_commits || []).forEach(function (f) { ligne(panneau, "  ↳ " + f); });
+        }
         res.refus.forEach(function (m) { ligne(panneau, "Refus : " + m, "ko"); });
         Object.keys(rep.diffs || {}).forEach(function (c) {
           var pre = doc.createElement("pre");
@@ -279,6 +291,8 @@
             });
             if (verifs.erreur) ligne(panneau, verifs.erreur, "ko");
             bEnvoyer.disabled = !peutPublier(rep, verifs);
+          }).catch(function (e) {
+            zone.textContent = "Échec réseau : " + e;
           });
         });
         bEnvoyer.addEventListener("click", function () {
@@ -293,8 +307,14 @@
               zone.textContent = "Non publié : " + ((j.refus || []).join(" ; ") || j.erreur || ("étape " + j.etape))
                 + (j.commit_local ? " (commit local conservé : relancer « Publier » pour le pousser)" : "");
             }
+          }).catch(function (e) {
+            zone.textContent = "Échec réseau : " + e;
+            bEnvoyer.disabled = false;
           });
         });
+      }).catch(function (e) {
+        panneau.textContent = "";
+        ligne(panneau, "Échec réseau : " + e, "ko");
       });
     }
 

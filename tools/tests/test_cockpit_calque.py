@@ -62,3 +62,9 @@ def test_resume_et_droit_de_publier():
     assert _node(f"C.peutPublier({rep}, null)") is False
     refuse = '{etat: {fichiers: [], hors_perimetre: []}, refus: ["rien à publier"], diffs: {}, message: ""}'
     assert _node(f"C.peutPublier({refuse}, {{ok: true}})") is False
+
+
+def test_le_resume_porte_les_commits_locaux():
+    rep = '{etat: {fichiers: [], hors_perimetre: [], commits_locaux: ["abc1234 un commit"]}, refus: [], diffs: {}}'
+    assert _node(f"C.resumeEtat({rep}).commits") == ["abc1234 un commit"]
+    assert _node("C.resumeEtat({etat: {fichiers: []}}).commits") == []

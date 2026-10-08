@@ -25,12 +25,12 @@ CALQUE = Path(__file__).resolve().parent / "static" / "calque.js"
 ETAT = {"actif": False, "port": PORT, "erreur": None}
 
 # Le jeton d'écriture est lisible par TOUT script qui tourne dans l'origine 8011 (il est
-# injecté dans chaque page). Scripts externes tolérés : URL EXACTES et versionnées (mesuré le
-# 2026-10-08, seuls deux scripts externes existent dans le site). Plausible est volontairement
-# absent : l'aperçu ne compte pas de visites, et aucun script tiers ne lit le jeton.
+# injecté dans chaque page) et il ouvre l'écriture des sources ET la publication sur main :
+# l'aperçu n'exécute donc AUCUN script tiers (les blocs de code n'y sont pas colorés,
+# cosmétique). Plausible est absent aussi : l'aperçu ne compte pas de visites.
 # 'unsafe-inline' est requis : le dictionnaire i18n du site et le script injecté sont en ligne.
-SCRIPTS_EXTERNES = ("https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js",)
-CSP = ("script-src 'self' 'unsafe-inline' " + " ".join(SCRIPTS_EXTERNES)
+SCRIPTS_EXTERNES = ()
+CSP = ("script-src 'self' 'unsafe-inline'" + "".join(" " + u for u in SCRIPTS_EXTERNES)
        + "; frame-ancestors http://127.0.0.1:8010 http://localhost:8010 http://[::1]:8010")
 
 
@@ -102,10 +102,18 @@ def post_source(h, data: dict) -> None:
     return _json(h, 200 if res.get("ok") else 422, res)
 
 
+def _erreur_500(h, exc) -> None:
+    return _json(h, 500, {"ok": False, "erreur": f"{type(exc).__name__}: {exc}"})
+
+
 def get_publication(h) -> None:
-    e = publication.etat(RACINE)
-    return _json(h, 200, {"etat": e, "refus": publication.refus(e), "diffs": publication.diffs_sources(RACINE, e),
-                          "message": publication.message_auto(e)})
+    try:
+        e = publication.etat(RACINE)
+        return _json(h, 200, {"etat": e, "refus": publication.refus(e),
+                              "diffs": publication.diffs_sources(RACINE, e),
+                              "message": publication.message_auto(e)})
+    except Exception as exc:  # noqa: BLE001 — rapportée, jamais avalée
+        return _erreur_500(h, exc)
 
 
 def post_verifier(h, data: dict) -> None:
@@ -114,6 +122,8 @@ def post_verifier(h, data: dict) -> None:
             res = publication.verifier(RACINE)
     except co.ActionEnCours as exc:
         return _json(h, 409, {"ok": False, "erreur": f"action déjà en cours : {exc}"})
+    except Exception as exc:  # noqa: BLE001
+        return _erreur_500(h, exc)
     return _json(h, 200, {"ok": all(r["ok"] for r in res), "verifications": res})
 
 
@@ -127,6 +137,8 @@ def post_publier(h, data: dict) -> None:
             res = publication.publier(RACINE, str(data.get("message") or ""))
     except co.ActionEnCours as exc:
         return _json(h, 409, {"ok": False, "erreur": f"action déjà en cours : {exc}"})
+    except Exception as exc:  # noqa: BLE001
+        return _erreur_500(h, exc)
     return _json(h, 200 if res["ok"] else 409, res)
 
 
@@ -134,7 +146,10 @@ def get_pages(h) -> None:
     sha = urllib.parse.parse_qs(urllib.parse.urlsplit(h.path).query).get("sha", [""])[0]
     if not re.fullmatch(r"[0-9a-f]{7,40}", sha):
         return _json(h, 400, {"statut": "inconnu", "erreur": "sha invalide"})
-    return _json(h, 200, publication.suivi_pages(sha))
+    try:
+        return _json(h, 200, publication.suivi_pages(sha))
+    except Exception as exc:  # noqa: BLE001
+        return _erreur_500(h, exc)
 
 
 ROUTES_GET: dict = {"/__cockpit/publication": get_publication, "/__cockpit/publication/pages": get_pages}

@@ -24,8 +24,12 @@ MARQUES_CALQUE = ('data-src="profile:', 'data-src="textes:', "/__cockpit/")
 
 
 def _git(racine, *args, run=subprocess.run, timeout=60):
-    return run(["git", "-C", str(racine), *args], capture_output=True, text=True, encoding="utf-8",
-               errors="replace", timeout=timeout, **config.SANS_CONSOLE)
+    argv = ["git", "-C", str(racine), *args]
+    try:
+        return run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                   timeout=timeout, **config.SANS_CONSOLE)
+    except subprocess.TimeoutExpired:   # jamais muet : l'étape échoue par son chemin normal, cause nommée
+        return subprocess.CompletedProcess(argv, 124, stdout="", stderr=f"délai dépassé ({timeout} s)")
 
 
 def dans_perimetre(chemin: str) -> bool:
@@ -41,20 +45,38 @@ def _porcelaine(sortie: str) -> list:
         if len(jeton) < 4:
             continue
         statut, chemin = jeton[:2], jeton[3:]
-        if statut[0] in "RC":
-            i += 1
         fichiers.append({"chemin": chemin, "statut": statut.strip() or statut})
+        if statut[0] in "RC":   # la source d'un renommage est aussi touchée : à contrôler et à inclure
+            source = jetons[i] if i < len(jetons) else ""
+            i += 1
+            if statut[0] == "R" and source:
+                fichiers.append({"chemin": source, "statut": "D"})
     return fichiers
 
 
 def etat(racine, *, run=subprocess.run) -> dict:
     branche = _git(racine, "branch", "--show-current", run=run).stdout.strip()
-    fetch_ok = _git(racine, "fetch", "-q", "origin", run=run, timeout=120).returncode == 0
+    fetch = _git(racine, "fetch", "-q", "origin", run=run, timeout=120)
+    fetch_ok = fetch.returncode == 0
     compte = _git(racine, "rev-list", "--left-right", "--count", "HEAD...origin/main", run=run).stdout.split()
     avance, retard = (int(compte[0]), int(compte[1])) if len(compte) == 2 else (None, None)
-    fichiers = _porcelaine(_git(racine, "status", "--porcelain=v1", "-z", "--untracked-files=all", run=run).stdout)
-    return {"branche": branche, "fetch_ok": fetch_ok, "en_avance": avance, "en_retard": retard,
-            "fichiers": fichiers, "hors_perimetre": [f["chemin"] for f in fichiers if not dans_perimetre(f["chemin"])]}
+    st = _git(racine, "status", "--porcelain=v1", "-z", "--untracked-files=all", run=run)
+    fichiers = _porcelaine(st.stdout)
+    commits, fichiers_commits = [], []
+    if avance:
+        lg = _git(racine, "log", "--format=%h %s", "origin/main..HEAD", run=run)
+        commits = lg.stdout.splitlines() if lg.returncode == 0 else []
+        df = _git(racine, "diff", "--name-only", "-z", "origin/main...HEAD", run=run)
+        fichiers_commits = [c for c in df.stdout.split("\0") if c] if df.returncode == 0 else []
+    hors = []
+    for c in [f["chemin"] for f in fichiers] + fichiers_commits:
+        if not dans_perimetre(c) and c not in hors:
+            hors.append(c)
+    return {"branche": branche, "fetch_ok": fetch_ok, "fetch_erreur": "" if fetch_ok else fetch.stderr.strip()[-300:],
+            "en_avance": avance, "en_retard": retard, "fichiers": fichiers, "commits_locaux": commits,
+            "fichiers_commits": fichiers_commits, "status_erreur": ("" if st.returncode == 0 else
+                                                                  st.stderr.strip()[-300:] or f"code {st.returncode}"),
+            "hors_perimetre": hors}
 
 
 def refus(e: dict) -> list:
@@ -62,7 +84,10 @@ def refus(e: dict) -> list:
     if e["branche"] != "main":
         motifs.append(f"le checkout n'est pas sur main (branche {e['branche'] or 'détachée'})")
     if not e["fetch_ok"]:
-        motifs.append("origin injoignable (git fetch a échoué) : publier exige de comparer à origin/main")
+        motifs.append(f"origin injoignable (git fetch a échoué : {e.get('fetch_erreur') or 'cause inconnue'}) : "
+                      "publier exige de comparer à origin/main")
+    if e.get("status_erreur"):
+        motifs.append(f"git status a échoué : {e['status_erreur']}")
     if e["en_avance"] is None:
         motifs.append("comparaison avec origin/main impossible")
     elif e["en_avance"] and e["en_retard"]:
@@ -110,8 +135,11 @@ def verifier(racine, *, run=subprocess.run) -> list:
     py = sys.executable
 
     def commande(nom, argv):
-        cp = run(argv, cwd=str(racine), capture_output=True, text=True, encoding="utf-8", errors="replace",
-                 timeout=600, **config.SANS_CONSOLE)
+        try:
+            cp = run(argv, cwd=str(racine), capture_output=True, text=True, encoding="utf-8", errors="replace",
+                     timeout=600, **config.SANS_CONSOLE)
+        except subprocess.TimeoutExpired:
+            return {"nom": nom, "ok": False, "detail": "délai dépassé (600 s)"}
         ok = cp.returncode == 0
         return {"nom": nom, "ok": ok, "detail": "" if ok else ((cp.stdout or "") + (cp.stderr or ""))[-1500:]}
 
@@ -146,13 +174,15 @@ def publier(racine, message: str, *, run=subprocess.run) -> dict:
         if ajout.returncode != 0:
             return {"ok": False, "etape": "add", "erreur": ajout.stderr.strip()[-500:]}
         texte = (message or "").strip() or message_auto(e)
-        cm = _git(racine, "commit", "-q", "-m", texte, run=run)
+        cm = _git(racine, "commit", "-q", "-m", texte, "--", *chemins, run=run)
         if cm.returncode != 0:
             return {"ok": False, "etape": "commit", "erreur": ((cm.stdout or "") + (cm.stderr or "")).strip()[-500:]}
     sha = _git(racine, "rev-parse", "HEAD", run=run).stdout.strip()
     pousse = _git(racine, "push", "origin", "HEAD:main", run=run, timeout=180)
     if pousse.returncode != 0:
-        return {"ok": False, "etape": "push", "commit": sha, "commit_local": True, "erreur": pousse.stderr.strip()[-500:]}
+        erreur = ("délai dépassé (180 s) : état du push inconnu — vérifier origin/main avant de relancer"
+                  if pousse.returncode == 124 else pousse.stderr.strip()[-500:])
+        return {"ok": False, "etape": "push", "commit": sha, "commit_local": True, "erreur": erreur}
     return {"ok": True, "commit": sha}
 
 
