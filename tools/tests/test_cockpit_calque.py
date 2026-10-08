@@ -51,3 +51,14 @@ def test_les_etapes_en_echec_de_la_sauvegarde_sont_signalees():
 def test_le_calque_n_injecte_jamais_de_html():
     source = CALQUE.read_text(encoding="utf-8")
     assert "innerHTML" not in source and "eval(" not in source and "insertAdjacentHTML" not in source
+
+
+def test_resume_et_droit_de_publier():
+    rep = ('{etat: {fichiers: [{chemin: "profile.json", statut: "M"}], hors_perimetre: []}, '
+           'refus: [], diffs: {}, message: "m"}')
+    assert _node(f"C.resumeEtat({rep}).fichiers") == ["M profile.json"]
+    assert _node(f"C.peutPublier({rep}, {{ok: true}})") is True
+    assert _node(f"C.peutPublier({rep}, {{ok: false}})") is False
+    assert _node(f"C.peutPublier({rep}, null)") is False
+    refuse = '{etat: {fichiers: [], hors_perimetre: []}, refus: ["rien à publier"], diffs: {}, message: ""}'
+    assert _node(f"C.peutPublier({refuse}, {{ok: true}})") is False

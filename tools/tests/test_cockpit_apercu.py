@@ -203,3 +203,15 @@ def test_le_cockpit_demarre_sans_import_circulaire():
     cp = subprocess.run([sys.executable, "-c", "import tools.cockpit.server, tools.cockpit.apercu"],
                         cwd=str(SITE), capture_output=True, text=True, timeout=60)
     assert cp.returncode == 0, cp.stderr
+
+
+def test_publier_rejoue_les_verifications(srv, monkeypatch):
+    from tools.cockpit import publication
+    monkeypatch.setattr(publication, "verifier", lambda racine: [{"nom": "x", "ok": False, "detail": "d"}])
+    monkeypatch.setattr(publication, "publier", lambda *a, **k: pytest.fail("publier sans vérifications"))
+    code, corps = _req(srv, "POST", "/__cockpit/publication/publier", {"message": "m"})
+    assert code == 409 and json.loads(corps)["refus"] == ["vérifications en échec"]
+
+
+def test_le_suivi_pages_refuse_un_sha_invalide(srv):
+    assert _req(srv, "GET", "/__cockpit/publication/pages?sha=;rm")[0] == 400

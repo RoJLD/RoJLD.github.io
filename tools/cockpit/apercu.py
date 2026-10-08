@@ -10,13 +10,14 @@ from __future__ import annotations
 import functools
 import json
 import mimetypes
+import re
 import subprocess
 import threading
 import urllib.parse
 from pathlib import Path
 
 from tools.cockpit import career_ops as co
-from tools.cockpit import config, edition, server, sources_accueil
+from tools.cockpit import config, edition, publication, server, sources_accueil
 
 PORT = 8011
 RACINE = config.SITE_ROOT
@@ -101,8 +102,44 @@ def post_source(h, data: dict) -> None:
     return _json(h, 200 if res.get("ok") else 422, res)
 
 
-ROUTES_GET: dict = {}
-ROUTES_POST: dict = {"/__cockpit/source": post_source}
+def get_publication(h) -> None:
+    e = publication.etat(RACINE)
+    return _json(h, 200, {"etat": e, "refus": publication.refus(e), "diffs": publication.diffs_sources(RACINE, e),
+                          "message": publication.message_auto(e)})
+
+
+def post_verifier(h, data: dict) -> None:
+    try:
+        with co.verrou_action("publication"):
+            res = publication.verifier(RACINE)
+    except co.ActionEnCours as exc:
+        return _json(h, 409, {"ok": False, "erreur": f"action déjà en cours : {exc}"})
+    return _json(h, 200, {"ok": all(r["ok"] for r in res), "verifications": res})
+
+
+def post_publier(h, data: dict) -> None:
+    """Les vérifications sont rejouées ici : publier sans elles est impossible, même par l'API."""
+    try:
+        with co.verrou_action("publication"):
+            verifs = publication.verifier(RACINE)
+            if not all(r["ok"] for r in verifs):
+                return _json(h, 409, {"ok": False, "refus": ["vérifications en échec"], "verifications": verifs})
+            res = publication.publier(RACINE, str(data.get("message") or ""))
+    except co.ActionEnCours as exc:
+        return _json(h, 409, {"ok": False, "erreur": f"action déjà en cours : {exc}"})
+    return _json(h, 200 if res["ok"] else 409, res)
+
+
+def get_pages(h) -> None:
+    sha = urllib.parse.parse_qs(urllib.parse.urlsplit(h.path).query).get("sha", [""])[0]
+    if not re.fullmatch(r"[0-9a-f]{7,40}", sha):
+        return _json(h, 400, {"statut": "inconnu", "erreur": "sha invalide"})
+    return _json(h, 200, publication.suivi_pages(sha))
+
+
+ROUTES_GET: dict = {"/__cockpit/publication": get_publication, "/__cockpit/publication/pages": get_pages}
+ROUTES_POST: dict = {"/__cockpit/source": post_source, "/__cockpit/publication/verifier": post_verifier,
+                     "/__cockpit/publication/publier": post_publier}
 
 
 class ApercuHandler(server.Handler):
