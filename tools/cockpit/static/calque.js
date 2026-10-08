@@ -85,6 +85,11 @@
     }
 
     var enCours = null;
+    var envoi = false;   // une sauvegarde est en vol : aucune autre action d'édition jusqu'à sa réponse
+    var MSG_EN_COURS = "Modification en cours : Entrée pour enregistrer, Échap pour annuler";
+    function modifie() {
+      return !!enCours && texteSain(enCours.el.textContent) !== texteSain(enCours.avant);
+    }
     function quitter(restaurer) {
       if (!enCours) return;
       if (restaurer) enCours.el.textContent = enCours.avant;
@@ -93,6 +98,7 @@
     }
 
     function enregistrer() {
+      if (envoi || !enCours) return;
       var el = enCours.el;
       var valeur = texteSain(el.textContent);
       if (valeur === texteSain(enCours.avant)) { quitter(false); return; }
@@ -100,6 +106,7 @@
       var r = requeteSource(el.getAttribute("data-src"), lang, valeur, jeton);
       dire("Enregistrement…", false);
       el.removeAttribute("contenteditable");
+      envoi = true;
       win.fetch(r.url, r.init).then(function (rep) {
         return rep.text().then(function (corps) {
           if (rep.ok) {
@@ -113,23 +120,27 @@
               garde = false;
             }
             if (alertes.length && !garde) {
-              dire("Enregistré, mais : " + alertes.join(" ; "), true);
-              return;
+              envoi = false; quitter(false); dire("Enregistré, mais : " + alertes.join(" ; "), true); return;
             }
             win.location.reload();
           } else {
+            envoi = false;
             dire(messageErreur(rep.status, corps), true);
             el.setAttribute("contenteditable", "true");
             el.focus();
           }
         });
       }).catch(function (e) {
+        envoi = false;
         dire("Échec réseau : " + e, true);
         el.setAttribute("contenteditable", "true");
+        el.focus();
       });
     }
 
     function basculer(actif) {
+      if (envoi) { dire("Enregistrement en cours…", false); return; }
+      if (!actif && modifie()) { dire(MSG_EN_COURS, true); return; }
       doc.body.classList.toggle("cockpit-edition", actif);
       bEditer.setAttribute("aria-pressed", actif ? "true" : "false");
       if (!actif) quitter(true);
@@ -146,6 +157,8 @@
       ev.preventDefault();
       ev.stopPropagation();
       if (enCours && enCours.el === el) return;
+      if (envoi) { dire("Enregistrement en cours…", false); return; }
+      if (modifie()) { dire(MSG_EN_COURS, true); return; }
       quitter(true);
       enCours = { el: el, avant: el.textContent };
       el.setAttribute("contenteditable", "true");
@@ -153,7 +166,7 @@
     }, true);
 
     doc.addEventListener("keydown", function (ev) {
-      if (!enCours) return;
+      if (!enCours || envoi) return;
       if (ev.key === "Enter") { ev.preventDefault(); enregistrer(); }
       else if (ev.key === "Escape") { ev.preventDefault(); quitter(true); dire("Modification annulée", false); }
     }, true);
