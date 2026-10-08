@@ -1,0 +1,111 @@
+"""Écrire une source depuis la page : textes fixes dans site_texts.json puis reconstruction,
+champs de profil par la sauvegarde gouvernée — jamais le HTML généré (spec § 3.4)."""
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+SITE = Path(__file__).resolve().parents[2]
+if str(SITE) not in sys.path:
+    sys.path.insert(0, str(SITE))
+from tools.cockpit import edition  # noqa: E402
+from tools.cockpit.pages import cv as page_cv  # noqa: E402
+
+TEXTES = {"fr": {"nav_exp": "Expérience"}, "en": {"nav_exp": "Experience"}}
+PROFIL = {"identity": {"status": {"fr": "Disponible", "en": "Available"}},
+          "experiences": [{"bullets": {"fr": ["Un", "Deux"], "en": ["One", "Two"]}}]}
+
+
+@pytest.fixture
+def site(tmp_path):
+    (tmp_path / "site_texts.json").write_text(json.dumps(TEXTES, ensure_ascii=False), encoding="utf-8")
+    (tmp_path / "profile.json").write_text(json.dumps(PROFIL, ensure_ascii=False), encoding="utf-8")
+    appels = {"reconstruire": 0, "sauvegarde": []}
+
+    def reconstruire():
+        appels["reconstruire"] += 1
+
+    def sauvegarde(brut):
+        appels["sauvegarde"].append(json.loads(brut))
+        return {"ok": True, "stages": {}}
+
+    def ecrire(source, lang, valeur):
+        return edition.ecrire_source(source, lang, valeur, textes_path=tmp_path / "site_texts.json",
+                                     profile_path=tmp_path / "profile.json",
+                                     reconstruire=reconstruire, sauvegarde=sauvegarde)
+    return tmp_path, appels, ecrire
+
+
+def test_un_texte_fixe_est_ecrit_puis_le_site_reconstruit(site):
+    racine, appels, ecrire = site
+    assert ecrire("textes:nav_exp", "fr", "  Parcours \n pro ") == {"ok": True}
+    assert json.loads((racine / "site_texts.json").read_text(encoding="utf-8"))["fr"]["nav_exp"] == "Parcours pro"
+    assert appels["reconstruire"] == 1
+
+
+def test_un_texte_inchange_ne_reconstruit_rien(site):
+    _, appels, ecrire = site
+    assert ecrire("textes:nav_exp", "fr", "Expérience") == {"ok": True, "inchange": True}
+    assert appels["reconstruire"] == 0
+
+
+def test_un_texte_piege_est_stocke_tel_quel(site):
+    racine, _, ecrire = site
+    ecrire("textes:nav_exp", "en", 'Exp "</script><b>é')
+    assert json.loads((racine / "site_texts.json").read_text(encoding="utf-8"))["en"]["nav_exp"] == 'Exp "</script><b>é'
+
+
+def test_la_langue_de_la_page_choisit_la_feuille(site):
+    _, appels, ecrire = site
+    assert ecrire("profile:identity.status.{lang}", "en", "Open to work")["ok"] is True
+    envoye = appels["sauvegarde"][0]
+    assert envoye["identity"]["status"] == {"fr": "Disponible", "en": "Open to work"}
+
+
+def test_une_puce_de_liste_est_ecrite_a_son_indice(site):
+    _, appels, ecrire = site
+    ecrire("profile:experiences.0.bullets.{lang}.1", "fr", "Deux bis")
+    assert appels["sauvegarde"][0]["experiences"][0]["bullets"]["fr"] == ["Un", "Deux bis"]
+
+
+def test_un_refus_de_la_sauvegarde_gouvernee_est_rendu(site):
+    racine, _, _ = site
+    res = edition.ecrire_source("profile:identity.status.{lang}", "fr", "Autre",
+                                textes_path=racine / "site_texts.json", profile_path=racine / "profile.json",
+                                reconstruire=lambda: None,
+                                sauvegarde=lambda brut: {"ok": False, "errors": ["règle X"]})
+    assert res == {"ok": False, "rapport": {"ok": False, "errors": ["règle X"]}}
+
+
+@pytest.mark.parametrize("source, lang, valeur, motif", [
+    ("textes:nav_exp", "de", "x", "langue inconnue"),
+    ("textes:nav_exp", "fr", "   ", "texte vide"),
+    ("textes:nav_exp", "fr", 42, "texte attendu"),
+    ("textes:inconnue", "fr", "x", "texte fixe inconnu"),
+    ("profile:identity.status.fr", "fr", "x", "segment de langue"),
+    ("profile:identity.absent.{lang}", "fr", "x", "chemin introuvable"),
+    ("profile:experiences.0.bullets.{lang}", "fr", "x", "n'est pas un texte"),
+    ("html:index", "fr", "x", "source inconnue"),
+])
+def test_les_refus_sont_nommes(site, source, lang, valeur, motif):
+    _, appels, ecrire = site
+    with pytest.raises(edition.SourceRefusee, match=motif):
+        ecrire(source, lang, valeur)
+    assert appels["reconstruire"] == 0 and appels["sauvegarde"] == []
+
+
+def test_un_texte_trop_long_est_refuse(site):
+    _, _, ecrire = site
+    with pytest.raises(edition.SourceRefusee, match="trop long"):
+        ecrire("textes:nav_exp", "fr", "x" * (edition.LONGUEUR_MAX + 1))
+
+
+def test_sauvegarde_gouvernee_porte_banque_et_career_ops(monkeypatch):
+    import profile_pipeline
+    from tools.cockpit import projection
+    monkeypatch.setattr(profile_pipeline, "govern_save", lambda *a, **k: {"ok": True, "stages": {}})
+    monkeypatch.setattr(page_cv, "_regen_bank", lambda: None)
+    monkeypatch.setattr(projection, "etape_sauvegarde", lambda: {"ok": True, "message": ""})
+    rapport = page_cv.sauvegarde_gouvernee("{}")
+    assert rapport["stages"]["prefab"] == {"ok": True} and rapport["stages"]["career_ops"]["ok"] is True

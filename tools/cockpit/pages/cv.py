@@ -734,30 +734,34 @@ def handle_generate_letter(h, data):   # ex 1058-1093
         h._send(500, "text/plain; charset=utf-8", _ERR_CLIENT.encode("utf-8"))
 
 
+def sauvegarde_gouvernee(raw_json: str, *, rebuild: bool = True) -> dict:
+    """Pipeline gouverné complet — partagé par /save (gouverné) et l'édition sur la page.
+
+    Spec § 6.4 : les 8 PDF publics dérivent de profile.json, la banque est régénérée ; son
+    gate lève SystemExit sur profil invalide : rapporté, jamais masqué (le profil est déjà
+    écrit). D8 : cv.md et profile.yml de career-ops suivent, jamais d'écrasement."""
+    import profile_pipeline
+    from datetime import datetime
+    ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+    report = profile_pipeline.govern_save(
+        raw_json, _PROFILE, _ROOT / "data" / "profile_history", _ROOT / "data" / "profile_graph.json",
+        ts, do_rebuild=rebuild)
+    if report.get("ok"):
+        try:
+            _regen_bank()
+            report["stages"]["prefab"] = {"ok": True}
+        except (Exception, SystemExit) as exc:
+            traceback.print_exc()
+            report["stages"]["prefab"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        from tools.cockpit import projection
+        report["stages"]["career_ops"] = projection.etape_sauvegarde()
+    return report
+
+
 def handle_save(h, data):              # ex 1095-1123 ; `_PROFILE`, `_ROOT`, `save_profile_edit`, `_regen_bank`, `_git_commit` = globaux de CE module
     try:
         if data.get("govern"):
-            import profile_pipeline
-            from datetime import datetime
-            ts = datetime.now().strftime("%Y%m%dT%H%M%S")
-            report = profile_pipeline.govern_save(
-                str(data.get("json", "")), _PROFILE,
-                _ROOT / "data" / "profile_history", _ROOT / "data" / "profile_graph.json",
-                ts, do_rebuild=bool(data.get("rebuild", True)))
-            if report.get("ok"):
-                # Spec § 6.4 : les 8 PDF publics dérivent de profile.json ; une édition sans
-                # régénération les laissait mentir. Le gate de build_cv_bank lève SystemExit
-                # sur profil invalide : rapporté, jamais masqué — le profil est déjà écrit.
-                try:
-                    _regen_bank()
-                    report["stages"]["prefab"] = {"ok": True}
-                except (Exception, SystemExit) as exc:
-                    traceback.print_exc()
-                    report["stages"]["prefab"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
-                # D8 : cv.md et profile.yml de career-ops suivent profile.json. Jamais d'écrasement
-                # (forcer=False) ; un refus s'affiche à côté du succès, le profil reste enregistré.
-                from tools.cockpit import projection
-                report["stages"]["career_ops"] = projection.etape_sauvegarde()
+            report = sauvegarde_gouvernee(str(data.get("json", "")), rebuild=bool(data.get("rebuild", True)))
             return h._send(200, "application/json; charset=utf-8",
                            json.dumps(report, ensure_ascii=False).encode("utf-8"))
         res = save_profile_edit(str(data.get("json", "")), _PROFILE)
