@@ -157,6 +157,25 @@ def test_demarrer_sur_un_port_occupe_rend_un_etat_lisible(monkeypatch):
         occupe.close()
 
 
+def test_l_apercu_refuse_d_ecouter_hors_du_loopback(monkeypatch):
+    monkeypatch.setattr(apercu, "ETAT", dict(apercu.ETAT))
+    monkeypatch.setattr(server, "_bind", lambda: "0.0.0.0")
+    monkeypatch.setattr(apercu, "make_apercu_server", lambda port=0: pytest.fail("aucun serveur hors loopback"))
+    assert apercu.demarrer(0) is None
+    assert apercu.ETAT["actif"] is False and "hors du loopback" in apercu.ETAT["erreur"]
+
+
+def test_les_pages_de_l_apercu_bloquent_les_scripts_tiers(srv):
+    port = srv.server_address[1]
+    c = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    c.request("GET", "/", headers={"Host": f"127.0.0.1:{port}"})
+    r = c.getresponse()
+    r.read()
+    csp = r.getheader("Content-Security-Policy") or ""
+    assert "script-src 'self' 'unsafe-inline'" in csp and "plausible" not in csp
+    assert "frame-ancestors http://127.0.0.1:8010" in csp
+
+
 class _H:
     def __init__(self):
         self.envoye = None

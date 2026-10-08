@@ -23,6 +23,15 @@ RACINE = config.SITE_ROOT
 CALQUE = Path(__file__).resolve().parent / "static" / "calque.js"
 ETAT = {"actif": False, "port": PORT, "erreur": None}
 
+# Le jeton d'écriture est lisible par TOUT script qui tourne dans l'origine 8011 (il est
+# injecté dans chaque page). Scripts externes tolérés : URL EXACTES et versionnées (mesuré le
+# 2026-10-08, seuls deux scripts externes existent dans le site). Plausible est volontairement
+# absent : l'aperçu ne compte pas de visites, et aucun script tiers ne lit le jeton.
+# 'unsafe-inline' est requis : le dictionnaire i18n du site et le script injecté sont en ligne.
+SCRIPTS_EXTERNES = ("https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js",)
+CSP = ("script-src 'self' 'unsafe-inline' " + " ".join(SCRIPTS_EXTERNES)
+       + "; frame-ancestors http://127.0.0.1:8010 http://localhost:8010 http://[::1]:8010")
+
 
 @functools.lru_cache(maxsize=4096)
 def _ignore(racine: str, rel: str) -> bool:
@@ -114,15 +123,17 @@ class ApercuHandler(server.Handler):
         if fichier is None:
             return self._send(404, "text/plain; charset=utf-8", "introuvable".encode("utf-8"))
         octets = fichier.read_bytes()
+        entetes = {"Cache-Control": "no-store"}
         ctype = mimetypes.guess_type(fichier.name)[0] or "application/octet-stream"
         if fichier.suffix.lower() == ".html":
             page = octets.decode("utf-8", "replace")
             if fichier == (Path(RACINE) / "index.html").resolve():
                 page = sources_accueil.annoter(page, sources_accueil.carte_sources(page, _profil()))
             octets, ctype = injecter_calque(page, self.token()).encode("utf-8"), "text/html"
+            entetes["Content-Security-Policy"] = CSP
         if ctype.startswith("text/") or ctype in ("application/javascript", "application/json"):
             ctype += "; charset=utf-8"
-        return self._send(200, ctype, octets, {"Cache-Control": "no-store"})
+        return self._send(200, ctype, octets, entetes)
 
 
 def make_apercu_server(port: int = 0):
@@ -131,6 +142,12 @@ def make_apercu_server(port: int = 0):
 
 def demarrer(port: int = PORT):
     """Lance l'aperçu dans un fil. Jamais d'exception : un port occupé est un état affiché."""
+    adresse = server._bind()
+    if adresse not in server._LOCAL_HOSTS:
+        ETAT.update(actif=False, port=port,
+                    erreur=f"aperçu désactivé : le cockpit écoute sur {adresse}, hors du loopback "
+                           "— l'édition du site n'est servie qu'en local")
+        return None
     try:
         srv = make_apercu_server(port)
     except OSError as exc:
