@@ -79,3 +79,27 @@ def test_l_accueil_reel_est_presque_entierement_editable():
     assert carte["status"] == "profile:identity.status.{lang}"
     assert carte["nav_exp"] == "textes:nav_exp"
     assert len(carte) >= 80      # mesuré le 2026-10-08 : 94 clés éditables sur 107
+
+
+def test_chaque_source_de_profil_redonne_les_valeurs_affichees():
+    """Garde contre une correspondance fortuite : la source `profile:` d'une clé, résolue avec
+    {lang} = fr puis en, redonne EXACTEMENT les deux valeurs que le dictionnaire affiche — sinon
+    une édition sur la page écrirait une autre feuille que celle du texte cliqué."""
+    html = (config.SITE_ROOT / "index.html").read_text(encoding="utf-8")
+    profil = json.loads((config.SITE_ROOT / "profile.json").read_text(encoding="utf-8"))
+    affiche = {"fr": {}, "en": {}}
+    for (nom, lang), valeurs in sa.lire_regions(html).items():
+        if nom != "textes":
+            affiche[lang].update(valeurs)
+    sources = {k: s for k, s in sa.carte_sources(html, profil).items() if s.startswith("profile:")}
+    assert len(sources) >= 60    # mesuré le 2026-10-09
+    ecarts = []
+    for cle, source in sources.items():
+        for lang in ("fr", "en"):
+            noeud = profil
+            for m in source[len("profile:"):].split("."):
+                m = lang if m == "{lang}" else m
+                noeud = noeud[int(m) if m.isdigit() else m]
+            if noeud != affiche[lang][cle]:
+                ecarts.append((cle, lang, source, noeud, affiche[lang][cle]))
+    assert ecarts == []
