@@ -146,6 +146,46 @@ def test_les_diffs_ne_montrent_que_les_sources(depot):
     assert '+{"a": 3}' in d["profile.json"] and d["site_texts.json"] == "(nouveau fichier)"
 
 
+def test_le_diff_d_une_source_indexee_est_montre(depot):
+    """`git diff` compare l'arbre à l'index : une source déjà indexée montrait un diff vide."""
+    site, _ = depot
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"a": 4}\n', encoding="utf-8")
+    _g(site, "add", "profile.json")
+    assert '+{"a": 4}' in pub.diffs_sources(site, pub.etat(site))["profile.json"]
+
+
+class _Espion:
+    def __init__(self, stdout=""):
+        self.appels, self.stdout = [], stdout
+
+    def __call__(self, argv, **kw):
+        self.appels.append((argv, kw))
+        return subprocess.CompletedProcess(argv, 0, stdout=self.stdout, stderr="")
+
+
+def test_chaque_lancement_ferme_stdin(tmp_path):
+    """Lancé par pythonw depuis Git Bash, un enfant qui hérite d'un stdin invalide échoue
+    (WinError 6 mesuré : pytest des vérifications en échec, publication refusée)."""
+    e = _Espion(json.dumps({"status": "built", "commit": "abc1234"}))
+    pub._git(tmp_path, "status", run=e)
+    pub.verifier(tmp_path, run=e)
+    pub.suivi_pages("abc1234", run=e)
+    assert len(e.appels) == 6 and all(kw.get("stdin") is subprocess.DEVNULL for _, kw in e.appels)
+
+
+def test_aucun_lancement_de_publication_ni_du_journal_n_oublie_stdin():
+    import ast
+    oublis = []
+    for nom in ("publication.py", "journal.py"):
+        arbre = ast.parse((SITE / "tools" / "cockpit" / nom).read_text(encoding="utf-8"))
+        for n in ast.walk(arbre):
+            if isinstance(n, ast.Call) and getattr(n.func, "id", None) == "run" \
+                    and not any(k.arg == "stdin" for k in n.keywords):
+                oublis.append(f"{nom}:{n.lineno}")
+    assert oublis == []
+
+
 def test_verifier_nomme_chaque_controle_et_detecte_un_calque_publie(tmp_path):
     (tmp_path / "index.html").write_text('<p data-src="textes:x">a</p>', encoding="utf-8")
     appels = []

@@ -24,10 +24,12 @@ MARQUES_CALQUE = ('data-src="profile:', 'data-src="textes:', "/__cockpit/")
 
 
 def _git(racine, *args, run=subprocess.run, timeout=60):
+    """stdin fermé sur chaque lancement de ce module : sous pythonw lancé depuis Git Bash, un enfant
+    qui hérite d'un stdin invalide échoue (WinError 6 mesuré, publication refusée)."""
     argv = ["git", "-C", str(racine), *args]
     try:
         return run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                   timeout=timeout, **config.SANS_CONSOLE)
+                   timeout=timeout, stdin=subprocess.DEVNULL, **config.SANS_CONSOLE)
     except subprocess.TimeoutExpired:   # jamais muet : l'étape échoue par son chemin normal, cause nommée
         return subprocess.CompletedProcess(argv, 124, stdout="", stderr=f"délai dépassé ({timeout} s)")
 
@@ -111,7 +113,9 @@ def diffs_sources(racine, e: dict, *, run=subprocess.run) -> dict:
     for f in e["fichiers"]:
         c = f["chemin"]
         if c in SOURCES or (c.startswith("articles/src/") and c.endswith(".md")):
-            out[c] = "(nouveau fichier)" if f["statut"] == "??" else _git(racine, "diff", "--", c, run=run).stdout
+            # contre HEAD : une source déjà indexée montrait un diff vide (arbre == index)
+            out[c] = ("(nouveau fichier)" if f["statut"] == "??"
+                      else _git(racine, "diff", "HEAD", "--", c, run=run).stdout)
     return out
 
 
@@ -142,7 +146,7 @@ def verifier(racine, *, run=subprocess.run) -> list:
     def commande(nom, argv):
         try:
             cp = run(argv, cwd=str(racine), capture_output=True, text=True, encoding="utf-8", errors="replace",
-                     timeout=600, **config.SANS_CONSOLE)
+                     timeout=600, stdin=subprocess.DEVNULL, **config.SANS_CONSOLE)
         except subprocess.TimeoutExpired:
             return {"nom": nom, "ok": False, "detail": "délai dépassé (600 s)"}
         ok = cp.returncode == 0
@@ -194,7 +198,7 @@ def publier(racine, message: str, *, run=subprocess.run) -> dict:
 def suivi_pages(sha: str, *, run=subprocess.run) -> dict:
     try:
         cp = run(["gh", "api", f"repos/{DEPOT_PAGES}/pages/builds/latest"], capture_output=True, text=True,
-                 encoding="utf-8", errors="replace", timeout=30, **config.SANS_CONSOLE)
+                 encoding="utf-8", errors="replace", timeout=30, stdin=subprocess.DEVNULL, **config.SANS_CONSOLE)
     except (OSError, subprocess.SubprocessError) as exc:
         return {"statut": "inconnu", "erreur": f"gh indisponible : {exc}"}
     if cp.returncode != 0:

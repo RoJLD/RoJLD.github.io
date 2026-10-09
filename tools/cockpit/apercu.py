@@ -29,9 +29,10 @@ ETAT = {"actif": False, "port": PORT, "erreur": None}
 # l'aperçu n'exécute donc AUCUN script tiers (les blocs de code n'y sont pas colorés,
 # cosmétique). Plausible est absent aussi : l'aperçu ne compte pas de visites.
 # 'unsafe-inline' est requis : le dictionnaire i18n du site et le script injecté sont en ligne.
+# frame-ancestors sans [::1] : Chromium rejette cette source (erreur console à chaque page).
 SCRIPTS_EXTERNES = ()
 CSP = ("script-src 'self' 'unsafe-inline'" + "".join(" " + u for u in SCRIPTS_EXTERNES)
-       + "; frame-ancestors http://127.0.0.1:8010 http://localhost:8010 http://[::1]:8010")
+       + "; frame-ancestors http://127.0.0.1:8010 http://localhost:8010")
 
 
 @functools.lru_cache(maxsize=4096)

@@ -198,7 +198,8 @@ def test_les_pages_de_l_apercu_bloquent_les_scripts_tiers(srv):
     r.read()
     csp = r.getheader("Content-Security-Policy") or ""
     assert "script-src 'self' 'unsafe-inline'" in csp and "plausible" not in csp
-    assert "frame-ancestors http://127.0.0.1:8010" in csp
+    # Chromium rejette la source [::1] (erreur console sur chaque page de l'aperçu) : retirée
+    assert csp.split("frame-ancestors")[1].split() == ["http://127.0.0.1:8010", "http://localhost:8010"]
     assert "https://" not in csp.split("frame-ancestors")[0]   # aucun script tiers : le jeton ouvre la publication
 
 
