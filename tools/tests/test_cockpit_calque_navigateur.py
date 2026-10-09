@@ -63,9 +63,10 @@ def test_une_double_entree_n_envoie_qu_une_fois(apercu_reel):
     with sync_playwright() as p:
         b = p.chromium.launch()
         page = b.new_page()
-        erreurs, envois = [], []
+        erreurs, envois, dialogues = [], [], []
         page.on("pageerror", lambda e: erreurs.append(str(e)))
         page.on("request", lambda r: envois.append(r.method) if r.url.endswith("/__cockpit/source") else None)
+        page.on("dialog", lambda d: (dialogues.append(d.type), d.dismiss()))   # le rechargement ne demande rien
         page.goto(url + "/", wait_until="load")
         page.get_by_role("button", name="Éditer").click()
         page.locator('[data-src="textes:nav_exp"]').click()
@@ -77,7 +78,91 @@ def test_une_double_entree_n_envoie_qu_une_fois(apercu_reel):
         assert envois == ["POST"]
         assert appels == [("textes:nav_exp", "fr", "Expérience pro")]
         assert page.locator("body.cockpit-edition").count() == 1      # mode Éditer conservé au rechargement
+        assert erreurs == [] and dialogues == []
+        b.close()
+
+
+def _etat(fichiers):
+    return {"branche": "main", "fetch_ok": True, "fetch_erreur": "", "en_avance": 0, "en_retard": 0,
+            "fichiers": [{"chemin": c, "statut": "M"} for c in fichiers], "commits_locaux": [],
+            "fichiers_commits": [], "status_erreur": "", "hors_perimetre": [], "hors_journal": []}
+
+
+def test_le_panneau_se_relit_apres_verifier_et_propose_de_reessayer_le_push(apercu_reel, monkeypatch):
+    """Le build des vérifications régénère des pages : la liste est relue ; les lignes de
+    vérification ne s'empilent pas ; un push refusé laisse « Réessayer le push » (spec § 6)."""
+    from playwright.sync_api import sync_playwright
+
+    from tools.cockpit import publication
+    url, _ = apercu_reel
+    lectures, verifications = [], []
+
+    def etat(racine):
+        lectures.append(1)
+        return _etat(["profile.json"] if len(lectures) == 1 else ["profile.json", "index.html"])
+
+    def verifier(racine):
+        verifications.append(1)
+        ok = len(verifications) != 3          # la 3e (rejouée par « Publier ») échoue
+        return [{"nom": "contrôle A", "ok": ok, "detail": "" if ok else "cassé"}]
+    monkeypatch.setattr(publication, "etat", etat)
+    monkeypatch.setattr(publication, "diffs_sources", lambda racine, e: {})
+    monkeypatch.setattr(publication, "verifier", verifier)
+    monkeypatch.setattr(publication, "publier", lambda racine, message: {
+        "ok": False, "etape": "push", "commit": "abc1234", "commit_local": True, "erreur": "rejeté"})
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        page = b.new_page()
+        erreurs = []
+        page.on("pageerror", lambda e: erreurs.append(str(e)))
+        page.goto(url + "/", wait_until="load")
+        page.get_by_role("button", name="Publier", exact=True).click()
+        page.get_by_text("• M profile.json").wait_for()
+        assert page.get_by_text("• M index.html").count() == 0
+        envoyer = page.get_by_role("button", name="Publier sur main")
+        for _ in range(2):
+            page.get_by_role("button", name="Vérifier").click()
+            page.get_by_text("Vérifications terminées").wait_for()
+        assert page.get_by_text("• M index.html").count() == 1            # état relu après le build
+        assert page.get_by_text("✓ contrôle A").count() == 1              # lignes remplacées, pas empilées
+        assert envoyer.is_enabled()
+        envoyer.click()                                                   # 409 : vérifications rejouées en échec
+        page.get_by_text("✗ contrôle A — cassé").wait_for()
+        assert page.get_by_text("✓ contrôle A").count() == 0 and not envoyer.is_enabled()
+        page.get_by_role("button", name="Vérifier").click()
+        page.get_by_text("Vérifications terminées").wait_for()
+        envoyer.click()                                                   # push refusé, commit local gardé
+        reessai = page.get_by_role("button", name="Réessayer le push")
+        reessai.wait_for()
+        assert reessai.is_enabled() and "commit local conservé" in page.locator("body").inner_text()
         assert erreurs == []
+        b.close()
+
+
+def test_quitter_la_page_avec_un_texte_modifie_demande_confirmation(apercu_reel):
+    """Cohérence R9 : un clic sur un lien non éditable ne perd pas une modification en silence."""
+    from playwright.sync_api import Error as ErreurPlaywright
+    from playwright.sync_api import sync_playwright
+    url, appels = apercu_reel
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        page = b.new_page()
+        erreurs, dialogues = [], []
+        page.on("pageerror", lambda e: erreurs.append(str(e)))
+        page.on("dialog", lambda d: (dialogues.append(d.type), d.dismiss()))
+        page.goto(url + "/", wait_until="load")
+        page.get_by_role("button", name="Éditer").click()
+        titre = page.locator('[data-src="textes:nav_exp"]')
+        titre.click()
+        page.keyboard.press("End")
+        page.keyboard.type(" pro")
+        try:
+            page.goto(url + "/page.html", timeout=5000)
+        except ErreurPlaywright:
+            pass                                                      # navigation annulée par le refus
+        assert dialogues == ["beforeunload"]
+        assert titre.inner_text() == "Expérience pro"
+        assert appels == [] and erreurs == []
         b.close()
 
 

@@ -111,6 +111,15 @@
       enCours = null;
     }
 
+    // Un lien non éditable (ou un rechargement) ne perd pas une modification en silence : le
+    // navigateur demande confirmation. Jamais pendant un envoi : le rechargement qui suit une
+    // sauvegarde ne doit rien demander.
+    win.addEventListener("beforeunload", function (ev) {
+      if (envoi || !modifie()) return;
+      ev.preventDefault();
+      ev.returnValue = "";
+    });
+
     function enregistrer() {
       if (envoi || !enCours) return;
       var el = enCours.el;
@@ -244,28 +253,39 @@
         "max-height:70vh;overflow:auto;background:#fff;color:#1a1a2e;border:1px solid #4361ee;border-radius:8px;" +
         "padding:12px;font:13px system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2)";
       doc.body.appendChild(panneau);
-      ligne(panneau, "Chargement de l'état…");
-      appel("GET", "/__cockpit/publication").then(function (r) {
-        panneau.textContent = "";
+      var zoneEtat = doc.createElement("div");   // redessinée après « Vérifier » : le build régénère des pages
+      panneau.appendChild(zoneEtat);
+      ligne(zoneEtat, "Chargement de l'état…");
+      var rep = null, verifs = null;
+
+      function dessinerEtat(r) {
+        zoneEtat.textContent = "";
+        rep = null;
         if (!r.ok || !r.json.etat) {
-          ligne(panneau, "Impossible de lire l'état : " + (r.json.erreur || ("réponse " + r.statut)), "ko");
-          return;
+          ligne(zoneEtat, "Impossible de lire l'état : " + (r.json.erreur || ("réponse " + r.statut)), "ko");
+          return false;
         }
-        var rep = r.json, res = resumeEtat(rep), verifs = null;
-        ligne(panneau, "Fichiers à publier : " + (res.fichiers.length || "aucun"));
-        res.fichiers.forEach(function (f) { ligne(panneau, "• " + f); });
+        rep = r.json;
+        var res = resumeEtat(rep);
+        ligne(zoneEtat, "Fichiers à publier : " + (res.fichiers.length || "aucun"));
+        res.fichiers.forEach(function (f) { ligne(zoneEtat, "• " + f); });
         if (res.commits.length) {
-          ligne(panneau, "Commits locaux non poussés : " + res.commits.length);
-          res.commits.forEach(function (c) { ligne(panneau, "• " + c); });
-          ((rep.etat || {}).fichiers_commits || []).forEach(function (f) { ligne(panneau, "  ↳ " + f); });
+          ligne(zoneEtat, "Commits locaux non poussés : " + res.commits.length);
+          res.commits.forEach(function (c) { ligne(zoneEtat, "• " + c); });
+          ((rep.etat || {}).fichiers_commits || []).forEach(function (f) { ligne(zoneEtat, "  ↳ " + f); });
         }
-        res.refus.forEach(function (m) { ligne(panneau, "Refus : " + m, "ko"); });
+        res.refus.forEach(function (m) { ligne(zoneEtat, "Refus : " + m, "ko"); });
         Object.keys(rep.diffs || {}).forEach(function (c) {
           var pre = doc.createElement("pre");
           pre.style.cssText = "background:#f6f7fb;padding:8px;overflow:auto;max-height:200px";
           pre.textContent = c + "\n" + rep.diffs[c];
-          panneau.appendChild(pre);
+          zoneEtat.appendChild(pre);
         });
+        return true;
+      }
+
+      appel("GET", "/__cockpit/publication").then(function (r) {
+        if (!dessinerEtat(r)) return;
         var message = doc.createElement("input");
         message.type = "text";
         message.value = rep.message || "";
@@ -281,16 +301,29 @@
         bEnvoyer.disabled = true;
         panneau.appendChild(bVerifier);
         panneau.appendChild(bEnvoyer);
+        var zoneVerifs = doc.createElement("div");   // une seule série de lignes : vidée à chaque passage
+        panneau.appendChild(zoneVerifs);
+
+        function afficherVerifs(j) {
+          zoneVerifs.textContent = "";
+          (j.verifications || []).forEach(function (v) {
+            ligne(zoneVerifs, (v.ok ? "✓ " : "✗ ") + v.nom + (v.detail ? " — " + v.detail : ""), v.ok ? "ok" : "ko");
+          });
+          if (j.erreur) ligne(zoneVerifs, j.erreur, "ko");
+        }
+
         bVerifier.addEventListener("click", function () {
           zone.textContent = "Vérifications en cours (≈ 30 s)…";
+          zoneVerifs.textContent = "";
+          bEnvoyer.disabled = true;
           appel("POST", "/__cockpit/publication/verifier", {}).then(function (rv) {
             verifs = rv.json;
-            zone.textContent = "";
-            (verifs.verifications || []).forEach(function (v) {
-              ligne(panneau, (v.ok ? "✓ " : "✗ ") + v.nom + (v.detail ? " — " + v.detail : ""), v.ok ? "ok" : "ko");
+            afficherVerifs(verifs);
+            return appel("GET", "/__cockpit/publication").then(function (r) {
+              dessinerEtat(r);
+              zone.textContent = "Vérifications terminées — état relu après le build";
+              bEnvoyer.disabled = !peutPublier(rep, verifs);
             });
-            if (verifs.erreur) ligne(panneau, verifs.erreur, "ko");
-            bEnvoyer.disabled = !peutPublier(rep, verifs);
           }).catch(function (e) {
             zone.textContent = "Échec réseau : " + e;
           });
@@ -302,10 +335,16 @@
             var j = rp.json;
             if (j.ok) {
               zone.textContent = "Poussé : " + j.commit;
+              bEnvoyer.textContent = "Publier sur main";
               suivre(j.commit, ligne(panneau, "GitHub Pages : en attente"), 60);
-            } else {
-              zone.textContent = "Non publié : " + ((j.refus || []).join(" ; ") || j.erreur || ("étape " + j.etape))
-                + (j.commit_local ? " (commit local conservé : relancer « Publier » pour le pousser)" : "");
+              return;
+            }
+            zone.textContent = "Non publié : " + ((j.refus || []).join(" ; ") || j.erreur || ("étape " + j.etape))
+              + (j.commit_local ? " (commit local conservé : « Réessayer le push » le pousse)" : "");
+            if (j.verifications) afficherVerifs(j);   // 409 : les vérifications rejouées disent pourquoi
+            if (j.commit_local) {                     // spec § 6 : bouton réessayer (le serveur revérifie)
+              bEnvoyer.textContent = "Réessayer le push";
+              bEnvoyer.disabled = false;
             }
           }).catch(function (e) {
             zone.textContent = "Échec réseau : " + e;
@@ -313,8 +352,8 @@
           });
         });
       }).catch(function (e) {
-        panneau.textContent = "";
-        ligne(panneau, "Échec réseau : " + e, "ko");
+        zoneEtat.textContent = "";
+        ligne(zoneEtat, "Échec réseau : " + e, "ko");
       });
     }
 
