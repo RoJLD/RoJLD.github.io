@@ -44,10 +44,39 @@ def test_un_texte_fixe_est_ecrit_puis_le_site_reconstruit(site):
     assert appels["reconstruire"] == 1
 
 
-def test_un_texte_inchange_ne_reconstruit_rien(site):
+def test_un_texte_inchange_reconstruit_quand_meme(site):
+    """Le calque n'envoie jamais un texte inchangé : le serveur ne voit « inchangé » que sur
+    une page périmée — exactement quand une reconstruction est due (ruling R16)."""
     _, appels, ecrire = site
     assert ecrire("textes:nav_exp", "fr", "Expérience") == {"ok": True, "inchange": True}
-    assert appels["reconstruire"] == 0
+    assert appels["reconstruire"] == 1
+
+
+def test_un_champ_de_profil_inchange_reconstruit_quand_meme(site):
+    _, appels, ecrire = site
+    assert ecrire("profile:identity.status.{lang}", "fr", "Disponible") == {"ok": True, "inchange": True}
+    assert appels["reconstruire"] == 1 and appels["sauvegarde"] == []
+
+
+@pytest.mark.parametrize("exc, attendu", [(RuntimeError("build cassé"), "RuntimeError: build cassé"),
+                                          (SystemExit("gate"), "SystemExit: gate")])
+def test_un_echec_de_reconstruction_garde_la_source_et_le_dit(site, exc, attendu):
+    """Spec § 6 : échec de la régénération → bandeau ; la source modifiée est gardée."""
+    racine, _, _ = site
+
+    def casse():
+        raise exc
+    res = edition.ecrire_source("textes:nav_exp", "fr", "Parcours", textes_path=racine / "site_texts.json",
+                                profile_path=racine / "profile.json", reconstruire=casse,
+                                sauvegarde=lambda brut: pytest.fail("pas de sauvegarde de profil"))
+    assert res["ok"] is True
+    assert res["rapport"]["stages"]["rebuild"] == {"ok": False, "error": attendu}
+    assert json.loads((racine / "site_texts.json").read_text(encoding="utf-8"))["fr"]["nav_exp"] == "Parcours"
+    res = edition.ecrire_source("textes:nav_exp", "fr", "Parcours", textes_path=racine / "site_texts.json",
+                                profile_path=racine / "profile.json", reconstruire=casse,
+                                sauvegarde=lambda brut: pytest.fail("pas de sauvegarde de profil"))
+    assert res["ok"] is True and res["inchange"] is True                 # le réessai reconstruit encore
+    assert res["rapport"]["stages"]["rebuild"] == {"ok": False, "error": attendu}
 
 
 def test_un_texte_piege_est_stocke_tel_quel(site):

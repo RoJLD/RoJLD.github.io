@@ -43,7 +43,21 @@ def _ecrire_json(chemin, donnees) -> None:
     derive.ecrire_atomique(Path(chemin), octets)
 
 
+def _reconstruire_garde(reconstruire, resultat: dict) -> dict:
+    """La source est déjà écrite : un échec du build ne la reprend pas et ne devient pas un
+    « Refusé ». Il est rapporté comme étape en échec (le calque l'affiche après rechargement,
+    spec § 6 « la source modifiée est gardée ») ; SystemExit compris (gates du build)."""
+    try:
+        reconstruire()
+    except (Exception, SystemExit) as exc:  # noqa: BLE001 — rapporté dans le résultat, jamais avalé
+        etape = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        resultat["rapport"] = {"ok": True, "stages": {"rebuild": etape}}
+    return resultat
+
+
 def ecrire_source(source, lang, valeur, *, textes_path, profile_path, reconstruire, sauvegarde) -> dict:
+    """Une valeur égale à la source reconstruit quand même : le calque n'envoie jamais un texte
+    inchangé, le serveur ne le voit donc que sur une page périmée — quand le build est dû."""
     if lang not in LANGS:
         raise SourceRefusee(f"langue inconnue : {lang!r}")
     texte = texte_sain(valeur)
@@ -53,11 +67,10 @@ def ecrire_source(source, lang, valeur, *, textes_path, profile_path, reconstrui
         if cle not in textes.get(lang, {}):
             raise SourceRefusee(f"texte fixe inconnu : {cle!r}")
         if textes[lang][cle] == texte:
-            return {"ok": True, "inchange": True}
+            return _reconstruire_garde(reconstruire, {"ok": True, "inchange": True})
         textes[lang][cle] = texte
         _ecrire_json(textes_path, textes)
-        reconstruire()
-        return {"ok": True}
+        return _reconstruire_garde(reconstruire, {"ok": True})
     if genre == "profile":
         segments = _segments(cle, lang)
         profil = json.loads(Path(profile_path).read_text(encoding="utf-8"))
@@ -71,7 +84,7 @@ def ecrire_source(source, lang, valeur, *, textes_path, profile_path, reconstrui
         if not isinstance(actuel, str):
             raise SourceRefusee(f"{cle!r} n'est pas un texte dans profile.json")
         if actuel == texte:
-            return {"ok": True, "inchange": True}
+            return _reconstruire_garde(reconstruire, {"ok": True, "inchange": True})
         parent[segments[-1]] = texte
         rapport = sauvegarde(json.dumps(profil, ensure_ascii=False, indent=2))
         return {"ok": bool(rapport.get("ok")), "rapport": rapport}
