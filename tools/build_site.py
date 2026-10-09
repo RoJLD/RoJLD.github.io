@@ -592,6 +592,32 @@ def gen_i18n_textes(profile, lang):
     return "\n" + "".join(f"        {k}: {js_str(v)},\n" for k, v in textes[lang].items())
 
 
+def synchroniser_textes_statiques(html_page, textes_fr):
+    """Réécrit le texte statique de chaque élément `data-i18n="<k>"`, k clé de site_texts.
+
+    Le texte écrit dans le HTML est ce que voit un visiteur français : `applyLang` ne tourne
+    au chargement qu'en anglais. Ces éléments vivent hors des régions BUILD ; sans cette
+    passe, un texte fixe modifié ne changeait que le dictionnaire, et la page FR gardait
+    l'ancien texte (en ligne comme dans l'aperçu). Les clés de profil sont déjà générées par
+    leurs régions BUILD : elles ne sont pas touchées ici."""
+    import html as _html
+    for cle, valeur in textes_fr.items():
+        ouvrante = re.compile(r'<(\w+)\b[^>]*\sdata-i18n="' + re.escape(cle) + r'"[^>]*>')
+        morceaux, pos = [], 0
+        for m in ouvrante.finditer(html_page):
+            fermante = re.compile(r"</" + re.escape(m.group(1)) + r"\s*>", re.I).search(html_page, m.end())
+            if fermante is None:
+                raise BuildError(f'index.html : l\'élément data-i18n="{cle}" n\'a pas de balise fermante '
+                                 "— son texte statique ne peut pas être régénéré")
+            if "<" in html_page[m.end():fermante.start()]:
+                raise BuildError(f'index.html : l\'élément data-i18n="{cle}" contient du balisage '
+                                 "— son texte statique ne peut pas être régénéré")
+            morceaux += [html_page[pos:m.end()], _html.escape(valeur, quote=False)]
+            pos = fermante.start()
+        html_page = "".join(morceaux) + html_page[pos:]
+    return html_page
+
+
 # ── Registre des sections (extensible) ────────────────────────────────────────
 # name section HTML -> fonction render (marqueur <!-- BUILD:name -->)
 HTML_SECTIONS = {
@@ -631,7 +657,9 @@ def build_html(index_html, profile):
         for lang in ("fr", "en"):
             out = inject(out, f"/* BUILD:i18n_{name}_{lang} */",
                          f"/* /BUILD:i18n_{name}_{lang} */", gen(profile, lang))
-    return out
+    # Les régions i18n ont validé site_texts.json (gen_i18n_textes) : ses valeurs FR
+    # deviennent aussi le texte statique des éléments, hors régions BUILD.
+    return synchroniser_textes_statiques(out, load_site_texts()["fr"])
 
 
 def build(profile_path=None, index_path=None, write=True, today=None):
