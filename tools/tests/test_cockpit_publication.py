@@ -1,5 +1,9 @@
 """Publier : état, refus nommés, commit des seuls fichiers du site, push, réessai après échec.
-Exercé contre de VRAIS dépôts git temporaires (un origin nu + un clone) — spec § 5."""
+Exercé contre de VRAIS dépôts git temporaires (un origin nu + un clone) — spec § 5.
+
+Une écriture du cockpit passe par `journal.ecriture` (spec § 5.4) : les tests qui simulent une
+édition faite depuis le cockpit l'écrivent dans ce bloc ; un fichier écrit hors du bloc est une
+modification étrangère, refusée."""
 import json
 import subprocess
 import sys
@@ -10,6 +14,7 @@ import pytest
 SITE = Path(__file__).resolve().parents[2]
 if str(SITE) not in sys.path:
     sys.path.insert(0, str(SITE))
+from tools.cockpit import journal  # noqa: E402
 from tools.cockpit import publication as pub  # noqa: E402
 
 
@@ -45,8 +50,9 @@ def test_rien_a_publier(depot):
 
 def test_publier_committe_le_seul_perimetre_et_pousse(depot):
     site, origin = depot
-    (site / "profile.json").write_text('{"a": 1}\n', encoding="utf-8")
-    (site / "index.html").write_text("<html>neuf</html>\n", encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"a": 1}\n', encoding="utf-8")
+        (site / "index.html").write_text("<html>neuf</html>\n", encoding="utf-8")
     res = pub.publier(site, "")
     assert res["ok"] is True
     fichiers = _g(origin, "show", "--name-only", "--format=", "main").split()
@@ -56,16 +62,34 @@ def test_publier_committe_le_seul_perimetre_et_pousse(depot):
 
 def test_hors_perimetre_est_refuse(depot):
     site, _ = depot
-    (site / "profile.json").write_text('{"a": 1}\n', encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"a": 1}\n', encoding="utf-8")
     (site / "tools" / "outil.py").write_text("x = 2\n", encoding="utf-8")
     res = pub.publier(site, "msg")
     assert res["ok"] is False and any("hors du périmètre" in m and "tools/outil.py" in m for m in res["refus"])
 
 
+def test_une_modification_hors_cockpit_est_refusee(depot):
+    """Spec § 5.4 : l'arbre contient des modifications que le cockpit n'a pas faites → refus
+    nommé, rien n'est committé — même DANS le périmètre (index.html)."""
+    site, origin = depot
+    tete = _g(site, "rev-parse", "HEAD")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"a": 1}\n', encoding="utf-8")
+    (site / "index.html").write_text("<html>à la main</html>\n", encoding="utf-8")
+    res = pub.publier(site, "msg")
+    assert res["ok"] is False
+    assert [m for m in res["refus"] if "modifications que le cockpit n'a pas faites" in m] == [
+        "modifications que le cockpit n'a pas faites (journal de ses écritures), "
+        "à committer ou annuler à la main : index.html"]
+    assert _g(site, "rev-parse", "HEAD") == tete and _g(origin, "rev-parse", "main") == tete
+
+
 def test_hors_de_main_est_refuse(depot):
     site, _ = depot
     _g(site, "checkout", "-q", "-b", "autre")
-    (site / "profile.json").write_text('{"a": 1}\n', encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"a": 1}\n', encoding="utf-8")
     assert any("pas sur main" in m for m in pub.publier(site, "msg")["refus"])
 
 
@@ -92,14 +116,16 @@ def test_un_retard_se_rattrape_par_avance_rapide(depot, tmp_path):
     (autre / "index.html").write_text("<html>distant</html>\n", encoding="utf-8")
     _g(autre, "commit", "-q", "-am", "distant")
     _g(autre, "push", "-q", "origin", "main")
-    (site / "profile.json").write_text('{"local": 1}\n', encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"local": 1}\n', encoding="utf-8")
     assert pub.publier(site, "msg")["ok"] is True
     assert _g(origin, "log", "--format=%s", "main").split("\n")[:2] == ["msg", "distant"]
 
 
 def test_un_push_refuse_garde_le_commit_et_le_reessai_le_pousse(depot):
     site, origin = depot
-    (site / "profile.json").write_text('{"a": 2}\n', encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"a": 2}\n', encoding="utf-8")
     _g(site, "remote", "set-url", "--push", "origin", str(site.parent / "absent.git"))
     res = pub.publier(site, "msg")
     assert res["ok"] is False and res["etape"] == "push" and res["commit_local"] is True
@@ -150,7 +176,8 @@ def test_un_commit_local_hors_perimetre_est_refuse(depot):
     site, _ = depot
     (site / "tools" / "outil.py").write_text("x = 3\n", encoding="utf-8")
     _g(site, "commit", "-q", "-am", "outil local")
-    (site / "profile.json").write_text('{"b": 1}\n', encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"b": 1}\n', encoding="utf-8")
     e = pub.etat(site)
     assert len(e["commits_locaux"]) == 1 and e["commits_locaux"][0].endswith("outil local")
     assert e["fichiers_commits"] == ["tools/outil.py"]
@@ -168,7 +195,8 @@ def test_un_renommage_depuis_hors_perimetre_est_refuse(depot):
 
 def test_le_commit_ne_prend_que_les_fichiers_verifies(depot):
     site, origin = depot
-    (site / "profile.json").write_text('{"c": 1}\n', encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"c": 1}\n', encoding="utf-8")
 
     def run(argv, **k):
         if "commit" in argv:      # un autre processus indexe un fichier entre l'état et le commit
@@ -181,15 +209,17 @@ def test_le_commit_ne_prend_que_les_fichiers_verifies(depot):
 
 def test_un_nouveau_fichier_du_perimetre_est_publie(depot):
     site, origin = depot
-    (site / "articles").mkdir()
-    (site / "articles" / "neuf.html").write_text("<p>neuf</p>\n", encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "articles").mkdir()
+        (site / "articles" / "neuf.html").write_text("<p>neuf</p>\n", encoding="utf-8")
     assert pub.publier(site, "msg")["ok"] is True
     assert "articles/neuf.html" in _g(origin, "show", "--name-only", "--format=", "main").split()
 
 
 def test_un_delai_depasse_au_push_est_rapporte(depot):
     site, _ = depot
-    (site / "profile.json").write_text('{"d": 1}\n', encoding="utf-8")
+    with journal.ecriture(site):
+        (site / "profile.json").write_text('{"d": 1}\n', encoding="utf-8")
 
     def run(argv, **k):
         if "push" in argv:

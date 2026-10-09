@@ -38,3 +38,12 @@ def _filet_ecriture_hors_tmp(monkeypatch, tmp_path_factory):
         return vraie(chemin, octets)
 
     monkeypatch.setattr(derive, "ecrire_atomique", gardee)
+
+
+@pytest.fixture(autouse=True)
+def _journal_des_ecritures_sous_tmp(monkeypatch, tmp_path):
+    """Le journal des écritures du cockpit (spec édition du site § 5.4) vit dans le dépôt du
+    site : chaque test en a un à lui, sous son dossier temporaire, jamais le vrai."""
+    from tools.cockpit import journal
+
+    monkeypatch.setattr(journal, "CHEMIN", tmp_path / "journal_ecritures.json")

@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from tools.cockpit import config
+from tools.cockpit import config, journal
 
 # Ce que le cockpit écrit ou régénère : sources, sorties des générateurs, banque préfabriquée.
 PERIMETRE = ("profile.json", "site_texts.json", "academy.json", "index.html", "articles/", "projects/",
@@ -76,7 +76,9 @@ def etat(racine, *, run=subprocess.run) -> dict:
             "en_avance": avance, "en_retard": retard, "fichiers": fichiers, "commits_locaux": commits,
             "fichiers_commits": fichiers_commits, "status_erreur": ("" if st.returncode == 0 else
                                                                   st.stderr.strip()[-300:] or f"code {st.returncode}"),
-            "hors_perimetre": hors}
+            "hors_perimetre": hors,
+            # Spec § 5.4 : le cockpit tient le journal de ses écritures ; le périmètre reste une garde de plus.
+            "hors_journal": journal.etrangers(racine, [f["chemin"] for f in fichiers])}
 
 
 def refus(e: dict) -> list:
@@ -96,6 +98,9 @@ def refus(e: dict) -> list:
     if e["hors_perimetre"]:
         motifs.append("modifications hors du périmètre du site, à committer ou annuler à la main : "
                       + ", ".join(e["hors_perimetre"][:10]))
+    if e.get("hors_journal"):
+        motifs.append("modifications que le cockpit n'a pas faites (journal de ses écritures), "
+                      "à committer ou annuler à la main : " + ", ".join(e["hors_journal"][:10]))
     if not e["fichiers"] and not e["en_avance"]:
         motifs.append("rien à publier")
     return motifs

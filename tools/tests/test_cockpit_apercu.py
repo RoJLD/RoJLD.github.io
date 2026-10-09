@@ -127,6 +127,31 @@ def test_une_ecriture_valide_passe_par_edition(srv, monkeypatch):
     assert code == 200 and json.loads(corps) == {"ok": True} and vu == {"s": "textes:nav_exp", "l": "en", "v": "Path"}
 
 
+def test_une_ecriture_de_source_est_journalisee(srv, racine, monkeypatch):
+    """Spec § 5.4 : ce que le cockpit écrit est au journal, la publication ne le refuse pas."""
+    from tools.cockpit import journal
+
+    def ecrit(s, l, v, **k):
+        (racine / "site_texts.json").write_text('{"fr": {}, "en": {}}\n', encoding="utf-8")
+        return {"ok": True}
+    monkeypatch.setattr(edition, "ecrire_source", ecrit)
+    assert _req(srv, "POST", "/__cockpit/source", {"source": "textes:nav_exp", "lang": "fr", "valeur": "x"})[0] == 200
+    assert journal.etrangers(racine, ["site_texts.json"]) == []
+    (racine / "secret2.txt").write_text("à la main", encoding="utf-8")
+    assert journal.etrangers(racine, ["secret2.txt"]) == ["secret2.txt"]
+
+
+def test_les_pages_regenerees_par_verifier_sont_journalisees(srv, racine, monkeypatch):
+    from tools.cockpit import journal, publication
+
+    def verifie(r):
+        (racine / "page.html").write_text("<html><body>régénérée</body></html>", encoding="utf-8")
+        return [{"nom": "x", "ok": True, "detail": ""}]
+    monkeypatch.setattr(publication, "verifier", verifie)
+    assert _req(srv, "POST", "/__cockpit/publication/verifier", {})[0] == 200
+    assert journal.etrangers(racine, ["page.html"]) == []
+
+
 def test_un_refus_d_edition_rend_400_nomme(srv, monkeypatch):
     def refuse(*a, **k):
         raise edition.SourceRefusee("texte vide : rien n'est enregistré")

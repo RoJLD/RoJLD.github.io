@@ -9,7 +9,7 @@ import urllib.parse
 from datetime import date
 from typing import Callable, Optional
 
-from tools.cockpit import config
+from tools.cockpit import config, journal
 from tools.cockpit.pages import layout
 
 import cv_pdf      # noqa: E402  (test_cv_templates patche cv_target.* via ce module)
@@ -739,23 +739,25 @@ def sauvegarde_gouvernee(raw_json: str, *, rebuild: bool = True) -> dict:
 
     Spec § 6.4 : les 8 PDF publics dérivent de profile.json, la banque est régénérée ; son
     gate lève SystemExit sur profil invalide : rapporté, jamais masqué (le profil est déjà
-    écrit). D8 : cv.md et profile.yml de career-ops suivent, jamais d'écrasement."""
+    écrit). D8 : cv.md et profile.yml de career-ops suivent, jamais d'écrasement.
+    Tout s'écrit sous le journal des écritures du cockpit (spec édition du site § 5.4)."""
     import profile_pipeline
     from datetime import datetime
-    ts = datetime.now().strftime("%Y%m%dT%H%M%S")
-    report = profile_pipeline.govern_save(
-        raw_json, _PROFILE, _ROOT / "data" / "profile_history", _ROOT / "data" / "profile_graph.json",
-        ts, do_rebuild=rebuild)
-    if report.get("ok"):
-        try:
-            _regen_bank()
-            report["stages"]["prefab"] = {"ok": True}
-        except (Exception, SystemExit) as exc:
-            traceback.print_exc()
-            report["stages"]["prefab"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
-        from tools.cockpit import projection
-        report["stages"]["career_ops"] = projection.etape_sauvegarde()
-    return report
+    with journal.ecriture(_ROOT):
+        ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+        report = profile_pipeline.govern_save(
+            raw_json, _PROFILE, _ROOT / "data" / "profile_history", _ROOT / "data" / "profile_graph.json",
+            ts, do_rebuild=rebuild)
+        if report.get("ok"):
+            try:
+                _regen_bank()
+                report["stages"]["prefab"] = {"ok": True}
+            except (Exception, SystemExit) as exc:
+                traceback.print_exc()
+                report["stages"]["prefab"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+            from tools.cockpit import projection
+            report["stages"]["career_ops"] = projection.etape_sauvegarde()
+        return report
 
 
 def handle_save(h, data):              # ex 1095-1123 ; `_PROFILE`, `_ROOT`, `save_profile_edit`, `_regen_bank`, `_git_commit` = globaux de CE module
@@ -764,16 +766,17 @@ def handle_save(h, data):              # ex 1095-1123 ; `_PROFILE`, `_ROOT`, `sa
             report = sauvegarde_gouvernee(str(data.get("json", "")), rebuild=bool(data.get("rebuild", True)))
             return h._send(200, "application/json; charset=utf-8",
                            json.dumps(report, ensure_ascii=False).encode("utf-8"))
-        res = save_profile_edit(str(data.get("json", "")), _PROFILE)
-        if res["ok"]:
-            actions = []
-            if data.get("regen"):
-                _regen_bank(); actions.append("banque régénérée")
-            if data.get("commit"):
-                _git_commit(_ROOT, ["profile.json", "cv/prefab"],
-                            "chore(cv): edition profile via atelier")
-                actions.append("committé local")
-            res["actions"] = actions
+        with journal.ecriture(_ROOT):   # spec édition du site § 5.4 : écriture du cockpit, au journal
+            res = save_profile_edit(str(data.get("json", "")), _PROFILE)
+            if res["ok"]:
+                actions = []
+                if data.get("regen"):
+                    _regen_bank(); actions.append("banque régénérée")
+                if data.get("commit"):
+                    _git_commit(_ROOT, ["profile.json", "cv/prefab"],
+                                "chore(cv): edition profile via atelier")
+                    actions.append("committé local")
+                res["actions"] = actions
         h._send(200, "application/json; charset=utf-8",
                json.dumps(res, ensure_ascii=False).encode("utf-8"))
     except Exception:

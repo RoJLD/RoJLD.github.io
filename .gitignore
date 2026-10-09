@@ -27,3 +27,6 @@ tools/cv/parity_cases.json
 # 2026-09-29 — cockpit : l'emplacement de career-ops sur le poste. Un chemin du poste
 # n'a rien à faire dans un dépôt public ; test_cockpit_config le vérifie.
 tools/cockpit/local.json
+# 2026-10-09 — journal des écritures du cockpit (spec édition du site § 5.4) : état local du
+# poste, jamais servi par l'aperçu ni publié.
+tools/cockpit/journal_ecritures.json

@@ -130,6 +130,50 @@ def test_un_texte_trop_long_est_refuse(site):
         ecrire("textes:nav_exp", "fr", "x" * (edition.LONGUEUR_MAX + 1))
 
 
+def _enregistreur(vu):
+    import contextlib
+
+    @contextlib.contextmanager
+    def ecriture(racine, **k):
+        vu.append(("entre", racine))
+        try:
+            yield
+        finally:
+            vu.append(("sort", racine))
+    return ecriture
+
+
+def test_la_sauvegarde_gouvernee_ecrit_sous_le_journal(monkeypatch):
+    """Spec § 5.4 : toute écriture du cockpit est au journal — profil, historique, pages
+    reconstruites et banque préfabriquée sont écrits DANS le bloc journal.ecriture(_ROOT)."""
+    import profile_pipeline
+    from tools.cockpit import journal, projection
+    vu = []
+    monkeypatch.setattr(journal, "ecriture", _enregistreur(vu))
+    monkeypatch.setattr(profile_pipeline, "govern_save",
+                        lambda *a, **k: vu.append(("govern",)) or {"ok": True, "stages": {}})
+    monkeypatch.setattr(page_cv, "_regen_bank", lambda: vu.append(("banque",)))
+    monkeypatch.setattr(projection, "etape_sauvegarde", lambda: {"ok": True, "message": ""})
+    page_cv.sauvegarde_gouvernee("{}")
+    assert vu == [("entre", page_cv._ROOT), ("govern",), ("banque",), ("sort", page_cv._ROOT)]
+
+
+def test_la_sauvegarde_non_gouvernee_ecrit_sous_le_journal(monkeypatch):
+    from tools.cockpit import journal
+    vu = []
+    monkeypatch.setattr(journal, "ecriture", _enregistreur(vu))
+    monkeypatch.setattr(page_cv, "save_profile_edit", lambda raw, path: vu.append(("profil",)) or {"ok": True})
+    monkeypatch.setattr(page_cv, "_regen_bank", lambda: vu.append(("banque",)))
+    monkeypatch.setattr(page_cv, "_git_commit", lambda *a: vu.append(("commit",)))
+
+    class H:
+        def _send(self, code, ctype, corps):
+            vu.append(("envoi", code))
+    page_cv.handle_save(H(), {"json": "{}", "regen": True, "commit": True})
+    assert vu == [("entre", page_cv._ROOT), ("profil",), ("banque",), ("commit",), ("sort", page_cv._ROOT),
+                  ("envoi", 200)]
+
+
 def test_sauvegarde_gouvernee_porte_banque_et_career_ops(monkeypatch):
     import profile_pipeline
     from tools.cockpit import projection

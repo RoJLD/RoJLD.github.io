@@ -17,7 +17,7 @@ import urllib.parse
 from pathlib import Path
 
 from tools.cockpit import career_ops as co
-from tools.cockpit import config, edition, publication, server, sources_accueil
+from tools.cockpit import config, edition, journal, publication, server, sources_accueil
 
 PORT = 8011
 RACINE = config.SITE_ROOT
@@ -87,7 +87,7 @@ def post_source(h, data: dict) -> None:
     from tools.cockpit.pages import cv as pages_cv
     import build_site
     try:
-        with co.verrou_action("edition-site"):
+        with co.verrou_action("edition-site"), journal.ecriture(RACINE):
             res = edition.ecrire_source(
                 data.get("source"), data.get("lang"), data.get("valeur"),
                 textes_path=build_site.SITE_TEXTS, profile_path=pages_cv._PROFILE,
@@ -119,7 +119,8 @@ def get_publication(h) -> None:
 def post_verifier(h, data: dict) -> None:
     try:
         with co.verrou_action("publication"):
-            res = publication.verifier(RACINE)
+            with journal.ecriture(RACINE):          # le build des vérifications réécrit les pages
+                res = publication.verifier(RACINE)
     except co.ActionEnCours as exc:
         return _json(h, 409, {"ok": False, "erreur": f"action déjà en cours : {exc}"})
     except Exception as exc:  # noqa: BLE001
@@ -131,7 +132,8 @@ def post_publier(h, data: dict) -> None:
     """Les vérifications sont rejouées ici : publier sans elles est impossible, même par l'API."""
     try:
         with co.verrou_action("publication"):
-            verifs = publication.verifier(RACINE)
+            with journal.ecriture(RACINE):          # le build des vérifications réécrit les pages
+                verifs = publication.verifier(RACINE)
             if not all(r["ok"] for r in verifs):
                 return _json(h, 409, {"ok": False, "refus": ["vérifications en échec"], "verifications": verifs})
             res = publication.publier(RACINE, str(data.get("message") or ""))
