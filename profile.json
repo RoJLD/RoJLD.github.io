@@ -1,7 +1,7 @@
 {
   "$schema": "https://roblastar.github.io/profile-schema/v1.json",
   "$version": "1.1.0",
-  "$updated": "2026-09-28",
+  "$updated": "2026-10-12",
   "domains": [
     {
       "id": "quant",
@@ -139,33 +139,65 @@
       "end": "2026-09",
       "gpa": null,
       "courses_label": {
-        "fr": "Cours clés",
-        "en": "Key courses"
+        "fr": "Cours pertinents",
+        "en": "Relevant coursework"
       },
       "courses": [
         {
-          "fr": "Calcul stochastique & SDE",
-          "en": "Stochastic calculus & SDE"
+          "fr": "Calcul stochastique & EDS",
+          "en": "Stochastic Calculus & SDEs"
+        },
+        {
+          "fr": "Pricing des dérivés & risque de marché",
+          "en": "Derivatives Pricing & Market Risk"
+        },
+        {
+          "fr": "Produits de taux & construction de courbes",
+          "en": "Fixed Income & Yield-Curve Construction"
         },
         {
           "fr": "Finance de marché",
-          "en": "Financial markets"
+          "en": "Financial Markets"
         },
         {
           "fr": "Recherche opérationnelle & optimisation numérique",
-          "en": "Operations research & numerical optimization"
+          "en": "Operations Research & Numerical Optimization"
+        },
+        {
+          "fr": "Trading algorithmique & backtesting",
+          "en": "Algorithmic Trading & Backtesting"
+        },
+        {
+          "fr": "Contrôle optimal & méthodes hamiltoniennes",
+          "en": "Optimal Control & Hamiltonian Methods"
+        },
+        {
+          "fr": "Finance comportementale",
+          "en": "Behavioral Finance"
+        },
+        {
+          "fr": "IA appliquée à la finance",
+          "en": "Applied AI in Finance"
         },
         {
           "fr": "Machine Learning appliqué",
           "en": "Applied Machine Learning"
         },
         {
-          "fr": "Contrôle optimal et Hamiltonien",
-          "en": "Optimal control & Hamiltonian"
+          "fr": "Gestion de portefeuille & asset management",
+          "en": "Portfolio & Asset Management"
         },
         {
-          "fr": "Modèles DSGE",
-          "en": "DSGE models"
+          "fr": "Modèles DSGE & macro-finance",
+          "en": "DSGE & Macro-Finance"
+        },
+        {
+          "fr": "Blockchain & finance décentralisée",
+          "en": "Blockchain & DeFi"
+        },
+        {
+          "fr": "Fusions-acquisitions & LBO",
+          "en": "M&A and LBO"
         }
       ],
       "capstone": {
@@ -194,7 +226,57 @@
           "EY"
         ]
       },
-      "ranking_context": "Top 2% sur communauté de 40 000 étudiants (Student Pop)"
+      "ranking_context": "Top 2% sur communauté de 40 000 étudiants (Student Pop)",
+      "location": {
+        "fr": "Paris 15e, France",
+        "en": "Paris 15e, France"
+      }
+    },
+    {
+      "id": "erasmus-ruse",
+      "school": "Angel Kanchev University",
+      "title": {
+        "fr": "Université Angel Kanchev",
+        "en": "University Angel Kanchev"
+      },
+      "org": {
+        "fr": "Mobilité internationale (ERASMUS)",
+        "en": "International Mobility (ERASMUS)"
+      },
+      "location": {
+        "fr": "Roussé, Bulgarie",
+        "en": "Ruse, Bulgaria"
+      },
+      "period": "2022 – 2023",
+      "start": "2022",
+      "end": "2023",
+      "courses_label": {
+        "fr": "Cours",
+        "en": "Coursework"
+      },
+      "courses": [
+        {
+          "fr": "Économie internationale",
+          "en": "International Economics"
+        },
+        {
+          "fr": "Marketing",
+          "en": "Marketing"
+        },
+        {
+          "fr": "Intelligence artificielle",
+          "en": "Artificial Intelligence"
+        },
+        {
+          "fr": "Graphic design",
+          "en": "Graphic Design"
+        },
+        {
+          "fr": "Cryptographie",
+          "en": "Cryptography"
+        }
+      ],
+      "capstone": null
     },
     {
       "id": "prepa",
@@ -210,22 +292,59 @@
       "period": "2019 – 2021 · Bourg-en-Bresse",
       "start": "2019-09",
       "end": "2021-06",
-      "courses": [],
-      "capstone": null
+      "courses": [
+        {
+          "fr": "Mathématiques",
+          "en": "Mathematics"
+        },
+        {
+          "fr": "Physique",
+          "en": "Physics"
+        },
+        {
+          "fr": "Chimie",
+          "en": "Chemistry"
+        },
+        {
+          "fr": "Sciences de l'ingénieur",
+          "en": "Engineering Sciences"
+        },
+        {
+          "fr": "Programmation",
+          "en": "Programming"
+        },
+        {
+          "fr": "Philosophie",
+          "en": "Philosophy"
+        },
+        {
+          "fr": "Anglais",
+          "en": "English"
+        }
+      ],
+      "capstone": null,
+      "location": {
+        "fr": "Bourg-en-Bresse, France",
+        "en": "Bourg-en-Bresse, France"
+      },
+      "courses_label": {
+        "fr": "Cours",
+        "en": "Coursework"
+      }
     }
   ],
   "experiences": [
     {
       "id": "alten_2026",
-      "company": "ALTEN",
+      "company": "ALTEN Labs",
       "division": {
         "fr": "Lab R&D",
         "en": "Lab R&D"
       },
       "location": "Sèvres, France",
       "title": {
-        "fr": "Quantitative Researcher DeFi",
-        "en": "DeFi Quantitative Researcher"
+        "fr": "Chercheur quantitatif DeFi",
+        "en": "Quantitative Researcher, DeFi"
       },
       "type": "stage",
       "start": "2026-02",
@@ -233,14 +352,22 @@
       "current": false,
       "bullets": {
         "fr": [
-          "Pilotage du projet « CryptoExploration » : détection et évaluation des fluctuations d'actifs sur protocoles émergents",
-          "Développement de modèles statistiques et ML pour l'exploration de patterns et l'analyse de corrélations",
-          "Data Engineering : automatisation de la collecte de métriques on-chain (TVL, APY, Volume) via Python"
+          "Pilotage de la R&D sur la synchronisation des régimes crypto/TradFi dans le projet « CryptoExploration » : détection et évaluation des fluctuations d'actifs sur protocoles émergents, pipelines de données et modèles statistiques sur 12+ ans de données de marché journalières.",
+          "Conception de modèles de Markov cachés à 3 états (Baum-Welch, Viterbi) analysant 3 200+ observations journalières pour segmenter les microstructures de marché.",
+          "Évaluation du couplage entre régimes crypto et 7 indicateurs macro-financiers via un protocole d'event study, des fenêtres glissantes de 30 à 252 jours et 2 000 tests de permutation.",
+          "Traitement de la non-stationnarité des séries temporelles (tests ADF/KPSS) par bootstrap par blocs et correction FDR de Benjamini-Hochberg sur une grille de 56 cellules testées.",
+          "Création et automatisation d'un pipeline ETL d'ingestion multi-sources (3 APIs : Binance via CCXT, Yahoo Finance, FRED) traitant 12+ ans d'historique journalier au format Parquet.",
+          "Data engineering : automatisation de la collecte de métriques on-chain (TVL, APY, volume) en Python.",
+          "Construction du socle d'accueil R&D interne (bibliothèque scientifique, templates de livrables, guides méthodologiques, environnement d'expérimentation reproductible sous Git/Docker), réduisant le temps d'acculturation des futurs chercheurs."
         ],
         "en": [
-          "Led the 'CryptoExploration' project: detection and evaluation of asset fluctuations on emerging protocols",
-          "Developed statistical and ML models for pattern exploration and correlation analysis",
-          "Data Engineering: automated on-chain metrics collection (TVL, APY, Volume) via Python"
+          "Led R&D on crypto/TradFi regime synchronization within the 'CryptoExploration' project: detection and evaluation of asset fluctuations on emerging protocols, with data pipelines and statistical models over 12+ years of daily market data.",
+          "Engineered 3-state Hidden Markov Models (Baum-Welch, Viterbi) analyzing 3,200+ daily observations to segment market microstructures.",
+          "Assessed the coupling between crypto regimes and 7 macro-financial indicators via an event-study protocol, rolling windows of 30–252 days, and 2,000 permutation tests.",
+          "Handled time-series non-stationarity (ADF/KPSS tests) using block bootstrap and Benjamini-Hochberg FDR correction across a 56-cell test grid.",
+          "Built and automated a multi-source ETL ingestion pipeline (3 APIs: Binance via CCXT, Yahoo Finance, FRED) processing 12+ years of daily history in Parquet.",
+          "Data engineering: automated on-chain metrics collection (TVL, APY, volume) in Python.",
+          "Built the internal R&D onboarding foundation (scientific library, deliverable templates, methodology guides, reproducible Git/Docker experimentation environment), reducing ramp-up time for future researchers."
         ]
       },
       "impact_metrics": [
@@ -295,10 +422,10 @@
         "fr": "Département Financier",
         "en": "Finance Department"
       },
-      "location": "Vélizy, France",
+      "location": "Vélizy-Villacoublay, France",
       "title": {
-        "fr": "Trésorier & Développeur Full Stack",
-        "en": "Treasury Manager & Full Stack Developer"
+        "fr": "Trésorier & Développeur Full-Stack",
+        "en": "Treasurer & Full-Stack Developer"
       },
       "type": "stage",
       "start": "2025-02",
@@ -306,14 +433,16 @@
       "current": false,
       "bullets": {
         "fr": [
-          "Conception d'un Treasury Management System (Python/SQL/VBA, ODBC) : gain de ~4h/jour",
-          "Automatisation des prévisions de trésorerie et intégration du pricing de swaps de taux",
-          "Orchestration d'ETL (Dataiku/BigQuery) et automatisation des contrôles qualité des données"
+          "Conception et livraison d'un Treasury Management System interne (Python, SQL, VBA, ODBC, GCP), permettant un gain d'environ 4 h/jour.",
+          "Intégration du pricing natif de swaps de taux (IRS) et automatisation des prévisions de trésorerie court/moyen terme dans le TMS.",
+          "Orchestration de pipelines ETL automatisés (Dataiku, BigQuery) avec contrôles qualité et validation des données.",
+          "Appui à la planification budgétaire et fourniture de données financières fiables au management."
         ],
         "en": [
-          "Built a Treasury Management System (Python/SQL/VBA, ODBC): saving ~4h/day",
-          "Automated cash flow forecasting and integrated interest rate swap pricing",
-          "Orchestrated ETL pipelines (Dataiku/BigQuery) and automated data quality controls"
+          "Architected and shipped an in-house Treasury Management System (Python, SQL, VBA, ODBC, GCP), saving ~4 hours/day of operational effort.",
+          "Integrated native Interest Rate Swap (IRS) pricing and automated short/medium-term cash-flow forecasting into the TMS.",
+          "Orchestrated automated ETL pipelines (Dataiku, BigQuery) with data-quality and validation controls.",
+          "Supported budget planning and provided reliable financial data for management."
         ]
       },
       "impact_metrics": [
@@ -367,10 +496,10 @@
       "id": "manco_2024",
       "company": "ManCo Paris",
       "division": null,
-      "location": "Paris, France",
+      "location": "Paris 8e, France",
       "title": {
-        "fr": "Risk Manager",
-        "en": "Risk Manager"
+        "fr": "Risk Manager Junior",
+        "en": "Junior Risk Manager"
       },
       "type": "stage",
       "start": "2024-06",
@@ -378,16 +507,18 @@
       "current": false,
       "bullets": {
         "fr": [
-          "Suivi de plus de 250 règles d'investissement réglementaires et statutaires",
-          "Préparation des comités de risques (mensuels, trimestriels, annuels)",
-          "Analyse des risques de marché, liquidité, contrepartie et opérationnels",
-          "Calculs actuariels, amélioration d'outils et automatisation (Excel, VBA, Access)"
+          "Automatisation des analyses de risque et du reporting sur 250+ règles d'investissement internes, réglementaires et statutaires ; calcul quotidien de VaR & stress testing.",
+          "Préparation des comités de risques (mensuels, trimestriels, annuels).",
+          "Analyse des risques de marché, de liquidité, de contrepartie et opérationnels pour des fonds institutionnels UCITS/AIF.",
+          "Réalisation de calculs actuariels et de la documentation réglementaire (DIC PRIIPS).",
+          "Refonte et automatisation d'outils d'analyse existants (Excel, VBA, SQL/Access), accélérant les cycles récurrents de traitement pour les comités de risques."
         ],
         "en": [
-          "Monitored over 250 regulatory and statutory investment rules",
-          "Prepared risk committees (monthly, quarterly, annual)",
-          "Analyzed market, liquidity, counterparty and operational risks",
-          "Performed actuarial calculations, improved tools and automated processes (Excel, VBA, Access)"
+          "Automated risk analytics and reporting across 250+ internal, regulatory, and statutory investment rules, generating daily VaR & stress testing.",
+          "Prepared risk committees (monthly, quarterly, annual).",
+          "Analyzed market, liquidity, counterparty, and operational risks for institutional UCITS/AIF funds.",
+          "Performed actuarial calculations and regulatory documentation (PRIIPS KID).",
+          "Refactored and automated legacy analytics tools (Excel, VBA, SQL/Access), accelerating recurring data-processing cycles for risk committees."
         ]
       },
       "impact_metrics": [
@@ -804,11 +935,26 @@
     }
   },
   "skills_labels": {
-    "programming": {"fr": "Langages de programmation", "en": "Programming languages"},
-    "finance": {"fr": "Finance & quantitatif", "en": "Finance & quantitative"},
-    "data_ml": {"fr": "Data & Machine Learning", "en": "Data & Machine Learning"},
-    "domain": {"fr": "Domaines", "en": "Domains"},
-    "engineering": {"fr": "Ingénierie & infrastructure", "en": "Engineering & infrastructure"}
+    "programming": {
+      "fr": "Langages de programmation",
+      "en": "Programming languages"
+    },
+    "finance": {
+      "fr": "Finance & quantitatif",
+      "en": "Finance & quantitative"
+    },
+    "data_ml": {
+      "fr": "Data & Machine Learning",
+      "en": "Data & Machine Learning"
+    },
+    "domain": {
+      "fr": "Domaines",
+      "en": "Domains"
+    },
+    "engineering": {
+      "fr": "Ingénierie & infrastructure",
+      "en": "Engineering & infrastructure"
+    }
   },
   "hidden_edge": {
     "description": "Combinaisons rares identifiées par croisement de skills",
@@ -869,8 +1015,8 @@
         "en": "English"
       },
       "level": {
-        "fr": "Courant (C1)",
-        "en": "Fluent (C1)"
+        "fr": "Courant, C1 — TOEIC 925/990",
+        "en": "Fluent, C1 — TOEIC 925/990"
       }
     },
     {
@@ -881,8 +1027,8 @@
         "en": "Spanish"
       },
       "level": {
-        "fr": "Intermédiaire (B1)",
-        "en": "Intermediate (B1)"
+        "fr": "Intermédiaire, B1",
+        "en": "Intermediate, B1"
       }
     },
     {
@@ -893,16 +1039,16 @@
         "en": "Chinese"
       },
       "level": {
-        "fr": "Notions (A1)",
-        "en": "Beginner (A1)"
+        "fr": "Notions, A1",
+        "en": "Beginner, A1"
       }
     }
   ],
   "certifications": [
-    "Google Project Management",
+    "Google — Project Management",
     "Business Analyst",
     "Data Scientist",
-    "TOEIC (925/990)"
+    "Data Analyst"
   ],
   "projects": [
     {
@@ -912,11 +1058,11 @@
         "en": "ELYSIUM — Sovereign Cognitive Architecture"
       },
       "type": "personal",
-      "date": "2024 — présent",
+      "date": "2026 — présent",
       "context": "personal",
       "summary": {
-        "fr": "Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d'audit git souveraine. ~30 mois en solo.",
-        "en": "Self-sovereign cognitive platform (700+ sub-projects, « SIGILs ») designed as the structured brain of a future autonomous AI: a 13K+ node KuzuDB Knowledge Graph indexing the AST of 22 languages, a custom GNN in pure NumPy, a 4-node K3s GPU cluster, a sovereign git audit chain. ~30 months solo."
+        "fr": "Plateforme cognitive auto-souveraine (700+ sous-projets « SIGILs ») pensée comme cerveau structuré d'une future IA autonome : Knowledge Graph KuzuDB de 13K+ nœuds indexant l'AST de 22 langages, GNN custom en NumPy pur, cluster K3s GPU 4 nœuds, chaîne d'audit git souveraine. En solo depuis février 2026.",
+        "en": "Self-sovereign cognitive platform (700+ sub-projects, « SIGILs ») designed as the structured brain of a future autonomous AI: a 13K+ node KuzuDB Knowledge Graph indexing the AST of 22 languages, a custom GNN in pure NumPy, a 4-node K3s GPU cluster, a sovereign git audit chain. Solo since February 2026."
       },
       "tags": [
         "architecture",
@@ -954,6 +1100,32 @@
         "label": "GraphSAGE-lite (NumPy pur, zéro dépendance deep-learning)",
         "file": "snippets/elysium.py",
         "note": "Une couche d'agrégation moyenne des voisins, combinée à l'état du nœud — le cœur du routage d'intentions sémantiques sur le graphe."
+      },
+      "cv": {
+        "group": "personal",
+        "start": "2026-02",
+        "title": {
+          "fr": "Elysium (Infrastructure réseau & Homelab)",
+          "en": "Elysium (Network Infrastructure & Homelab)"
+        },
+        "bullets": {
+          "fr": [
+            "Architecture & Infrastructure : conception et déploiement d'un cluster Kubernetes (K3s) bare-metal — 4 nœuds K3s, 2 edges DNS/DHCP en haute disponibilité, 1 NAS — pour exécuter des workloads IA/Data lourds en totale souveraineté.",
+            "Génie logiciel (Go) : développement d'un opérateur Kubernetes natif (control plane custom) gérant le cycle de vie énergétique du matériel (Wake-On-Demand) selon la charge et la présence.",
+            "Développement & TDD (Python) : co-développement assisté par LLM (Claude Code) d'une vaste codebase (~1,7 M lignes) avec une rigueur TDD stricte (~23 700 cas de tests validant la logique métier et l'orchestration).",
+            "DevOps & CI/CD : stack 100 % auto-hébergée sans vendor lock-in (Forgejo avec runners K8s, registre OCI local, déploiement GitOps via ArgoCD pour 58 applications).",
+            "Réseau & Observabilité : maillage sécurisé (Linkerd mTLS, Ingress Traefik, VPN Headscale) et stack d'observabilité complète (Prometheus, Grafana, Loki, OpenTelemetry).",
+            "Data & MLOps : stockage hiérarchisé (NAS 72 To, Longhorn) et persistance polyglotte (PostgreSQL, KuzuDB, DuckDB) avec support GPU AMD (ROCm)."
+          ],
+          "en": [
+            "Architecture & Infrastructure: designed and deployed a bare-metal Kubernetes (K3s) cluster — 4 K3s nodes, 2 DNS/DHCP edges in high availability, 1 NAS — to run heavy AI/Data workloads in full sovereignty.",
+            "Software Engineering (Go): developed a native Kubernetes operator (custom control plane) managing the hardware energy lifecycle (Wake-On-Demand) based on load and presence.",
+            "Development & TDD (Python): LLM-assisted co-development (Claude Code) of a large codebase (~1.7M lines) with strict TDD (~23,700 test cases validating business logic and orchestration).",
+            "DevOps & CI/CD: built a 100% self-hosted, vendor-lock-in-free stack (Forgejo with K8s runners, local OCI registry, GitOps via ArgoCD for 58 applications).",
+            "Network & Observability: configured a secure mesh (Linkerd mTLS, Traefik Ingress, Headscale VPN) and a full observability stack (Prometheus, Grafana, Loki, OpenTelemetry).",
+            "Data & MLOps: integrated tiered storage (72 TB NAS, Longhorn) and polyglot persistence (PostgreSQL, KuzuDB, DuckDB) with AMD GPU support (ROCm)."
+          ]
+        }
       }
     },
     {
@@ -993,6 +1165,29 @@
       ],
       "links": {
         "article": "articles/couverture-dynamique.html"
+      },
+      "cv": {
+        "group": "academic",
+        "start": "2025-09",
+        "end": "2026-02",
+        "title": {
+          "fr": "Projet de fin d'études : Hedging dynamique (ECE × EY), Paris",
+          "en": "End-of-Studies Project: Dynamic Hedging (ECE × EY), Paris"
+        },
+        "role": {
+          "fr": "Chef de projet",
+          "en": "Project Manager"
+        },
+        "bullets": {
+          "fr": [
+            "Encadrement de 5 ingénieurs quant concevant des stratégies de couverture par collar dynamique (modèles stochastiques : Hull-White, Heston, SABR, Monte Carlo).",
+            "Livraison d'un outil quantitatif d'aide à la décision en Rust/Python validé par EY FSO."
+          ],
+          "en": [
+            "Led 5 quant engineers designing dynamic collar hedging strategies (stochastic models: Hull-White, Heston, SABR, Monte Carlo).",
+            "Delivered a quantitative decision-support tool in Rust/Python validated by EY FSO."
+          ]
+        }
       }
     },
     {
@@ -1036,6 +1231,41 @@
       "links": {
         "github": "https://github.com/RoJLD/HMMstudio",
         "live": "https://rojld.github.io/HMMstudio/"
+      }
+    },
+    {
+      "id": "agagi",
+      "name": "AGAGI — Framework génétique multi-agents & AGI distribué",
+      "type": "personal",
+      "date": "2026",
+      "context": "personal",
+      "summary": "Framework de recherche multi-agents distribué : dynamiques émergentes évaluées par 190+ Experimental Decision Records (vérifications statistiques multi-seed : tests des signes binomiaux, FDR) et dynamiques neuronales en temps continu via un moteur Liquid Mamba ODE vectorisé (PyTorch, BPTT, credit gating).",
+      "tags": [
+        "ml",
+        "python",
+        "architecture"
+      ],
+      "domains": [
+        "ai",
+        "research"
+      ],
+      "cv": {
+        "group": "personal",
+        "start": "2026-06",
+        "title": {
+          "fr": "AGAGI (Framework génétique multi-agents & AGI distribué)",
+          "en": "AGAGI (Distributed Multi-Agent & AGI Genetic Framework)"
+        },
+        "bullets": {
+          "fr": [
+            "Réalisation de 190+ Experimental Decision Records (EDR) pour backtester des dynamiques émergentes avec vérifications statistiques multi-seed (tests des signes binomiaux, FDR).",
+            "Dynamiques neuronales en temps continu via un moteur Liquid Mamba ODE vectorisé, intégrant PyTorch avec BPTT et credit gating."
+          ],
+          "en": [
+            "Executed 190+ Experimental Decision Records (EDRs) to backtest emergent dynamics with multi-seed statistical checks (binomial sign tests, FDR).",
+            "Sustained continuous-time neural dynamics via a vectorized Liquid Mamba ODE engine, integrating PyTorch with BPTT and credit gating."
+          ]
+        }
       }
     },
     {
@@ -1172,7 +1402,18 @@
       "domains": [
         "dev"
       ],
-      "code_status": "Projet matériel"
+      "code_status": "Projet matériel",
+      "cv": {
+        "group": "personal",
+        "title": {
+          "fr": "Robot pince",
+          "en": "Robot Gripper"
+        },
+        "summary": {
+          "fr": "modélisation 3D, impression, assemblage.",
+          "en": "3D modeling, printing, and assembly."
+        }
+      }
     },
     {
       "id": "octoprint-bed-leveller",
@@ -1265,6 +1506,23 @@
       ],
       "links": {
         "github": "https://github.com/RoJLD/PPE_Recherche_et_fixation_mon-taire"
+      },
+      "cv": {
+        "group": "academic",
+        "start": "2023-09",
+        "end": "2024-02",
+        "title": {
+          "fr": "Projet de mi-études : Objectifs monétaires des banques centrales (ECE)",
+          "en": "Mid-Studies Project: Central-Bank Monetary Objectives (ECE)"
+        },
+        "bullets": {
+          "fr": [
+            "Problématique : comment fixer les objectifs monétaires des banques centrales pour vaincre l'inflation sans étouffer la croissance ni débrider la prise de risque du secteur privé."
+          ],
+          "en": [
+            "Research question: how to set central banks' monetary objectives to curb inflation without stifling growth or unleashing private-sector risk-taking."
+          ]
+        }
       }
     },
     {
@@ -1299,7 +1557,11 @@
   "articles": [
     {
       "id": "couverture_dynamique",
-      "domains": ["quant", "risk", "finance"],
+      "domains": [
+        "quant",
+        "risk",
+        "finance"
+      ],
       "title": {
         "fr": "Couverture dynamique : théorie vs pratique en assurance",
         "en": "Dynamic Hedging: Theory vs Practice in Insurance"
@@ -1320,7 +1582,10 @@
     },
     {
       "id": "onchain_analytics",
-      "domains": ["defi", "data"],
+      "domains": [
+        "defi",
+        "data"
+      ],
       "title": {
         "fr": "Analyse on-chain : détecter les signaux faibles en DeFi",
         "en": "On-Chain Analytics: Detecting Weak Signals in DeFi"
@@ -1647,5 +1912,91 @@
   },
   "projects_meta": {
     "github_profile": "https://github.com/RoJLD"
+  },
+  "cv": {
+    "skills": [
+      {
+        "label": {
+          "fr": "Langages",
+          "en": "Programming"
+        },
+        "items": "Python, C++, C, C#, Rust, Java, VBA, SQL, Go, JavaScript, HTML, CSS"
+      },
+      {
+        "label": {
+          "fr": "Frameworks & Bibliothèques",
+          "en": "Frameworks & Libraries"
+        },
+        "items": "NumPy, pandas, scikit-learn, Seaborn, Matplotlib, Keras, SciPy, statsmodels, hmmlearn, FastAPI, Pydantic, Tree-sitter, KuzuDB, Parquet, DuckDB, PostgreSQL, ROCm"
+      },
+      {
+        "label": {
+          "fr": "Cloud, DevOps & Infra",
+          "en": "Cloud, DevOps & Infrastructure"
+        },
+        "items": "AWS, GCP, Azure | Docker, Kubernetes, K3s, Helm, ArgoCD, Kyverno | CI/CD, Git, Forgejo | Linux, Bash, PowerShell, SSH | Traefik, Linkerd, Headscale, Velero, Longhorn"
+      },
+      {
+        "label": {
+          "fr": "Observabilité",
+          "en": "Observability"
+        },
+        "items": "Prometheus, Grafana, Loki, OpenTelemetry, Tempo"
+      },
+      {
+        "label": {
+          "fr": "Génie logiciel & Backend",
+          "en": "Software Engineering & Backend"
+        },
+        "items": {
+          "fr": "architecture d'APIs (intégration, ODBC, MCP), FastAPI, Pydantic, TDD (pytest, mypy), Tree-sitter, ingénierie assistée par IA (Claude Code)",
+          "en": "API architecture (Integration, ODBC, MCP), FastAPI, Pydantic, TDD (pytest, mypy), Tree-sitter, AI-assisted engineering (Claude Code)"
+        }
+      },
+      {
+        "label": {
+          "fr": "Logiciels & Outils",
+          "en": "Software & Tools"
+        },
+        "items": {
+          "fr": "MATLAB, SolidWorks, Ultimaker Cura, JIRA, Notion, VS Code, Suite Office, Suite Adobe, Audacity, Clipchamp",
+          "en": "MATLAB, SolidWorks, Ultimaker Cura, JIRA, Notion, VS Code, Microsoft Office, Adobe Suite, Audacity, Clipchamp"
+        }
+      },
+      {
+        "label": {
+          "fr": "Gestion de projet",
+          "en": "Project Management"
+        },
+        "items": {
+          "fr": "Agile (Scrum, Kanban), Cycle en V, Lean Management, gestion du périmètre, matrice des risques, planification capacitaire, suivi KPI & OKR",
+          "en": "Agile (Scrum, Kanban), V-Model, Lean Management, Scope Management, Risk Assessment & Matrix, Capacity Planning, KPI & OKR Tracking"
+        }
+      },
+      {
+        "label": {
+          "fr": "Souveraineté numérique & Auto-hébergement",
+          "en": "Digital Sovereignty & Self-Hosting"
+        },
+        "items": {
+          "fr": "Forgejo, gestion d'infrastructure privée (homelab), solutions open source",
+          "en": "Forgejo, private infrastructure management (homelab), open-source solutions"
+        }
+      }
+    ],
+    "interests": [
+      {
+        "fr": "Échecs, lecture (finance quantitative, discipline & psychologie), impression 3D, développement open source, planche à voile, kitesurf, moto & mécanique, jeux de société (Catan)",
+        "en": "Chess, reading (quantitative finance, discipline & psychology), 3D printing, open-source development, windsurfing, kitesurfing, motorcycling & mechanics, board games (Catan)"
+      },
+      {
+        "fr": "Sports : salle de sport, running",
+        "en": "Sports: gym, running"
+      },
+      {
+        "fr": "Permis : B, A, BE ; Côtier/Fluvial",
+        "en": "Licenses: driving (B, A, BE); coastal/river boating"
+      }
+    ]
   }
 }

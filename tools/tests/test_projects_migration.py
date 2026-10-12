@@ -22,14 +22,15 @@ EXPECTED_IDS = {
     "anthropos", "hmm-studio", "derivatives-pricer", "monte-carlo-gbm", "sudoku-cnn",
     "vba-index-tool", "vhdl-calculator", "atc-simulation",
     "gripper-robot", "octoprint-bed-leveller", "ppe-politique-monetaire",
+    "agagi",   # import D8 (2026-10-12) : carte publique validée par Robin, projet depuis juin 2026 (fait 5)
 }
 
 
-def test_sixteen_projects_with_canonical_ids():
+def test_projects_with_canonical_ids():
     p = _profile()
     ids = {pr["id"] for pr in p["projects"]}
     assert ids == EXPECTED_IDS
-    assert len(p["projects"]) == 16
+    assert len(p["projects"]) == len(EXPECTED_IDS)
 
 
 def test_every_project_schema_valid():

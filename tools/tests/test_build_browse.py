@@ -114,7 +114,7 @@ _IDS_ATTENDUS = {
     "demos": {"bs", "mc"},
     "articles": {"couverture_dynamique", "onchain_analytics"},
     "experiences": {"alten_2026", "bouygues_2025", "manco_2024"},
-    "education": {"ece", "prepa"},
+    "education": {"ece", "erasmus-ruse", "prepa"},   # ERASMUS ajouté par l'import D8 (fait 7)
     "recommendations": {"student_pop", "manco_paris"},
 }
 

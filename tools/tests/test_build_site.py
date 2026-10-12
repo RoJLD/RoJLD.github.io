@@ -162,7 +162,8 @@ def test_chrome_i18n_preserved():
 def test_education_has_prepa_entry():
     p = bs.load_profile()
     ids = [e["id"] for e in p["education"]]
-    assert ids == ["ece", "prepa"]  # Prépa remontée dans la donnée (était affichage-only)
+    # Prépa remontée dans la donnée (était affichage-only) ; ERASMUS ajouté par l'import D8 (fait 7)
+    assert ids == ["ece", "erasmus-ruse", "prepa"]
 
 def test_render_education_from_profile():
     p = bs.load_profile()
@@ -176,9 +177,9 @@ def test_render_education_from_profile():
     assert 'data-i18n="edu1_c1"' in html  # bug latent corrigé : 1er cours a une clé
     assert 'data-i18n="edu1_pfe_role"' in html and 'data-i18n="edu1_pfe_desc"' in html
     assert 'onclick="sub(this,event)"' in html  # handler collapsible préservé
-    # Prépa n'a NI cours NI capstone
-    assert 'data-i18n="edu2_courses_label"' not in html
-    assert 'data-i18n="edu2_pfe_label"' not in html
+    # ERASMUS (edu2) et prépa (edu3) ont des cours depuis l'import D8, mais aucun capstone
+    assert 'data-i18n="edu2_courses_label"' in html and 'data-i18n="edu3_courses_label"' in html
+    assert 'data-i18n="edu2_pfe_label"' not in html and 'data-i18n="edu3_pfe_label"' not in html
 
 def test_render_education_pfe_shows_summary_not_long_desc():
     p = bs.load_profile()
