@@ -1076,6 +1076,11 @@ def test_main_tire_un_jeton_neuf_au_demarrage(monkeypatch):
     l'identique, et les 38 tests restaient VERTS.
     """
     monkeypatch.setattr(server, "_TOKEN", server._TOKEN)   # rotation annulée au teardown
+    # `main` démarre aussi l'aperçu du site sur le port fixe 8011 : neutralisé ici (il
+    # resterait vivant et écrivant pour toute la session pytest), et le câblage est épinglé.
+    from tools.cockpit import apercu
+    appels_apercu = []
+    monkeypatch.setattr(apercu, "demarrer", lambda port=apercu.PORT: appels_apercu.append(port))
     avant = atelier.csrf_token()
     crees, vrai = [], atelier.make_server
     # `main` fixe le port ; on le force éphémère pour ne pas heurter un atelier
@@ -1101,6 +1106,7 @@ def test_main_tire_un_jeton_neuf_au_demarrage(monkeypatch):
         "main() a resservi le jeton hérité de l'import : aucune rotation au démarrage")
     assert servi == atelier.csrf_token(), "le jeton servi n'est pas celui qui sera exigé"
     assert len(servi) >= 40, servi
+    assert appels_apercu == [apercu.PORT], "main() n'a pas démarré l'aperçu du site"
 
 
 # ── Zero Masking, versant refus ─────────────────────────────────────────────

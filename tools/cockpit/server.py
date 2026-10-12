@@ -174,6 +174,9 @@ ROUTES_POST.update({
 from tools.cockpit.pages import anthropos as pages_anthropos  # noqa: E402
 
 ROUTES_GET["/anthropos"] = pages_anthropos.page_anthropos
+from tools.cockpit.pages import site as pages_site  # noqa: E402
+
+ROUTES_GET["/site"] = pages_site.page_site
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -370,10 +373,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             data = json.loads(body) if body else {}
         except json.JSONDecodeError:
             return self._send(400, "text/plain", b"bad json")
-        route = ROUTES_POST.get(self.path)
+        route = self._routes_post().get(self.path)
         if route is None:
             return self._send(404, "text/plain", b"not found")
         return route(self, data)
+
+    def _routes_post(self) -> dict:
+        """Table des routes POST ; l'aperçu (apercu.ApercuHandler) en sert une autre."""
+        return ROUTES_POST
 
     def token(self) -> str:
         return csrf_token()
@@ -418,6 +425,10 @@ def main(port: int = 8010) -> int:
     srv = make_server(port)
     adresse = _bind()
     print(f"[atelier] http://{adresse}:{port}  (Ctrl+C pour arrêter)")
+    from tools.cockpit import apercu
+    apercu.demarrer()
+    print("[atelier] aperçu du site : " + (f"http://127.0.0.1:{apercu.ETAT['port']}/"
+                                           if apercu.ETAT["actif"] else str(apercu.ETAT["erreur"])))
     if adresse not in _LOCAL_HOSTS:
         # Bruyant par construction : deux gardes viennent de tomber d'un coup
         # (l'écoute loopback ET l'implicite « seul l'utilisateur local parle »).

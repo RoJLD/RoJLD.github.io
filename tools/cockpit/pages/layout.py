@@ -32,13 +32,15 @@ font-size:12px;border:0}
 <a href="/cv/" __A_ATELIER__>Profil &amp; CV</a>
 <a href="/cms" __A_CMS__>Profil</a>
 <a href="/edit" __A_EDIT__>JSON brut</a>
+<a href="/site" __A_SITE__>Site</a>
 <a href="/career-ops" __A_CAREER__>Ergon &middot; career-ops</a>
 <a href="/anthropos" __A_ANTHROPOS__>Anthropos</a>
 <span class="sp"></span><span class="env">reseau prive</span>
 </nav>"""
 
 _PAGES = (("__A_ACCUEIL__", "accueil"), ("__A_ATELIER__", "atelier"), ("__A_CMS__", "cms"),
-          ("__A_EDIT__", "edit"), ("__A_CAREER__", "career-ops"), ("__A_ANTHROPOS__", "anthropos"))
+          ("__A_EDIT__", "edit"), ("__A_CAREER__", "career-ops"), ("__A_ANTHROPOS__", "anthropos"),
+          ("__A_SITE__", "site"))
 
 BASE_CSS = ("body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;max-width:1100px;margin:24px auto;"
             "padding:0 16px;color:#1a1a2e}h1{font-size:22px}h2{font-size:16px}a{color:#4361ee}"
