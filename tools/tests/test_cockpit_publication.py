@@ -283,3 +283,56 @@ def test_un_git_status_en_echec_n_est_pas_un_arbre_propre(tmp_path):
         return subprocess.CompletedProcess(argv, 128, stdout="", stderr="fatal: not a git repository")
     e = pub.etat(tmp_path, run=run)
     assert any("git status a échoué" in m and "not a git repository" in m for m in pub.refus(e))
+
+
+# ── « Vérifier » lancé par le cockpit (pythonw) : mesuré le 2026-10-12, les deux gardes de
+# confidentialité échouaient en WinError 6. Sous pythonw (sous-système GUI), la capture par
+# descripteurs de pytest ferme le handle d'entrée standard que Windows garde en STD_INPUT_HANDLE :
+# le git lancé par le test héritait d'un handle mort. Sous python.exe, tout passe.
+
+def test_le_python_console_remplace_pythonw(tmp_path):
+    (tmp_path / "pythonw.exe").write_bytes(b"")
+    (tmp_path / "python.exe").write_bytes(b"")
+    assert pub._python_console(tmp_path / "pythonw.exe") == str(tmp_path / "python.exe")
+    assert pub._python_console(tmp_path / "python.exe") == str(tmp_path / "python.exe")
+
+
+def test_sans_python_console_voisin_l_interpreteur_reste_le_meme(tmp_path):
+    (tmp_path / "pythonw.exe").write_bytes(b"")
+    assert pub._python_console(tmp_path / "pythonw.exe") == str(tmp_path / "pythonw.exe")
+
+
+def test_verifier_lance_ses_outils_avec_le_python_console(tmp_path, monkeypatch):
+    (tmp_path / "pythonw.exe").write_bytes(b"")
+    (tmp_path / "python.exe").write_bytes(b"")
+    monkeypatch.setattr(pub.sys, "executable", str(tmp_path / "pythonw.exe"))
+    lances = []
+
+    def run(argv, **k):
+        lances.append(argv[0])
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+    pub.verifier(tmp_path, run=run)
+    assert lances == [str(tmp_path / "python.exe")] * 4
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="pythonw n'existe que sous Windows")
+def test_sous_pythonw_un_test_qui_lance_git_passe(tmp_path):
+    """La situation du cockpit, de bout en bout : un parent sous pythonw lance pytest comme
+    `verifier`, et le test lancé démarre lui-même un sous-processus (git)."""
+    pythonw = Path(sys.executable).with_name("pythonw.exe")
+    if not pythonw.is_file():
+        pytest.skip("pythonw.exe absent à côté de l'interpréteur")
+    test = tmp_path / "test_lance_git.py"
+    test.write_text("import subprocess\n\n\ndef test_git():\n"
+                    "    assert subprocess.run(['git', '--version'], capture_output=True).returncode == 0\n",
+                    encoding="utf-8")
+    script = ("import subprocess, sys\n"
+              f"sys.path.insert(0, {str(SITE)!r})\n"
+              "from tools.cockpit import publication\n"
+              "cp = subprocess.run([publication._python_console(), '-m', 'pytest', '-q', '-p', 'no:cacheprovider', "
+              f"{str(test)!r}], stdin=subprocess.DEVNULL, capture_output=True, text=True, "
+              "creationflags=subprocess.CREATE_NO_WINDOW)\n"
+              "print(cp.returncode)\n"
+              "print(cp.stdout[-800:])\n")
+    cp = subprocess.run([str(pythonw), "-c", script], capture_output=True, text=True, timeout=120, cwd=str(tmp_path))
+    assert cp.stdout.splitlines()[:1] == ["0"], cp.stdout + cp.stderr
