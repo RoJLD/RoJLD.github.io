@@ -140,8 +140,23 @@ def _pages_avec_calque(racine) -> list:
     return fautives
 
 
+def _python_console(exe=None) -> str:
+    """L'interpréteur console voisin de `pythonw.exe` — celui sous lequel les outils du site doivent tourner.
+
+    Sous pythonw (sous-système GUI, le cockpit), la capture par descripteurs de pytest ferme le handle
+    d'entrée standard que Windows garde en STD_INPUT_HANDLE : tout sous-processus lancé par un test
+    échoue alors en WinError 6. Mesuré le 2026-10-12 : les deux gardes de confidentialité de
+    « Vérifier » (git ls-files) échouaient ainsi ; sous python.exe, elles passent."""
+    exe = Path(exe or sys.executable)
+    if exe.name.lower() == "pythonw.exe":
+        console = exe.with_name("python.exe")
+        if console.is_file():
+            return str(console)
+    return str(exe)
+
+
 def verifier(racine, *, run=subprocess.run) -> list:
-    py = sys.executable
+    py = _python_console()
 
     def commande(nom, argv):
         try:
