@@ -14,6 +14,7 @@ import pytest
 SITE = Path(__file__).resolve().parents[2]
 if str(SITE) not in sys.path:
     sys.path.insert(0, str(SITE))
+from tools import servi_ailleurs  # noqa: E402
 from tools.cockpit import journal  # noqa: E402
 from tools.cockpit import publication as pub  # noqa: E402
 
@@ -283,6 +284,29 @@ def test_un_git_status_en_echec_n_est_pas_un_arbre_propre(tmp_path):
         return subprocess.CompletedProcess(argv, 128, stdout="", stderr="fatal: not a git repository")
     e = pub.etat(tmp_path, run=run)
     assert any("git status a échoué" in m and "not a git repository" in m for m in pub.refus(e))
+
+
+# ── Le périmètre suit le site RÉEL : retrait de l'Academy (spec Academy § 9.3, 2026-10-14).
+# `/academy/` est servie par le dépôt-projet RoJLD/academy ; `academy.json` et `academy/` sont
+# sortis du dépôt. Aucun test ne confrontait `PERIMETRE` ni `SOURCES` au site : y laisser les
+# deux entrées mortes passait vert, et le cockpit aurait publié sans un mot un `academy/`
+# ressuscité — un dossier que GitHub Pages ne sert jamais.
+
+def test_le_perimetre_ne_couvre_aucun_chemin_servi_par_un_autre_depot():
+    """Un chemin servi par un autre dépôt n'est pas à publier depuis ce site : il y serait mort."""
+    couverts = sorted(p for p in servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT
+                      if pub.dans_perimetre(p) or pub.dans_perimetre(p + "index.html"))
+    assert couverts == [], (f"le périmètre de publication couvre {couverts}, que "
+                            f"{[servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT[c] for c in couverts]} sert à sa place")
+
+
+def test_chaque_entree_du_perimetre_et_des_sources_existe_dans_le_site():
+    """Le périmètre décrit ce que le cockpit écrit ou régénère : chaque entrée existe dans le site.
+
+    Une entrée orpheline n'est pas inerte — elle autorise en silence la publication de ce qui
+    viendrait la remplir (c'est ce que `academy.json` et `academy/` auraient fait)."""
+    absentes = [p for p in dict.fromkeys(pub.PERIMETRE + pub.SOURCES) if not (SITE / p).exists()]
+    assert absentes == [], f"entrées du périmètre ou des sources absentes du site : {absentes}"
 
 
 # ── « Vérifier » lancé par le cockpit (pythonw) : mesuré le 2026-10-12, les deux gardes de

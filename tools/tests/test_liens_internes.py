@@ -9,7 +9,11 @@ Règles vérifiées, pour chaque page HTML publiée du dépôt :
     fichier existant, résolu **comme le ferait le navigateur** (relatif au
     répertoire de la page, absolu depuis la racine du site) ;
   * un répertoire (ou un chemin terminé par `/`) est résolu en `index.html` ;
-  * si l'URL porte un fragment `#ancre`, la page cible doit contenir cette ancre.
+  * si l'URL porte un fragment `#ancre`, la page cible doit contenir cette ancre ;
+  * un chemin ABSENT du disque n'est accepté que s'il est déclaré servi par un
+    autre dépôt du même domaine (`servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT`,
+    aujourd'hui le seul `/academy/` -> RoJLD/academy) ; tout autre absent reste
+    une erreur.
 
 Aucun réseau : les liens externes sont hors périmètre par construction.
 """
@@ -17,6 +21,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import pathlib
 import re
 import sys
@@ -30,6 +35,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from validate_profile import validate  # noqa: E402
 import corpus_publie  # noqa: E402
 import radar_boot_harness  # noqa: E402
+import servi_ailleurs  # noqa: E402
 
 # Schémas non résolvables sur le disque -> hors périmètre.
 EXTERNAL = ("http://", "https://", "//", "mailto:", "tel:", "javascript:", "data:")
@@ -118,6 +124,21 @@ def resolve(page: pathlib.Path, url: str, root: pathlib.Path = ROOT) -> pathlib.
     return target
 
 
+def servi_par_un_autre_depot(target: pathlib.Path, root: pathlib.Path = ROOT) -> str | None:
+    """Dépôt qui sert `target` sous le domaine à la place de ce site, ou None.
+
+    Consulté par `broken_links_in` SEULEMENT quand la cible manque sur le
+    disque : la déclaration excuse une absence, elle ne masque jamais un
+    fichier présent — un dossier déclaré qui réapparaît est lu normalement, et
+    fait rougir `test_un_chemin_servi_ailleurs_n_existe_pas_dans_ce_site`.
+    """
+    try:
+        rel = os.path.relpath(target, root)
+    except ValueError:                # autre lecteur (Windows) : hors du site
+        return None
+    return servi_ailleurs.depot_qui_sert(pathlib.PurePath(rel).as_posix())
+
+
 def broken_links(page: pathlib.Path, root: pathlib.Path = ROOT) -> list[str]:
     """Liste des liens locaux non résolvables de `page` (vide = page saine)."""
     return broken_links_in(page.read_text(encoding="utf-8", errors="replace"),
@@ -140,6 +161,8 @@ def broken_links_in(text: str, page: pathlib.Path,
         if target is None:
             continue
         if not target.exists():
+            if servi_par_un_autre_depot(target, root):
+                continue              # vivant, mais servi par un autre dépôt
             bad.append(f"{here} -> {url!r} : fichier absent ({target})")
             continue
         frag = url.partition("#")[2]
@@ -593,6 +616,103 @@ def test_le_scan_laisse_passer_une_page_saine(tmp_path):
     assert broken_links(page, root=tmp_path) == []
 
 
+# --- Les chemins servis par un AUTRE dépôt du domaine ------------------------
+#
+# Le 2026-10-14, `/academy/` a quitté ce site : le dépôt-projet RoJLD/academy la
+# sert sous robin-denis.com (un dépôt-projet Pages l'emporte sur un dossier du
+# même nom du site utilisateur). Le lien de nav reste ; le dossier `academy/`,
+# mort, est retiré. Mesuré, déclaration vidée : 12 rouges parmi les gardes qui
+# existaient déjà — le scan anti-404 sur les 6 pages publiées qui portent ce lien
+# vivant (accueil compris) et sur la sortie des 5 générateurs de nav, plus la
+# topologie de la nav, qui ne fermait plus. Un lien vivant refusé partout, c'est
+# une garde qu'on finit par éteindre.
+#
+# La déclaration (`tools/servi_ailleurs.py`) est NOMMÉE — chemin et dépôt — et
+# ne s'élargit à rien d'autre. Les quatre tests suivants tiennent ses bords : ce
+# qu'elle laisse passer, ce qu'elle laisse rouge, ce qu'elle ne masque pas sur
+# le disque, et ce qu'elle interdit au site de reprendre.
+
+_LIENS_VERS_L_ACADEMY = ('<a href="/academy/">a</a>'
+                         '<a href="/academy">b</a>'
+                         '<a href="/academy/cours/intro.html#q1">c</a>'
+                         '<a href="../academy/#certifications">d</a>')
+
+
+def test_un_lien_vers_un_chemin_servi_par_un_autre_depot_passe(tmp_path, monkeypatch):
+    """`/academy/` et tout ce qui est dessous : vivant, sans fichier local.
+
+    Quatre écritures du même chemin, dont une relative à la page (`../academy/`
+    depuis `/projects/`) : la déclaration est consultée sur la cible RÉSOLUE,
+    pas sur la chaîne écrite.
+
+    Contre-épreuve dans le même test : la déclaration vidée, les quatre liens
+    redeviennent des « fichier absent ». Le vert vient donc bien d'elle, et pas
+    d'un autre chemin du scanner qui sauterait ces liens.
+    """
+    (tmp_path / "projects").mkdir()
+    page = tmp_path / "projects" / "index.html"
+    page.write_text(_LIENS_VERS_L_ACADEMY, encoding="utf-8")
+    assert broken_links(page, root=tmp_path) == []
+
+    monkeypatch.setattr(servi_ailleurs, "SERVI_PAR_UN_AUTRE_DEPOT", {})
+    bad = broken_links(page, root=tmp_path)
+    assert len(bad) == 4 and all("fichier absent" in b for b in bad), bad
+
+
+def test_un_dossier_absent_non_declare_reste_une_erreur(tmp_path):
+    """La déclaration n'ouvre que ce qu'elle nomme, par SEGMENT de chemin.
+
+    Chaque lien ci-dessous ressemble à `/academy/` sans l'être : un nom qui la
+    prolonge (`/academyx/`), un segment homonyme plus bas (`/cours/academy/`),
+    l'ancienne source retirée avec elle (`academy.json`), et un dossier sans
+    rapport. Une correspondance par préfixe de chaîne ou par sous-chaîne en
+    laisserait passer au moins un.
+    """
+    liens = ["/academyx/", "/cours/academy/", "academy.json", "/fantome/"]
+    page = _page_synthetique(tmp_path, "".join(f'<a href="{u}">x</a>' for u in liens))
+    bad = broken_links(page, root=tmp_path)
+    rapportes = {u for u in liens if any(repr(u) in b and "fichier absent" in b for b in bad)}
+    assert rapportes == set(liens), (
+        f"lien(s) absent(s) laissé(s) passer : {sorted(set(liens) - rapportes)} "
+        f"(rapporté : {bad})")
+
+
+def test_la_declaration_n_excuse_que_l_absence(tmp_path):
+    """Un dossier déclaré qui EXISTE sur le disque est scanné comme les autres.
+
+    Si la déclaration était consultée avant le disque, elle masquerait tout ce
+    qu'elle couvre : une ancre morte dans un `academy/` ressuscité passerait
+    verte. Ici l'ancre absente doit être rapportée, la présente acceptée.
+    """
+    (tmp_path / "academy").mkdir()
+    (tmp_path / "academy" / "index.html").write_text(
+        '<h2 id="present">ok</h2>', encoding="utf-8")
+    page = _page_synthetique(
+        tmp_path, '<a href="/academy/#present">ok</a><a href="/academy/#absent">ko</a>')
+    bad = broken_links(page, root=tmp_path)
+    assert len(bad) == 1 and "#absent" in bad[0], bad
+
+
+def test_un_chemin_servi_ailleurs_n_existe_pas_dans_ce_site():
+    """Un dossier mort ne doit pas pouvoir masquer le dépôt-projet.
+
+    GitHub Pages sert `/academy/` depuis RoJLD/academy, quel que soit le contenu
+    d'un dossier `academy/` de ce dépôt — mesuré le 2026-10-14 : l'app du
+    dépôt-projet était servie alors que l'ancien dossier existait encore. Un
+    tel dossier, s'il réapparaissait (restauration, fusion d'une vieille
+    branche, build d'un ancien générateur), ne serait jamais servi, mais les
+    gardes le liraient à la place de la vraie page : l'ancre morte, le thème, la
+    nav seraient vérifiés sur un fantôme. Il doit donc faire rougir ici.
+    """
+    presents = {prefixe: depot
+                for prefixe, depot in servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT.items()
+                if (ROOT / prefixe).exists()}
+    assert not presents, (
+        f"chemin(s) servi(s) par un autre dépôt mais présent(s) dans ce site : "
+        f"{presents} — GitHub Pages ne les sert jamais ; retirer le dossier, ou la "
+        "déclaration si ce site reprend ce chemin")
+
+
 # Les destinations de la nav sont DÉCOUVERTES sur le disque (répertoires dont
 # l'`index.html` porte la marque de la nav partagée), pas listées à la main.
 #
@@ -602,6 +722,13 @@ def test_le_scan_laisse_passer_une_page_saine(tmp_path):
 # peut pas se surveiller elle-même ; le témoin est le site publié
 # (`corpus_publie.destinations_nav`), qui continue de voir `/demos/` exister.
 NAV_DESTINATIONS = corpus_publie.destinations_nav()
+
+# Les destinations de la nav qu'un AUTRE dépôt sert (`/academy/` -> RoJLD/academy
+# depuis le 2026-10-14). Le disque ne peut pas les découvrir : elles viennent de
+# la topologie de la nav, filtrée par la déclaration `servi_ailleurs`. Les gardes
+# « la nav pointe toute la nav » exigent les deux familles de liens.
+NAV_SERVIE_AILLEURS = corpus_publie.destinations_nav_servies_ailleurs()
+NAV_COMPLETE = NAV_DESTINATIONS + NAV_SERVIE_AILLEURS
 
 
 def test_les_destinations_de_nav_viennent_bien_du_disque():
@@ -628,7 +755,7 @@ def test_les_destinations_de_nav_viennent_bien_du_disque():
 
 
 def test_les_cibles_de_navigation_existent():
-    """Les 6 destinations de la nav partagée sont des pages réelles.
+    """Les destinations LOCALES de la nav partagée sont des pages réelles.
 
     Nécessaire, très insuffisant : cette assertion ne regarde que le disque.
     Une revue par mutation l'a mesuré — retirer `/demos/` de la nav de
@@ -643,9 +770,10 @@ def test_les_cibles_de_navigation_existent():
 
 @pytest.mark.parametrize("page", NAV_DESTINATIONS)
 def test_la_page_publiee_pointe_toute_la_nav(page):
-    """L'artefact servi porte les 6 liens — attrape une page laissée périmée."""
+    """L'artefact servi porte tous les liens de la nav, ceux servis ailleurs
+    compris — attrape une page laissée périmée."""
     html = (ROOT / page / "index.html").read_text(encoding="utf-8")
-    manquants = [d for d in NAV_DESTINATIONS if f'href="/{d}/"' not in html]
+    manquants = [d for d in NAV_COMPLETE if f'href="/{d}/"' not in html]
     assert not manquants, (
         f"{page}/index.html : destination(s) absente(s) de la nav {manquants} — "
         "la page devient un cul-de-sac pour ces sections")
@@ -654,14 +782,13 @@ def test_la_page_publiee_pointe_toute_la_nav(page):
 @functools.lru_cache(maxsize=1)
 def _rendu_des_builders():
     """(nom, html) produit en mémoire par chaque générateur de page de nav."""
-    import build_academy, build_browse, build_demos          # noqa: E401
+    import build_browse, build_demos                         # noqa: E401
     import build_graph, build_highlights, build_projects     # noqa: E401
     p = _real_profile()
     return {
         "projects": build_projects.build_projects(p, write=False),
         "explorer": build_browse.build_browse(p, write=False),
         "highlights": build_highlights.build_highlights(p, write=False),
-        "academy": build_academy.build_academy(write=False),
         "graph": build_graph.build_graph(p, write=False),
         "demos": build_demos.build_demos(p, write=False),
     }
@@ -704,9 +831,35 @@ def test_le_generateur_emet_toute_la_nav(page):
     l'artefact qu'elle a produit un jour.
     """
     html = _rendu_des_builders()[page]
-    manquants = [d for d in NAV_DESTINATIONS if f'href="/{d}/"' not in html]
+    manquants = [d for d in NAV_COMPLETE if f'href="/{d}/"' not in html]
     assert not manquants, (
         f"le générateur de /{page}/ n'émet plus {manquants} dans sa nav")
+
+
+def test_la_nav_partagee_mene_toujours_a_l_academy():
+    """Spec § 9.3 : retirer la page n'est pas retirer le lien.
+
+    `/academy/` n'est plus une page de ce site — le dépôt-projet RoJLD/academy
+    la sert sous le même domaine. Elle est donc sortie de `NAV_DESTINATIONS`, qui
+    ne découvre que des pages du disque, et les gardes ci-dessus ne l'exigent
+    plus qu'à travers `NAV_SERVIE_AILLEURS`, découverte dans la nav elle-même.
+    Retirer `/academy/` de TOUTES les navs ferait disparaître l'exigence avec le
+    lien : la fermeture du groupe tiendrait encore, sur cinq membres. Mesuré, ce
+    test neutralisé : le lien retiré des six pages publiées ne faisait plus
+    rougir que `test_nav_academy_link_everywhere` — et seulement parce qu'il
+    relit l'accueil ; les cinq pages de nav passaient. (Retiré d'UNE seule
+    page, la topologie ne ferme plus et rougit d'elle-même.)
+
+    D'où ce nom écrit en clair, à la manière des attributs dormants plus haut :
+    rien sur ce disque ne peut découvrir une page servie ailleurs, c'est ce qui
+    la définit. Le dépôt qui la sert est vérifié avec elle — sans déclaration,
+    le scan anti-404 la refuserait.
+    """
+    assert "academy" in NAV_SERVIE_AILLEURS, (
+        f"la nav partagée ne mène plus à /academy/ (destinations servies ailleurs "
+        f"découvertes : {NAV_SERVIE_AILLEURS}) — le lien devait survivre au retrait "
+        "de la page (spec § 9.3)")
+    assert servi_ailleurs.depot_qui_sert("academy/") == "RoJLD/academy"
 
 
 # --- La marque de la nav doit vivre DANS la nav ------------------------------

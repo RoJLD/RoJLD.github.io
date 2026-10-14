@@ -14,10 +14,12 @@ from pathlib import Path
 from tools.cockpit import config, journal
 
 # Ce que le cockpit écrit ou régénère : sources, sorties des générateurs, banque préfabriquée.
-PERIMETRE = ("profile.json", "site_texts.json", "academy.json", "index.html", "articles/", "projects/",
-             "demos/", "explorer/", "highlights/", "academy/", "graph/", "cv/prefab/",
+# Ni `academy.json` ni `academy/` : /academy/ est servie par le dépôt-projet RoJLD/academy
+# (tools/servi_ailleurs.py), ce site n'en publie plus rien.
+PERIMETRE = ("profile.json", "site_texts.json", "index.html", "articles/", "projects/",
+             "demos/", "explorer/", "highlights/", "graph/", "cv/prefab/",
              "assets/js/cv-templates.js", "data/profile_graph.json")
-SOURCES = ("profile.json", "site_texts.json", "academy.json")
+SOURCES = ("profile.json", "site_texts.json")
 DEPOT_PAGES = "RoJLD/RoJLD.github.io"
 URL_SITE = "https://robin-denis.com/"
 MARQUES_CALQUE = ('data-src="profile:', 'data-src="textes:', "/__cockpit/")

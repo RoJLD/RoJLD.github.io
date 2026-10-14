@@ -746,12 +746,8 @@ def build(profile_path=None, index_path=None, write=True, today=None):
         build_highlights.build_highlights(profile, write=write)
     except Exception as exc:
         raise BuildError(f"génération page highlights échouée : {exc}")
-    # Génère aussi la page Academy (quiz + flashcards) depuis academy.json.
-    try:
-        import build_academy
-        build_academy.build_academy(write=write)
-    except Exception as exc:
-        raise BuildError(f"génération page academy échouée : {exc}")
+    # Pas de page Academy ici : /academy/ est servie par le dépôt-projet
+    # RoJLD/academy (cf. tools/servi_ailleurs.py). Seul le lien de nav reste.
     # Génère aussi la page Graphe (visualisation du profil) depuis la même source.
     try:
         import build_graph
