@@ -374,21 +374,23 @@ def test_nav_highlights_link_everywhere():
     assert 'href="/highlights/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
 
 
-def test_build_also_generates_academy_page():
-    import build_academy as bac
-    out = bac.build_academy(bac.load_academy(), write=False)
-    assert '<title>Academy' in out and out.count('class="topic"') == 4
-    import build_site, inspect
-    assert "build_academy" in inspect.getsource(build_site.build)
-
-
 def test_nav_academy_link_everywhere():
+    """Le lien `/academy/` survit au retrait de la page (spec Academy § 9.3).
+
+    Depuis le 2026-10-14 la page n'est plus générée ici : le dépôt-projet
+    RoJLD/academy la sert sous le même domaine (cf. tools/servi_ailleurs.py).
+    Le lien, lui, ne change pas — sur chaque générateur de nav et sur l'accueil.
+    Le générateur du graphe manquait à cette liste quand la page était encore
+    d'ici (la garde paramétrée de test_liens_internes le couvrait) ; il y entre.
+    """
     import build_projects as bp, build_demos as bd, build_browse as bb, build_highlights as bh
+    import build_graph as bg
     p = bs.load_profile()
     assert 'href="/academy/"' in bp.build_projects(p, write=False)
     assert 'href="/academy/"' in bd.build_demos(p, write=False)
     assert 'href="/academy/"' in bb.render_browse_page(p)
     assert 'href="/academy/"' in bh.render_highlights_page(p)
+    assert 'href="/academy/"' in bg.build_graph(p, write=False)
     assert 'href="/academy/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
 
 
@@ -402,13 +404,12 @@ def test_build_also_generates_graph_page():
 
 
 def test_nav_has_graph_link():
-    import build_projects as bp, build_demos as bd, build_browse as bb, build_highlights as bh, build_academy as bac
+    import build_projects as bp, build_demos as bd, build_browse as bb, build_highlights as bh
     p = bs.load_profile()
     assert 'href="/graph/"' in bp.build_projects(p, write=False)
     assert 'href="/graph/"' in bd.build_demos(p, write=False)
     assert 'href="/graph/"' in bb.render_browse_page(p)
     assert 'href="/graph/"' in bh.render_highlights_page(p)
-    assert 'href="/graph/"' in bac.render_academy_page(bac.load_academy())
     assert 'href="/graph/"' in (bs.ROOT / "index.html").read_text(encoding="utf-8")
 
 

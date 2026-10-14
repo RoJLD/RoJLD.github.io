@@ -57,8 +57,9 @@ import corpus_publie  # noqa: E402
 PAGES_A_PALETTE = corpus_publie.pages_a_palette()
 PAGES_A_BOOT = corpus_publie.pages_a_boot()
 
-# Les 6 pages de nav, découvertes elles aussi (témoin : leur `index.html` porte
-# la marque de la nav partagée).
+# Les pages de nav du site, découvertes elles aussi (témoin : leur `index.html`
+# porte la marque de la nav partagée). `/academy/` n'en est plus depuis le
+# 2026-10-14 : servie par RoJLD/academy, son thème ne relève plus de ce dépôt.
 PAGES_GENEREES = corpus_publie.destinations_nav()
 
 # La page sans builder qu'aucun build ne répare a existé ici
@@ -138,8 +139,11 @@ def test_aucune_section_de_la_nav_n_est_hors_du_champ_du_theme():
     # cf. `_PALETTE_SOMBRE` absente de leur HTML) — 10 -> 9 pages à palette,
     # 23 -> 15 pages publiées. Chaque plancher reste égal au compte mesuré
     # après suppression : toute nouvelle amputation continue de rougir ici.
-    assert len(PAGES_A_PALETTE) >= 9, PAGES_A_PALETTE
-    assert len(corpus_publie.pages_publiees()) >= 15, corpus_publie.pages_publiees()
+    # Réabaissés de nouveau au 2026-10-14 (spec Academy § 9.3) : retrait de
+    # `academy/index.html`, servie désormais par le dépôt-projet RoJLD/academy
+    # — 9 -> 8 pages à palette, 15 -> 14 pages publiées, mesurés après retrait.
+    assert len(PAGES_A_PALETTE) >= 8, PAGES_A_PALETTE
+    assert len(corpus_publie.pages_publiees()) >= 14, corpus_publie.pages_publiees()
 
 
 def _palette(html: str, theme: str) -> set[str] | None:
@@ -418,7 +422,7 @@ def test_le_script_qui_lit_le_theme_l_applique(page):
 # `test_la_page_manuelle_bascule_reellement_lattribut` vérifiait ici le mécanisme
 # de bascule de `/life-architect/`, seule page du dépôt sans builder. Retirée
 # avec la page elle-même le 2026-09-29 (D13a, bêta morte) : sa cible n'existe
-# plus sur le disque, et aucune page restante n'est dans ce cas — les 6 pages de
+# plus sur le disque, et aucune page restante n'est dans ce cas — les pages de
 # nav ont un builder qui les régénère, les autres sont couvertes par les gardes
 # paramétrées sur PAGES_A_PALETTE / PAGES_A_BOOT ci-dessus.
 
@@ -427,14 +431,13 @@ def test_le_script_qui_lit_le_theme_l_applique(page):
 
 @functools.lru_cache(maxsize=1)
 def _rendu_des_builders() -> dict[str, str]:
-    import build_academy, build_browse, build_demos          # noqa: E401
+    import build_browse, build_demos                         # noqa: E401
     import build_graph, build_highlights, build_projects     # noqa: E401
     p = json.loads((ROOT / "profile.json").read_text(encoding="utf-8"))
     return {
         "projects": build_projects.build_projects(p, write=False),
         "explorer": build_browse.build_browse(p, write=False),
         "highlights": build_highlights.build_highlights(p, write=False),
-        "academy": build_academy.build_academy(write=False),
         "graph": build_graph.build_graph(p, write=False),
         "demos": build_demos.build_demos(p, write=False),
     }
@@ -476,7 +479,6 @@ BASCULEUR = {
     "projects/index.html": "tgTheme",
     "explorer/index.html": "tgTheme",
     "highlights/index.html": "tgTheme",
-    "academy/index.html": "tgTheme",
     "graph/index.html": "tgTheme",
     "demos/index.html": "tgTheme",
 }
@@ -631,7 +633,7 @@ def test_le_choix_survit_au_rechargement(page, node_requis):
 def test_le_generateur_emet_une_restauration_qui_applique(page, node_requis):
     """La même garde sur la SOURCE : un builder amputé passerait vert sur disque.
 
-    Les six pages de nav sont régénérées à chaque build ; tenir l'artefact seul
+    Les pages de nav sont régénérées à chaque build ; tenir l'artefact seul
     laisserait une régression du générateur invisible jusqu'à ce qu'elle soit
     propagée par le prochain `build_site.py`.
     """

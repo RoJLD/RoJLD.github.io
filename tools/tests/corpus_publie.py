@@ -35,8 +35,20 @@ from __future__ import annotations
 import functools
 import pathlib
 import re
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
+
+# La déclaration des chemins servis par un AUTRE dépôt est PARTAGÉE avec le
+# scanner, à la différence d'`OUTILLAGE` ci-dessous. Ce n'est pas une constante
+# du scanner que ce module surveille : c'est un fait de déploiement (GitHub Pages
+# sert `/academy/` depuis RoJLD/academy), et elle est tenue dans les deux sens
+# par ses propres tests — retirer une entrée rougit le scan des liens, en
+# ajouter une qui existe sur le disque rougit
+# `test_un_chemin_servi_ailleurs_n_existe_pas_dans_ce_site`.
+import servi_ailleurs  # noqa: E402
 
 # Répertoires d'outillage : jamais servis par GitHub Pages.
 #
@@ -99,25 +111,28 @@ def pages_qui_persistent_le_theme() -> tuple[str, ...]:
     return tuple(p for p in pages_publiees() if _ECRITURE_THEME in _texte(p))
 
 
-@functools.lru_cache(maxsize=1)
-def sections_par_topologie_de_la_nav() -> tuple[str, ...]:
-    """Les sections de la nav partagée, déduites de la TOPOLOGIE des liens.
+def _servie_ailleurs(nom: str) -> bool:
+    """`/nom/` est servi par un autre dépôt du domaine (cf. `servi_ailleurs`)."""
+    return servi_ailleurs.depot_qui_sert(nom + "/") is not None
 
-    Second témoin de `destinations_nav()`, et il ne partage avec lui aucun
-    marqueur : celui-ci ne regarde pas `nav-brand`, seulement qui pointe qui.
+
+@functools.lru_cache(maxsize=1)
+def _groupe_ferme_de_la_nav() -> frozenset[str]:
+    """Le plus grand groupe fermé de la nav partagée, membres servis ailleurs compris.
 
     Une nav partagée est un groupe fermé : chacune de ses pages déclare
     exactement les mêmes destinations, et ce sont ses propres membres. On cherche
     donc les groupes `S` tels que la nav de chaque `d` de `S` déclare exactement
-    `S`, et on retient le plus grand. `/life-architect/` en forme un aussi — mais
-    de taille 1, sa nav ne pointant que sur elle-même : c'est bien une page à
-    part, pas une section de la nav partagée.
+    `S`, et on retient le plus grand. `/life-architect/` en formait un aussi —
+    mais de taille 1, sa nav ne pointant que sur elle-même : c'était bien une page
+    à part, pas une section de la nav partagée.
 
-    Pourquoi ce détour plutôt qu'une liste de six noms : la liste était
-    l'attendu écrit à la main d'une valeur découverte. Elle divergeait, donc elle
-    défendait quelque chose — mais elle demandait à être tenue à jour, et rien
-    ne l'ancrait au site. Deux dérivations qui doivent coïncider n'ont ni l'un ni
-    l'autre défaut.
+    Un membre servi par un AUTRE dépôt (`/academy/`, RoJLD/academy, depuis le
+    2026-10-14) n'a pas de page sur ce disque : sa nav ne peut pas être lue, il
+    est donc admis dans le groupe sans elle. Il ne dispense personne d'autre :
+    chaque page LOCALE du groupe doit toujours le déclarer, si bien qu'une seule
+    nav qui le perd casse la fermeture. Un groupe fait de seuls membres servis
+    ailleurs ne serait fermé que par vacuité : il est écarté.
     """
     liens: dict[str, set[str]] = {}
     for d in ROOT.iterdir():
@@ -130,10 +145,38 @@ def sections_par_topologie_de_la_nav() -> tuple[str, ...]:
             vus |= set(_LIEN_REPERTOIRE.findall(bloc))
         liens[d.name] = vus
     fermes = [s for s in {frozenset(v) for v in liens.values()}
-              if s and all(liens.get(d) == set(s) for d in s)]
+              if any(not _servie_ailleurs(d) for d in s)
+              and all(liens.get(d) == set(s) for d in s if not _servie_ailleurs(d))]
     if not fermes:
-        return ()
-    return tuple(sorted(max(fermes, key=len)))
+        return frozenset()
+    return max(fermes, key=len)
+
+
+def sections_par_topologie_de_la_nav() -> tuple[str, ...]:
+    """Les sections LOCALES de la nav partagée, déduites de la TOPOLOGIE des liens.
+
+    Second témoin de `destinations_nav()`, et il ne partage avec lui aucun
+    marqueur : celui-ci ne regarde pas `nav-brand`, seulement qui pointe qui
+    (cf. `_groupe_ferme_de_la_nav`).
+
+    Pourquoi ce détour plutôt qu'une liste de six noms : la liste était
+    l'attendu écrit à la main d'une valeur découverte. Elle divergeait, donc elle
+    défendait quelque chose — mais elle demandait à être tenue à jour, et rien
+    ne l'ancrait au site. Deux dérivations qui doivent coïncider n'ont ni l'un ni
+    l'autre défaut.
+    """
+    return tuple(sorted(d for d in _groupe_ferme_de_la_nav() if not _servie_ailleurs(d)))
+
+
+def destinations_nav_servies_ailleurs() -> tuple[str, ...]:
+    """Les destinations de la nav partagée qu'un AUTRE dépôt sert (`academy`).
+
+    Découvertes dans la même topologie que les sections locales : un lien que
+    toutes les navs portent, et que la déclaration `servi_ailleurs` attribue à
+    un autre dépôt. Ni `destinations_nav()` ni `pages_atteintes_par_la_nav()` ne
+    peuvent les voir — elles lisent le disque, où ces pages n'existent pas.
+    """
+    return tuple(sorted(d for d in _groupe_ferme_de_la_nav() if _servie_ailleurs(d)))
 
 
 def _resoudre(depuis: str, href: str) -> str | None:
