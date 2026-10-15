@@ -1206,9 +1206,7 @@
         "product",
         "ai"
       ],
-      "links": {
-        "github": "https://github.com/RoJLD/Anthropos"
-      }
+      "code_status": "Privé — dépôt non public"
     },
     {
       "id": "hmm-studio",
@@ -1229,8 +1227,7 @@
         "research"
       ],
       "links": {
-        "github": "https://github.com/RoJLD/HMMstudio",
-        "live": "https://rojld.github.io/HMMstudio/"
+        "github": "https://github.com/RoJLD/HMMstudio"
       }
     },
     {

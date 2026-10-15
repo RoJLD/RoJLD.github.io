@@ -1,6 +1,7 @@
 # tools/sync_github_projects.py
-"""sync_github_projects.py — rapport de derive entre profile.json (projects[].links.github) et le
-GitHub public de RoJLD. Read-only : n'ecrit jamais le catalogue.
+"""sync_github_projects.py — rapport de derive entre profile.json (projects[].links, TOUS
+champs) et le GitHub public de RoJLD. N'ecrit jamais le catalogue ; seul `--temoin`
+ecrit, et seulement le fichier qu'on lui nomme.
 
 Meme patron que build_projects.py : fonctions pures + main() fin. L'acces reseau
 (fetch GitHub) passe par un seam injectable `fetch_fn` (comme complete_fn dans
@@ -10,6 +11,7 @@ Usage (depuis la racine du repo site) :
     python tools/sync_github_projects.py            # rapport texte, exit 1 si derive
     python tools/sync_github_projects.py --json     # sortie machine
     python tools/sync_github_projects.py --include-forks
+    python tools/sync_github_projects.py --temoin data/depots_publics_rojld.json
 """
 from __future__ import annotations
 
@@ -44,13 +46,27 @@ def repo_key(repo: dict) -> str:
 
 
 def catalog_github_refs(catalog: dict) -> list[tuple[str, str]]:
-    """[(project_id, 'owner/name')] pour chaque projet avec un links.github parseable."""
+    """[(project_id, 'owner/name')] pour chaque lien github.com d'un projet.
+
+    TOUS les champs de `links`, pas seulement `links.github`. Mesure du
+    2026-10-15 : le lien mort du site etait le `links.live` de `hmm-studio`, et
+    il n'entrait JAMAIS dans `dead_links` -- cette fonction ne lisait que
+    `links.github`. `render_links` (build_projects.py) affiche pourtant cinq
+    champs : un detecteur aveugle au champ ou se trouve le defaut laisse le
+    dossier referme dessus.
+
+    Un meme depot vise par deux champs du meme projet ne compte qu'une fois,
+    sinon il apparaitrait deux fois dans `dead_links`.
+    """
     refs: list[tuple[str, str]] = []
+    vus: set[tuple[str, str]] = set()
     for p in catalog.get("projects") or []:
-        url = (p.get("links") or {}).get("github")
-        key = normalize_repo_url(url) if url else None
-        if key:
-            refs.append((p.get("id", ""), key))
+        pid = p.get("id", "")
+        for url in (p.get("links") or {}).values():
+            key = normalize_repo_url(url)
+            if key and (pid, key) not in vus:
+                vus.add((pid, key))
+                refs.append((pid, key))
     return refs
 
 
@@ -98,6 +114,37 @@ def diff_catalog(catalog: dict, repos: list, *, owner: str = "RoJLD",
 
 def has_drift(diff: dict) -> bool:
     return bool(diff.get("dead_links") or diff.get("missing"))
+
+
+REGEN_TEMOIN = ("Temoin des depots PUBLICS de l'owner. Regenerer : "
+                "python tools/sync_github_projects.py --temoin data/depots_publics_rojld.json")
+
+
+def temoin_depots_publics(repos: list, *, owner: str = "RoJLD", releve: str = "") -> dict:
+    """Releve des depots PUBLICS de l'owner, pour les gardes HORS-LIGNE.
+
+    Pourquoi ce releve existe : une garde de test ne peut pas appeler github.com
+    (poste hors ligne, non determinisme), et elle a pourtant besoin de savoir
+    qu'un lien github.com/<owner>/<x> ne rendra pas 404 chez un visiteur anonyme.
+
+    La source est `users/<owner>/repos`, qui ne liste QUE le public -- mesure du
+    2026-10-15 : le MEME ensemble de 27 depots avec et sans jeton, alors que
+    `repos/RoJLD/Anthropos`, interroge avec un jeton du proprietaire, rend 200 et
+    `private: true` la ou un visiteur anonyme recoit 404. Le releve reflete donc
+    bien la vue du visiteur, meme produit par un `gh` authentifie.
+
+    Trois champs seulement : un releve qui recopierait la reponse GitHub
+    changerait a chaque etoile recue, donc a chaque commit.
+    """
+    return {
+        "$comment": REGEN_TEMOIN,
+        "owner": owner,
+        "releve": releve,
+        "repos": sorted(({"name": r.get("name", ""),
+                          "has_pages": bool(r.get("has_pages")),
+                          "fork": bool(r.get("fork"))} for r in repos),
+                        key=lambda r: r["name"].lower()),
+    }
 
 
 def _ascii(s) -> str:
@@ -161,6 +208,8 @@ def main(argv: Optional[list] = None, fetch_fn: Optional[Callable[[str], list]] 
     ap.add_argument("--include-forks", action="store_true")
     ap.add_argument("--json", action="store_true", dest="as_json")
     ap.add_argument("--catalog", default=None, help="chemin profile.json (defaut: profile.json du repo)")
+    ap.add_argument("--temoin", default=None, metavar="CHEMIN",
+                    help="ecrit le releve des depots publics dans CHEMIN et sort (pas de rapport)")
     args = ap.parse_args(argv)
 
     root = pathlib.Path(__file__).resolve().parents[1]
@@ -176,6 +225,18 @@ def main(argv: Optional[list] = None, fetch_fn: Optional[Callable[[str], list]] 
 
     fetch = fetch_fn or fetch_repos_gh
     repos = fetch(args.user)
+
+    # Un releve n'est pas un rapport : on sort AVANT le diff, sinon demander le
+    # releve exigerait un catalogue en phase et rendrait 1 sur la moindre derive.
+    if args.temoin:
+        import datetime
+        temoin = temoin_depots_publics(repos, owner=args.user,
+                                       releve=datetime.date.today().isoformat())
+        pathlib.Path(args.temoin).write_text(
+            json.dumps(temoin, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("temoin ecrit : %s (%d depots publics)" % (args.temoin, len(temoin["repos"])))
+        return 0
+
     diff = diff_catalog(catalog, repos, owner=args.user,
                         site_repo=args.site_repo, include_forks=args.include_forks)
 
