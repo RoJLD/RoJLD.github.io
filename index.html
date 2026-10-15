@@ -77,11 +77,38 @@
         .htl-wrap::-webkit-scrollbar{height:10px}.htl-wrap::-webkit-scrollbar-track{background:var(--bg-2);border-radius:5px}.htl-wrap::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:5px;border:2px solid var(--bg-0)}.htl-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent)}
         .htl-hint{display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:11px;color:var(--tx-3);margin:2px 8px 0;font-weight:500}
         .htl{display:flex;gap:0;min-width:max-content;position:relative;padding:0 8px}.htl::before{content:'';position:absolute;top:36px;left:8px;right:8px;height:2px;background:linear-gradient(90deg,var(--accent),var(--violet),var(--rose),var(--warm));border-radius:1px}
-        .ht-item{display:flex;flex-direction:column;align-items:center;min-width:130px;position:relative}.ht-year{font-size:11px;font-weight:700;color:var(--tx-3);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase}
-        .ht-dot{width:12px;height:12px;border-radius:50%;border:2.5px solid var(--accent);background:var(--bg-0);z-index:2;margin-bottom:14px;transition:all .3s var(--ease)}
+        /* Les jalons de la frise sont des <button> (focus clavier, Entrée, Espace et rôle ARIA
+           gratuits). Tout ce qui suit `position:relative` ne sert qu'à rendre ce bouton
+           indiscernable du <div> qu'il remplace. Relevé le 2026-10-15 en insérant un <button>
+           et un <div> côte à côte dans la vraie frise et en diffant leurs propriétés calculées
+           (Chromium 145) : ce que le navigateur ajoute et que le reset global `*{margin:0;
+           padding:0;box-sizing:border-box}` ne couvre pas, c'est `appearance:auto`,
+           `background rgb(240,240,240)`, `border 2px outset` noir, `color` noir, `font Arial
+           13,33px/normal`, `text-align:center`, `unicode-bidi:normal`. Sans `font:inherit` la
+           police contamine .ht-label, qui n'en déclare aucune, et sa largeur passe de 62,19 à
+           63,28 px. `scroll-margin-inline:6px` réserve la place de l'anneau quand le navigateur
+           ramène le jalon dans la frise. Preuve que la neutralisation est complète : 8 rects de
+           jalons, 32 rects d'enfants, 24/24 propriétés calculées, scrollHeight, scrollWidth et
+           capture SHA-256 de #parcours identiques avant/après.
+           Les ENFANTS ont changé de balise aussi (div -> span, le modèle de contenu d'un
+           <button> exige du contenu phrasé) et `.ht-item` ne les couvre pas : `unicode-bidi`
+           n'est PAS héritée. La feuille UA de Chromium pose `unicode-bidi:isolate` sur un
+           <div> et `normal` sur un <span>. Mesuré le 2026-10-15 en diffant TOUTES les
+           propriétés calculées énumérées (484 par élément, 40 éléments de frise) entre les
+           deux arbres servis : `unicode-bidi` passait de `isolate` à `normal` sur 24 d'entre
+           eux — .ht-dot, .ht-label et .ht-sub × 8 jalons. (.ht-year était déjà un <span>
+           avant, elle était déjà identique.) Inerte à l'œil sur du texte latin (#parcours
+           capturé au même SHA-256 à l'octet, 0 rect déplacé sur 40), mais la promesse de ce
+           lot est « l'apparence ne change pas », pas « ça ne se voit pas » : les trois règles
+           ci-dessous la rétablissent. Après quoi la seule différence calculée qui reste est
+           voulue : `scroll-margin-inline` 0 -> 6px sur les 8 jalons. */
+        .ht-item{display:flex;flex-direction:column;align-items:center;min-width:130px;position:relative;appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;font:inherit;text-align:inherit;unicode-bidi:isolate;scroll-margin-inline:6px}
+        .ht-item:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:var(--radius-sm)}
+        .ht-year{font-size:11px;font-weight:700;color:var(--tx-3);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase}
+        .ht-dot{width:12px;height:12px;border-radius:50%;border:2.5px solid var(--accent);background:var(--bg-0);z-index:2;margin-bottom:14px;transition:all .3s var(--ease);unicode-bidi:isolate}
         .ht-item:hover .ht-dot{background:var(--accent);transform:scale(1.4);box-shadow:0 0 16px var(--accent-g)}
-        .ht-label{font-size:11.5px;font-weight:600;color:var(--tx-1);text-align:center;max-width:120px;line-height:1.35;margin-bottom:4px}
-        .ht-sub{font-size:10px;color:var(--tx-3);text-align:center;max-width:120px;line-height:1.3}
+        .ht-label{font-size:11.5px;font-weight:600;color:var(--tx-1);text-align:center;max-width:120px;line-height:1.35;margin-bottom:4px;unicode-bidi:isolate}
+        .ht-sub{font-size:10px;color:var(--tx-3);text-align:center;max-width:120px;line-height:1.3;unicode-bidi:isolate}
         .ht-item.edu .ht-dot{border-color:var(--accent)}.ht-item.edu:hover .ht-dot{background:var(--accent);box-shadow:0 0 16px var(--accent-g)}
         .ht-item.proj .ht-dot{border-color:var(--accent)}.ht-item.proj:hover .ht-dot{background:var(--accent);box-shadow:0 0 16px var(--accent-g)}
         .radar-section{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
@@ -218,14 +245,14 @@
 <!-- TIMELINE HORIZONTALE -->
 <section class="rv" id="parcours"><div class="sh" aria-expanded="true" onclick="tog(this)"><div class="si">🗺️</div><h2 class="st" data-i18n="sec_parcours">Mon Parcours</h2><span class="sc">▼</span></div><div class="sb open"><div class="sb-in">
     <div class="htl-wrap" id="journeyScroll"><div class="htl"><!-- BUILD:journey -->
-        <div class="ht-item edu" data-ref="education:prepa" onclick="openModal('modal-education-prepa')" style="cursor:pointer"><span class="ht-year">2019</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j1_label">Prépa MPSI</div><div class="ht-sub">Bourg-en-Bresse</div></div>
-        <div class="ht-item edu" data-ref="education:ece" onclick="openModal('modal-education-ece')" style="cursor:pointer"><span class="ht-year">2021</span><div class="ht-dot"></div><div class="ht-label">ECE Paris</div><div class="ht-sub" data-i18n="ht_j2_sub">Cycle Ingénieur</div></div>
-        <div class="ht-item" data-ref="experience:manco_2024" onclick="openModal('modal-experience-manco_2024')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j3_year">Juin 2024</span><div class="ht-dot"></div><div class="ht-label">Risk Manager</div><div class="ht-sub">ManCo Paris</div></div>
-        <div class="ht-item" data-ref="experience:bouygues_2025" onclick="openModal('modal-experience-bouygues_2025')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j4_year">Fév 2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j4_label">Trésorier &amp; Dev</div><div class="ht-sub">Bouygues Telecom</div></div>
-        <div class="ht-item proj" data-ref="project:pfe-hedging" onclick="openModal('modal-project-pfe-hedging')" style="cursor:pointer"><span class="ht-year">2025</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j5_label">PFE avec EY</div><div class="ht-sub" data-i18n="ht_j5_sub">Couverture dynamique</div></div>
-        <div class="ht-item" data-ref="experience:alten_2026" onclick="openModal('modal-experience-alten_2026')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j6_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label">Quant Researcher</div><div class="ht-sub">ALTEN Lab R&amp;D</div></div>
-        <div class="ht-item" data-ref="project:elysium" onclick="openModal('modal-project-elysium')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j7_year">Fév 2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j7_label">ELYSIUM</div><div class="ht-sub" data-i18n="ht_j7_sub">Architecture IA (perso)</div></div>
-        <div class="ht-item edu" data-ref="education:ece" onclick="openModal('modal-education-ece')" style="cursor:pointer"><span class="ht-year">2026</span><div class="ht-dot"></div><div class="ht-label" data-i18n="ht_j8_label">Diplôme Ingénieur</div><div class="ht-sub">ECE Paris</div></div>
+        <button type="button" class="ht-item edu" data-ref="education:prepa" onclick="openModal('modal-education-prepa')" style="cursor:pointer"><span class="ht-year">2019</span><span class="ht-dot"></span><span class="ht-label" data-i18n="ht_j1_label">Prépa MPSI</span><span class="ht-sub">Bourg-en-Bresse</span></button>
+        <button type="button" class="ht-item edu" data-ref="education:ece" onclick="openModal('modal-education-ece')" style="cursor:pointer"><span class="ht-year">2021</span><span class="ht-dot"></span><span class="ht-label">ECE Paris</span><span class="ht-sub" data-i18n="ht_j2_sub">Cycle Ingénieur</span></button>
+        <button type="button" class="ht-item" data-ref="experience:manco_2024" onclick="openModal('modal-experience-manco_2024')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j3_year">Juin 2024</span><span class="ht-dot"></span><span class="ht-label">Risk Manager</span><span class="ht-sub">ManCo Paris</span></button>
+        <button type="button" class="ht-item" data-ref="experience:bouygues_2025" onclick="openModal('modal-experience-bouygues_2025')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j4_year">Fév 2025</span><span class="ht-dot"></span><span class="ht-label" data-i18n="ht_j4_label">Trésorier &amp; Dev</span><span class="ht-sub">Bouygues Telecom</span></button>
+        <button type="button" class="ht-item proj" data-ref="project:pfe-hedging" onclick="openModal('modal-project-pfe-hedging')" style="cursor:pointer"><span class="ht-year">2025</span><span class="ht-dot"></span><span class="ht-label" data-i18n="ht_j5_label">PFE avec EY</span><span class="ht-sub" data-i18n="ht_j5_sub">Couverture dynamique</span></button>
+        <button type="button" class="ht-item" data-ref="experience:alten_2026" onclick="openModal('modal-experience-alten_2026')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j6_year">Fév 2026</span><span class="ht-dot"></span><span class="ht-label">Quant Researcher</span><span class="ht-sub">ALTEN Lab R&amp;D</span></button>
+        <button type="button" class="ht-item" data-ref="project:elysium" onclick="openModal('modal-project-elysium')" style="cursor:pointer"><span class="ht-year" data-i18n="ht_j7_year">Fév 2026</span><span class="ht-dot"></span><span class="ht-label" data-i18n="ht_j7_label">ELYSIUM</span><span class="ht-sub" data-i18n="ht_j7_sub">Architecture IA (perso)</span></button>
+        <button type="button" class="ht-item edu" data-ref="education:ece" onclick="openModal('modal-education-ece')" style="cursor:pointer"><span class="ht-year">2026</span><span class="ht-dot"></span><span class="ht-label" data-i18n="ht_j8_label">Diplôme Ingénieur</span><span class="ht-sub">ECE Paris</span></button>
     <!-- /BUILD:journey --></div></div>
     <div class="htl-hint" data-i18n="journey_hint">↔ glisser pour parcourir la frise</div>
 </div></div></section>
@@ -761,6 +788,14 @@ window.addEventListener('mouseup',()=>{down=false;el.classList.remove('drag')});
 el.addEventListener('mouseleave',()=>{down=false;el.classList.remove('drag')});
 el.addEventListener('mousemove',e=>{if(!down)return;e.preventDefault();el.scrollLeft=sl-(e.pageX-sx)});
 el.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){el.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
+// Ramene le jalon focalise ENTIER dans la frise : Chrome ne defile `overflow-x:auto` au
+// focus que si l'element est integralement hors vue, donc on tabulait sur une vignette
+// rognee (mesure 2026-10-15 : 6 jalons entiers sur 8 a 1920/1440/1024 px, 5/8 a 768 px,
+// 2/8 a 390 px ; avec cet ecouteur, 8/8 aux cinq largeurs).
+// La garde `:focus-visible` n'est pas cosmetique : sans elle l'ecouteur se declenche aussi
+// au mousedown et la frise glisse sous le curseur — mesure sur le 7e jalon, rogne de 106 px :
+// scrollLeft 0 -> 112 entre mousedown et mouseup, et LA MODALE NE S'OUVRE PLUS.
+el.addEventListener('focusin',e=>{const t=e.target.closest('.ht-item');if(t&&t.matches(':focus-visible'))t.scrollIntoView({block:'nearest',inline:'nearest'})});
 })();
 // CV-ATELIER Track 2 : chooser de telechargement CV (complet ATS / profil prefab / composer)
 (function(){
