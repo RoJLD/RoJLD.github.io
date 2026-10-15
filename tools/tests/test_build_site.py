@@ -838,13 +838,76 @@ _NEUTRALISATIONS_BOUTON = {
 }
 
 
+# Les ENFANTS du jalon ont changé de balise eux aussi (div -> span : le modèle de contenu
+# d'un <button> exige du contenu phrasé) et la règle `.ht-item` ne les couvre pas —
+# `unicode-bidi` n'est pas une propriété héritée. Mesuré le 2026-10-15 en comparant les
+# 484 propriétés calculées des 40 éléments de la frise (8 jalons + 32 enfants) entre
+# l'arbre d'avant le lot et celui d'après (Chromium 145, 1440×900, rien de focalisé,
+# scrollLeft=0, transitions neutralisées) : la feuille UA de Chromium pose
+# `unicode-bidi:isolate` sur un <div> et `normal` sur un <span>, et la propriété passait
+# donc de `isolate` à `normal` sur 24 des 40 éléments — les 3 enfants reblottis × 8 jalons.
+# `.ht-year` était déjà un <span> avant le lot : elle n'a pas bougé, elle n'est pas ici.
+# C'est inerte à l'œil sur du texte latin (#parcours au même SHA-256 à l'octet, 0 rect
+# déplacé sur 40) ; on la rétablit quand même, parce que la promesse de ce lot est
+# « l'apparence ne change pas », pas « ça ne se voit pas ». Après renfort, la seule
+# différence calculée qui reste est voulue : `scroll-margin-inline` 0 -> 6px sur les
+# 8 jalons, qui réserve la place de l'anneau de focus.
+_NEUTRALISATIONS_ENFANTS = {
+    ".ht-dot": {"unicode-bidi": "unicode-bidi:isolate"},
+    ".ht-label": {"unicode-bidi": "unicode-bidi:isolate"},
+    ".ht-sub": {"unicode-bidi": "unicode-bidi:isolate"},
+}
+
+
+def _declarations(regle):
+    """Déclarations d'un bloc CSS, propriété -> valeur, reconnues à leur FRONTIÈRE.
+
+    Pourquoi pas la comparaison d'origine `prop + ":" in regle` : elle cherchait une
+    sous-chaîne n'importe où, et une AUTRE déclaration dont le nom finit par celui
+    cherché la satisfaisait. Mesuré le 2026-10-15 en posant les deux règles affaiblies
+    sur une copie du dépôt : `.ht-item` privée de `appearance:none` mais gardant
+    `-webkit-appearance:none` restait VERTE, et privée de `color:inherit` avec un
+    `background-color:transparent` restait VERTE aussi. Deux des huit neutralisations
+    ne gardaient donc rien.
+    Les déclarations CSS sont séparées par `;` : on coupe là — début de bloc, ou après
+    un `;`, espaces indifférents — et on compare le nom de propriété ENTIER. La valeur
+    est comparée elle aussi : `color:red` neutralise le noir du <button> aussi mal que
+    rien du tout, et toute autre graphie (`border:none` pour `border:0`) demande de
+    refaire la mesure de parité avant de dire que l'apparence n'a pas changé.
+    """
+    presentes = {}
+    for declaration in regle.split(";"):
+        nom, sep, valeur = declaration.partition(":")
+        if sep:
+            presentes[nom.strip()] = " ".join(valeur.split())
+    return presentes
+
+
+def _neutralisations_manquantes(regle, attendues):
+    """Celles de `attendues` (propriété -> déclaration) que `regle` ne porte pas."""
+    presentes = _declarations(regle)
+    return [declaration for prop, declaration in sorted(attendues.items())
+            if presentes.get(prop) != declaration.partition(":")[2]]
+
+
 def _regle_css(texte, selecteur):
-    """Bloc de déclarations de `selecteur{…}` dans une feuille inline, ou None."""
-    i = texte.find(selecteur + "{")
-    if i < 0:
-        return None
-    j = texte.index("}", i)
-    return texte[i + len(selecteur) + 1:j]
+    """Bloc de déclarations de `selecteur{…}` dans une feuille inline, ou None.
+
+    Le sélecteur doit OUVRIR une règle : début de texte, début de ligne, après un `}`
+    ou après une `,`. Sans cette frontière, `.ht-dot` serait lu dans
+    `.ht-item:hover .ht-dot{…}`, qui ne style que l'état survolé — mesuré sur
+    index.html le 2026-10-15 : `.ht-dot{` y apparaît 6 fois et `.ht-label{` 2 fois,
+    une seule occurrence chacune étant la règle de base.
+    """
+    depart = 0
+    while True:
+        i = texte.find(selecteur + "{", depart)
+        if i < 0:
+            return None
+        avant = texte[:i].rstrip(" \t")
+        if not avant or avant[-1] in "\n},":
+            return texte[i + len(selecteur) + 1:texte.index("}", i)]
+        depart = i + 1
 
 
 def test_les_boutons_de_la_frise_gardent_lapparence_des_anciens_div():
@@ -859,17 +922,32 @@ def test_les_boutons_de_la_frise_gardent_lapparence_des_anciens_div():
     Pas de `skip` si les ouvreurs sont encore des `div` : un skip ici serait une
     garde qui se tait au moment précis où elle sert (doctrine oracle_node.py). La
     balise réellement émise est rappelée dans le message d'échec.
+
+    Le jalon ET ses enfants sont jugés : le jalon a changé de balise (div -> button),
+    ses trois enfants reblottis aussi (div -> span), et `.ht-item` ne couvre pas les
+    seconds. Mesuré après renfort sur les deux arbres servis : des 484 propriétés
+    calculées des 40 éléments de la frise, la seule qui diffère encore est
+    `scroll-margin-inline` 0 -> 6px sur les 8 jalons, qui est voulue.
     """
     p = bs.load_profile()
     tags = sorted({t for t, _ in _ouvreurs_de_frise(bs.render_journey(p))})
     index = (bs.ROOT / "index.html").read_text(encoding="utf-8")
     regle = _regle_css(index, ".ht-item")
     assert regle, "index.html n'a plus de règle `.ht-item` — la frise n'est plus stylée"
-    manquantes = [d for prop, d in sorted(_NEUTRALISATIONS_BOUTON.items())
-                  if prop + ":" not in regle]
+    manquantes = _neutralisations_manquantes(regle, _NEUTRALISATIONS_BOUTON)
     assert not manquantes, (
         f"les ouvreurs de frise sont des {tags} mais `.ht-item` ne neutralise pas les "
         f"styles par défaut du navigateur : il manque {manquantes}")
+    for selecteur, attendues in sorted(_NEUTRALISATIONS_ENFANTS.items()):
+        regle_enfant = _regle_css(index, selecteur)
+        assert regle_enfant, (
+            f"index.html n'a plus de règle `{selecteur}` — l'enfant du jalon n'est plus stylé")
+        absentes = _neutralisations_manquantes(regle_enfant, attendues)
+        assert not absentes, (
+            f"`{selecteur}` est un <span> depuis que le jalon est un <button>, mais sa "
+            f"règle ne rétablit pas ce que la feuille UA donnait au <div> : il manque "
+            f"{absentes} (mesuré le 2026-10-15 : `unicode-bidi` passait de `isolate` à "
+            f"`normal` sur 24 des 40 éléments de la frise)")
     assert ".ht-item:focus-visible{" in index, (
         "un ouvreur focusable sans anneau de focus visible : WCAG 2.4.7 exige qu'on "
         "voie où l'on est (mesuré 5,39:1 en thème sombre, 4,82:1 en clair)")
