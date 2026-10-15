@@ -346,11 +346,22 @@ def render_journey(profile):
         li, label = _ht_field(j["label"], f"ht_j{i}_label", "fr")
         si, sub = _ht_field(j["sub"], f"ht_j{i}_sub", "fr")
         ref = j.get("ref", "")
+        # Un jalon qui ouvre une modale est un BOUTON, pas un div : le focus clavier,
+        # Entrée, Espace et le rôle annoncé aux lecteurs d'écran viennent gratuitement,
+        # là où un div réclamerait tabindex=0 + role=button + un gestionnaire de touches.
+        # Mesuré sur la page servie le 2026-10-15 (Chromium 145) : avec des div,
+        # 140 tabulations atteignent ZÉRO jalon et `focus()` laisse activeElement sur body.
+        # Enfants en <span> : le modèle de contenu d'un <button> exige du contenu phrasé,
+        # qu'un <div> n'est pas ; blottis en élément flex les deux rendent au pixel près.
+        # Un jalon SANS `ref` n'ouvre rien : il reste un div, sinon il serait focusable
+        # pour rien (aucun cas aujourd'hui — les 8 jalons portent tous un `ref`).
+        tag = "button" if ref else "div"
+        typ = ' type="button"' if ref else ""
         click = (f' data-ref="{esc(ref)}" onclick="openModal({_ref_slug(ref)!r})" style="cursor:pointer"'
                  if ref else "")
         items.append(
-            f'<div class="{cls}"{click}><span class="ht-year"{yi}>{year}</span><div class="ht-dot"></div>'
-            f'<div class="ht-label"{li}>{label}</div><div class="ht-sub"{si}>{sub}</div></div>'
+            f'<{tag}{typ} class="{cls}"{click}><span class="ht-year"{yi}>{year}</span><span class="ht-dot"></span>'
+            f'<span class="ht-label"{li}>{label}</span><span class="ht-sub"{si}>{sub}</span></{tag}>'
         )
     return "\n        " + "\n        ".join(items) + "\n    "
 

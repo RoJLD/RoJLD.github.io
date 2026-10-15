@@ -221,7 +221,13 @@ def test_render_journey_from_profile():
     p = bs.load_profile()
     html = bs.render_journey(p)
     for i, j in enumerate(p["journey"], start=1):
-        assert f'<div class="{bs._HT_CLS[j["kind"]]}"' in html
+        # La balise suit la DONNÉE, pas une constante : un jalon à `ref` ouvre une modale,
+        # donc c'est un <button> (atteignable au clavier) ; sans `ref` il n'ouvre rien et
+        # reste un <div>. Écrire `<button` en dur ferait rougir à tort le jour où la frise
+        # gagne un jalon non cliquable — et écrire `<div` en dur laissait passer le défaut
+        # mesuré le 2026-10-15 (140 tabulations, zéro jalon atteint).
+        ouvre = '<button type="button" class=' if j.get("ref") else "<div class="
+        assert f'{ouvre}"{bs._HT_CLS[j["kind"]]}"' in html
         for name, val in (("year", j["year"]), ("label", j["label"]), ("sub", j["sub"])):
             if isinstance(val, dict):
                 assert f'data-i18n="ht_j{i}_{name}"' in html
@@ -230,7 +236,8 @@ def test_render_journey_from_profile():
                 assert bs.esc(val) in html
     # champ statique = PAS de data-i18n (année, lieu)
     assert '<span class="ht-year">2019</span>' in html
-    assert '<div class="ht-sub">Bouygues Telecom</div>' in html
+    # <span> et non <div> : le modèle de contenu d'un <button> exige du contenu phrasé.
+    assert '<span class="ht-sub">Bouygues Telecom</span>' in html
 
 def test_gen_i18n_journey_only_bilingual_keys():
     p = bs.load_profile()
@@ -735,3 +742,157 @@ def test_le_build_reecrit_chaque_region_i18n_declaree(nom, lang):
         f"la région i18n_{nom}_{lang} n'est plus réécrite par le build")
     assert _entre(out, ouvre, ferme) == bs.I18N_SECTIONS[nom](profile, lang), (
         f"la région i18n_{nom}_{lang} ne porte pas ce que son générateur produit")
+
+
+# ── a11y : les ouvreurs de la frise sont atteignables au clavier ─────────────
+# Mesuré sur la page servie le 2026-10-15 (Chromium 145, 1440×900) : 140 tabulations
+# depuis `body`, ZÉRO jalon de frise atteint, et `element.focus()` sur un `div.ht-item`
+# laisse `document.activeElement` sur `body` — donc Entrée et Espace n'ouvrent rien.
+# Les 8 vignettes de « Mon Parcours » n'existent pas pour qui n'a pas de souris.
+def _ouvreurs_de_frise(texte):
+    """(tag, attrs) de chaque élément qui OUVRE une modale de frise, vus par un parseur.
+
+    Le témoin ne peut pas être la chaîne `'<button'` cherchée dans le rendu : ce serait
+    le générateur recopié dans son test. C'est `html.parser` (stdlib) qui dit quels
+    éléments portent `onclick="openModal(…)"` ; le test ne fait que juger CEUX-LÀ.
+    Même façon de procéder que `_ancres_selon_un_parseur` (test_liens_internes.py).
+    """
+    from html.parser import HTMLParser
+
+    class _Collecteur(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.vus = []
+
+        def handle_starttag(self, tag, attrs):
+            d = dict(attrs)
+            if "ht-item" in (d.get("class") or "").split() \
+                    and (d.get("onclick") or "").startswith("openModal("):
+                self.vus.append((tag, d))
+
+    c = _Collecteur()
+    c.feed(texte)
+    return c.vus
+
+
+def _temoins_de_frise():
+    """Les deux endroits où la frise existe : le générateur, et la page publiée.
+
+    Les DEUX comptent. `render_journey` dit ce que le prochain build produira ;
+    `index.html` dit ce que GitHub Pages sert AUJOURD'HUI — et la zone
+    `<!-- BUILD:journey -->` est régénérée, donc un correctif posé dans
+    `build_site.py` sans `py -3.13 tools/build_site.py` laisserait le visiteur
+    devant les anciens `div`, avec un test vert.
+    """
+    p = bs.load_profile()
+    return p, (("render_journey", bs.render_journey(p)),
+               ("index.html publié", (bs.ROOT / "index.html").read_text(encoding="utf-8")))
+
+
+def test_les_ouvreurs_de_la_frise_sont_des_boutons():
+    """Un `div` + `onclick` n'est pas atteignable au clavier ; un `<button>` l'est.
+
+    `<button type="button">` apporte le focus, Entrée, Espace et le rôle ARIA sans une
+    ligne de JS — là où un `div` demanderait `tabindex=0`, `role="button"` et un
+    gestionnaire de touches à écrire et à entretenir. `type="button"` parce qu'un
+    `<button>` sans type vaut `submit`.
+    """
+    p, temoins = _temoins_de_frise()
+    attendus = [j for j in p["journey"] if j.get("ref")]
+    assert len(attendus) >= 8, "contre-vacuité : la frise doit porter des jalons cliquables"
+    for source, texte in temoins:
+        ouvreurs = _ouvreurs_de_frise(texte)
+        assert len(ouvreurs) == len(attendus), \
+            f"{source}: {len(ouvreurs)} ouvreurs pour {len(attendus)} jalons à `ref`"
+        for tag, attrs in ouvreurs:
+            assert tag == "button", \
+                f"{source}: ouvreur <{tag}> — un div n'est pas focusable ({attrs.get('data-ref')})"
+            assert attrs.get("type") == "button", \
+                f"{source}: <button> sans type=button ({attrs.get('data-ref')})"
+
+
+# Propriétés que le navigateur applique à un `<button>` et PAS à un `div`, relevées
+# le 2026-10-15 en insérant les deux balises côte à côte dans la vraie frise et en
+# diffant leurs 300+ propriétés calculées (Chromium 145). Seules celles-là restent
+# après le reset global `*{margin:0;padding:0;box-sizing:border-box}` (index.html:24) :
+#   appearance       auto              -> none          (thème natif du système)
+#   background-color rgb(240,240,240)  -> transparent
+#   border-*         2px outset noir   -> 0
+#   color            noir              -> hérité (#e6eaf3 en sombre)
+#   font-family      Arial             -> héritée ; .ht-label/.ht-sub ne déclarent
+#   font-size        13.3333px            pas de police : sans `font:inherit`, la
+#   line-height      normal               largeur de .ht-label passe de 62,19 à 63,28 px
+#   text-align       center            -> start
+#   unicode-bidi     normal            -> isolate
+# `padding` (1px 6px) et `box-sizing` diffèrent sur une page nue mais PAS ici : le
+# reset global les couvre déjà — mesuré, ils sont absents du diff en page.
+_NEUTRALISATIONS_BOUTON = {
+    "appearance": "appearance:none",
+    "-webkit-appearance": "-webkit-appearance:none",
+    "background": "background:none",
+    "border": "border:0",
+    "color": "color:inherit",
+    "font": "font:inherit",
+    "text-align": "text-align:inherit",
+    "unicode-bidi": "unicode-bidi:isolate",
+}
+
+
+def _regle_css(texte, selecteur):
+    """Bloc de déclarations de `selecteur{…}` dans une feuille inline, ou None."""
+    i = texte.find(selecteur + "{")
+    if i < 0:
+        return None
+    j = texte.index("}", i)
+    return texte[i + len(selecteur) + 1:j]
+
+
+def test_les_boutons_de_la_frise_gardent_lapparence_des_anciens_div():
+    """Changer de balise ne doit RIEN changer à l'œil : c'est la condition de la PR.
+
+    Mesuré après correctif (Chromium 145, 1440×900) : 8 rectangles de jalons et
+    32 rectangles d'enfants aux mêmes coordonnées document, 24/24 propriétés
+    calculées identiques, capture de `#parcours` au même SHA-256 — mais SEULEMENT
+    parce que la règle `.ht-item` neutralise chacun des styles par défaut du
+    `<button>`. Sans `font:inherit`, la frise repasse en Arial 13,33 px.
+
+    Pas de `skip` si les ouvreurs sont encore des `div` : un skip ici serait une
+    garde qui se tait au moment précis où elle sert (doctrine oracle_node.py). La
+    balise réellement émise est rappelée dans le message d'échec.
+    """
+    p = bs.load_profile()
+    tags = sorted({t for t, _ in _ouvreurs_de_frise(bs.render_journey(p))})
+    index = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    regle = _regle_css(index, ".ht-item")
+    assert regle, "index.html n'a plus de règle `.ht-item` — la frise n'est plus stylée"
+    manquantes = [d for prop, d in sorted(_NEUTRALISATIONS_BOUTON.items())
+                  if prop + ":" not in regle]
+    assert not manquantes, (
+        f"les ouvreurs de frise sont des {tags} mais `.ht-item` ne neutralise pas les "
+        f"styles par défaut du navigateur : il manque {manquantes}")
+    assert ".ht-item:focus-visible{" in index, (
+        "un ouvreur focusable sans anneau de focus visible : WCAG 2.4.7 exige qu'on "
+        "voie où l'on est (mesuré 5,39:1 en thème sombre, 4,82:1 en clair)")
+
+
+def test_le_focus_ramene_le_jalon_entier_dans_la_frise():
+    """Chrome ne défile `overflow-x:auto` au focus que si l'élément est ENTIÈREMENT caché.
+
+    Mesuré sur la page servie avant l'écouteur : 6 jalons sur 8 entiers à 1920, 1440 et
+    1024 px, 5/8 à 768 px, 2/8 à 390 px — on tabule sur une vignette rognée. Avec
+    `focusin` + `scrollIntoView` : 8/8 aux cinq largeurs.
+
+    La garde `:focus-visible` n'est pas cosmétique : sans elle, l'écouteur se déclenche
+    aussi au `mousedown`, la frise bouge sous le curseur entre `mousedown` et `mouseup`,
+    et le clic n'ouvre plus la modale (mesuré sur le 7ᵉ jalon).
+    """
+    index = (bs.ROOT / "index.html").read_text(encoding="utf-8")
+    iife = index[index.index("getElementById('journeyScroll')"):]
+    iife = iife[:iife.index("})();")]
+    assert "'focusin'" in iife, (
+        "la frise ne ramène plus le jalon focalisé dans la vue : on tabule sur une "
+        "vignette coupée (mesuré : 2 jalons entiers sur 8 à 390 px)")
+    assert "scrollIntoView" in iife
+    assert ":focus-visible" in iife, (
+        "écouteur `focusin` sans garde `:focus-visible` — il se déclenche au mousedown "
+        "et le clic souris n'ouvre plus la modale")
