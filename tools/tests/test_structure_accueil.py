@@ -90,8 +90,10 @@ def test_chaque_section_de_l_accueil_est_enfant_de_div_box():
               for sid, ligne, parent, classe in arbre.sections
               if not _dans_la_box(parent, classe)]
     assert dehors == [], (
-        "des sections de l'accueil sont rendues hors du conteneur `div.box` "
-        "(donc hors du max-width:860px) : "
+        "des sections de l'accueil n'ont pas `div.box` pour parent IMMEDIAT, "
+        "donc elles echappent au max-width:860px (le seul emboitement legitime "
+        "aujourd'hui est section > div.sb > div.sb-in ; une enveloppe en plus "
+        "autour d'une section serait a autoriser ici consciemment) : "
         + " ; ".join(f"#{s} ligne {l} a pour parent <{p} class={c!r}>"
                      for s, l, p, c in dehors))
 
@@ -157,6 +159,20 @@ def test_la_sonde_distingue_bien_une_page_saine_d_une_page_a_div_en_trop():
         ("a", "div", "box"), ("b", "body", None)]
     assert [t for _l, t in mauvaise.fermetures_orphelines] == ["section", "div"]
 
+    # Le PREDICAT, et pas seulement le parseur. Sans ces quatre lignes, rendre
+    # `_dans_la_box` toujours vrai laissait TOUT le fichier vert : la garde qui a
+    # attrape le defaut de production devenait un no-op sans un seul rouge
+    # (trouve par relecture adverse, 2026-10-15). Le verdict porte ici sur une
+    # entree dont la reponse est connue d'avance, donc il est verifiable.
+    assert [_dans_la_box(p, c) for _s, _l, p, c in bonne.sections] == [True, True]
+    assert [_dans_la_box(p, c) for _s, _l, p, c in mauvaise.sections] == [True, False]
+    assert _dans_la_box("div", "box") is True
+    assert _dans_la_box("div", "boxed") is False, (
+        "le predicat doit comparer des CLASSES entieres, pas des sous-chaines")
+    assert _dans_la_box("div", None) is False
+    assert _dans_la_box("body", None) is False
+    assert _dans_la_box("section", "box") is False
+
 
 def test_les_regions_generees_de_l_accueil_sont_equilibrees_en_div():
     """Le surplus appartient au HTML écrit à la main, pas au générateur.
@@ -180,3 +196,26 @@ def test_les_regions_generees_de_l_accueil_sont_equilibrees_en_div():
                       != len(re.findall(r"</div\s*>", corps))}
     assert desequilibrees == {}, (
         f"régions générées déséquilibrées (ouvertes, fermées) : {desequilibrees}")
+
+
+def test_la_box_de_l_accueil_porte_bien_son_max_width():
+    """L'autre moitie du symptome : la regle CSS qui contraint le conteneur.
+
+    La garde de structure ci-dessus verifie ou vivent les sections ; elle ne dit
+    rien de la declaration qui les contraint. Mesure du 2026-10-15 : retirer la
+    seule declaration `max-width` de `.box` (index.html ligne 43) reproduit
+    exactement le symptome de production -- neuf sections rendues sur toute la
+    largeur de la fenetre -- avec la suite ENTIEREMENT verte. Une porte qui ne
+    garde qu'une moitie du chemin n'est pas une porte.
+
+    La valeur n'est pas figee a 860px : on garde qu'une borne EXISTE, pas
+    laquelle, pour qu'un choix de design reste libre sans rouvrir la porte.
+    """
+    texte = ACCUEIL.read_text(encoding="utf-8")
+    regles = re.findall(r"\.box\s*\{([^}]*)\}", texte)
+    assert regles, "aucune regle `.box{...}` dans l'accueil"
+    avec_borne = [r for r in regles if re.search(r"max-width\s*:\s*\d", r)]
+    assert avec_borne, (
+        "`.box` ne porte plus de `max-width` : les sections de l'accueil "
+        "s'etaleront sur toute la largeur de la fenetre, ce qui est le symptome "
+        f"corrige le 2026-10-15. Regles `.box` trouvees : {regles!r}")
