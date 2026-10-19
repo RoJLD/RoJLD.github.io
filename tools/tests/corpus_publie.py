@@ -36,6 +36,7 @@ import functools
 import pathlib
 import re
 import sys
+from html.parser import HTMLParser
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 if str(ROOT / "tools") not in sys.path:
@@ -64,6 +65,8 @@ _PALETTE_SOMBRE = '[data-theme="dark"]'
 _LECTURE_THEME = "getItem('theme')"
 _LECTURE_LANGUE = "getItem('lang')"
 _ECRITURE_THEME = "setItem('theme'"
+_ECRITURE_LANGUE = "setAttribute('lang'"
+_DICTIONNAIRE_I18N = "const i18n"
 _NAV_PARTAGEE = "nav-brand"
 
 _BLOC_NAV = re.compile(r"<nav\b.*?</nav>", re.S)
@@ -125,6 +128,113 @@ def pages_qui_basculent_la_langue() -> tuple[str, ...]:
     (`test_lang_switch_behaviour`) énumère ses deux pages à la main.
     """
     return tuple(p for p in pages_publiees() if _LECTURE_LANGUE in _texte(p))
+
+
+@functools.lru_cache(maxsize=1)
+def pages_qui_ecrivent_l_attribut_langue() -> tuple[str, ...]:
+    """Pages qui POSENT `lang` sur le document (`setAttribute('lang'`).
+
+    Second témoin de la bascule, distinct de `pages_qui_basculent_la_langue()` :
+    celui-là voit la LECTURE du choix mémorisé, celui-ci l'ÉCRITURE de l'attribut
+    que lit le lecteur d'écran. C'est cette écriture-là que WCAG 3.1.1 juge — une
+    page pourrait traduire ses textes sans toucher `lang`, ou l'inverse (poser
+    `lang="en"` sur un corps français : c'est exactement ce que `/projects/` et
+    `/demos/` ont fait du 2026-10-19 au correctif du même jour).
+    """
+    return tuple(p for p in pages_publiees() if _ECRITURE_LANGUE in _texte(p))
+
+
+class _CompteurDeTextes(HTMLParser):
+    """Compte le texte VISIBLE d'une page, traduisible ou nu, nav mise à part.
+
+    Un élément est traduisible s'il porte `data-fr` ET `data-en` (dialecte des
+    sous-pages), ou `data-i18n` SI la page embarque le dictionnaire
+    (`const i18n`, dialecte de l'accueil) — sans dictionnaire, `data-i18n` est un
+    marqueur mort : mesuré le 2026-10-19, `/demos/` en porte deux (`bs_vol`,
+    `bs_mat`) qu'aucun script de cette page ne lit. Les compter comme traduits
+    aurait fausse le verdict de la page.
+
+    Le texte hérite : ce qui est dans un élément traduisible l'est aussi.
+    """
+
+    _SANS_FERMETURE = {"br", "img", "input", "meta", "link", "hr", "source",
+                       "path", "circle", "rect", "line", "polygon", "polyline",
+                       "use", "stop", "area", "col", "embed", "track", "wbr"}
+
+    def __init__(self, dictionnaire: bool):
+        super().__init__(convert_charrefs=True)
+        self._dico = dictionnaire
+        self._pile: list[tuple[str, bool, bool]] = []   # (balise, traduisible, nav)
+        self.traduisibles: list[str] = []
+        self.nues: list[str] = []
+        self.nav: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        d = dict(attrs)
+        trad = (any(t for _, t, _ in self._pile)
+                or ("data-fr" in d and "data-en" in d)
+                or ("data-i18n" in d and self._dico))
+        nav = any(n for _, _, n in self._pile) or tag == "nav"
+        if tag not in self._SANS_FERMETURE:
+            self._pile.append((tag, trad, nav))
+
+    def handle_startendtag(self, tag, attrs):
+        pass
+
+    def handle_endtag(self, tag):
+        for i in range(len(self._pile) - 1, -1, -1):
+            if self._pile[i][0] == tag:
+                del self._pile[i:]
+                return
+
+    def handle_data(self, data):
+        texte = " ".join(data.split())
+        if not texte or not any(c.isalnum() for c in texte):
+            return
+        balise = self._pile[-1][0] if self._pile else "?"
+        if balise in ("script", "style"):
+            return
+        if any(n for _, _, n in self._pile):
+            self.nav.append(texte)
+        elif any(t for _, t, _ in self._pile):
+            self.traduisibles.append(texte)
+        else:
+            self.nues.append(texte)
+
+
+@functools.lru_cache(maxsize=1)
+def traduction_par_page() -> dict[str, dict[str, int]]:
+    """Pour chaque page servie : combien de chaînes visibles sont traduisibles.
+
+    Ce module ne décide de rien, il rapporte. C'est au test d'exiger que la
+    langue ANNONCÉE par une page soit celle que son contenu livre.
+    """
+    out: dict[str, dict[str, int]] = {}
+    for rel in pages_publiees():
+        texte = _texte(rel)
+        c = _CompteurDeTextes(_DICTIONNAIRE_I18N in texte)
+        c.feed(texte)
+        out[rel] = {"traduisibles": len(c.traduisibles),
+                    "nues": len(c.nues),
+                    "nav": len(c.nav)}
+    return out
+
+
+def pages_majoritairement_traduites() -> tuple[str, ...]:
+    """Pages dont PLUS DE LA MOITIÉ du texte visible hors nav est traduisible.
+
+    Le seuil n'est pas un réglage : c'est l'énoncé de WCAG 3.1.1. L'attribut
+    `lang` déclare la langue PAR DÉFAUT du document ; une page ne peut l'annoncer
+    en anglais que si son texte est, en majorité, disponible en anglais.
+
+    Marge mesurée le 2026-10-19, et elle est large : la pire page verte est
+    l'accueil à 67,4 % (186 traduisibles contre 90 nues), puis `/highlights/` à
+    70,4 % (69 contre 29) ; les deux pages rouges sont à 0,0 % tout rond
+    (`/projects/` 0 contre 174, `/demos/` 0 contre 33). Entre 0 % et 67 %, le
+    seuil n'est pas une valeur à régler.
+    """
+    return tuple(rel for rel, n in traduction_par_page().items()
+                 if n["traduisibles"] > n["nues"])
 
 
 def _servie_ailleurs(nom: str) -> bool:

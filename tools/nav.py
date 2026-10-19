@@ -111,6 +111,8 @@ ENTREES: tuple[tuple[str, str], ...] = (
 #                   l'appelle `toggleTheme`. Renommer l'un des deux toucherait
 #                   le témoin du thème (`test_theme_clair.BASCULEUR`) sans rien
 #                   corriger ici.
+#   bouton_langue   `/projects/` et `/demos/` n'en portent PAS, et c'est un
+#                   retrait assumé — voir `render_boutons`.
 _PAGES: dict[str, dict[str, object]] = {
     "accueil": {
         "nav_attrs": ' id="nav"',
@@ -122,8 +124,8 @@ _PAGES: dict[str, dict[str, object]] = {
         "titre_langue": "Switch language",
         "titre_theme": "Toggle theme",
     },
-    "projects": {},
-    "demos": {},
+    "projects": {"bouton_langue": False},
+    "demos": {"bouton_langue": False},
     "explorer": {},
     "highlights": {},
     "graph": {},
@@ -138,6 +140,7 @@ _DEFAUTS: dict[str, object] = {
     "theme_fn": "tgTheme()",
     "titre_langue": "Langue",
     "titre_theme": "Thème",
+    "bouton_langue": True,
 }
 
 MARQUE = "R<b>.</b> Denis"
@@ -236,18 +239,43 @@ def render_boutons(page: str) -> str:
     rangée. Un contrôle qui se déplace avec le contenu défilant n'est plus un
     contrôle.
 
-    Le bouton de langue est émis sur les SIX pages. Mesuré le 2026-10-15 :
-    `document.getElementById('langBtn')` rend `null` sur `/projects/` et
-    `/demos/`, dont le `<html>` n'a pas de `data-lang` — un visiteur qui choisit
-    EN sur l'accueil arrive sur ces deux pages sans aucun moyen d'en changer, et
-    l'attribut `lang` du document annonce `fr` quoi qu'il ait choisi.
+    Le bouton de langue est émis sur QUATRE pages des six, et les deux absences
+    sont un RETRAIT ASSUMÉ, décidé le 2026-10-19 après mesure. `/projects/` et
+    `/demos/` l'ont porté un temps (« défaut F ») : il annonçait l'anglais sans
+    le livrer. Mesuré par un parseur HTML sur les artefacts publiés, texte
+    visible hors nav :
+
+        /projects/   174 nues,  0 traduisible  (89 distinctes) ->  0,0 %
+        /demos/       33 nues,  0 traduisible  (28 distinctes) ->  0,0 %
+        /explorer/     2 nues, 155 traduisibles               -> 98,7 %
+        /graph/        2 nues,  90 traduisibles               -> 97,8 %
+        /highlights/  29 nues,  69 traduisibles               -> 70,4 %
+        accueil       90 nues, 186 traduisibles               -> 67,4 %
+
+    Le bouton posait `lang="en"` et `data-lang="en"` sur un corps resté français,
+    titre compris : un lecteur d'écran lisait du français avec une voix anglaise
+    — WCAG 3.1.1 Language of Page, niveau A. Un bouton qui mentit à l'utilisateur
+    ET au lecteur d'écran est pire que son absence : avant lui, `lang` restait
+    `fr`, ce qui était juste. Le vrai défaut n'est pas « il manque un bouton »,
+    c'est que ces deux pages n'ont aucune traduction (h1, baselines, filtres,
+    libellés de tags — `project_tag_labels` est mono-langue). Le bouton revient
+    avec la traduction, pas avant. La garde qui tient les deux sens vit dans
+    `tools/tests/test_lang_switch_behaviour.py::test_la_langue_annoncee_est_celle_du_contenu`.
+
+    Conséquence sur la nav de ces deux pages, mesurée et voulue : ses entrées
+    portent toujours `data-fr`/`data-en` (le dialecte ne change pas), mais plus
+    rien ne les lit sur la page — elles restent donc en français, d'accord avec
+    le corps. Aucun libellé anglais orphelin n'apparaît : `data-en` est un
+    attribut, pas du texte rendu.
     """
     pas = str(_reglage(page, "pas"))
     indent = str(_reglage(page, "indent"))
     dedans = indent + pas
+    langue = (f'{dedans}<button class="ctrl-btn lang-btn" onclick="toggleLang()"'
+              f' id="langBtn" title="{_reglage(page, "titre_langue")}">FR</button>\n'
+              if _reglage(page, "bouton_langue") else "")
     return (f'{indent}<div class="nav-btns">\n'
-            f'{dedans}<button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn"'
-            f' title="{_reglage(page, "titre_langue")}">FR</button>\n'
+            f'{langue}'
             f'{dedans}<button class="ctrl-btn" onclick="{_reglage(page, "theme_fn")}"'
             f' id="themeBtn" title="{_reglage(page, "titre_theme")}">🌙</button>\n'
             f'{indent}</div>')

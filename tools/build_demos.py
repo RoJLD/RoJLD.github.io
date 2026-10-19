@@ -72,7 +72,7 @@ def render_card(d: dict) -> str:
 
 
 TEMPLATE = """<!DOCTYPE html>
-<html lang="fr" data-theme="dark" data-lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -101,7 +101,6 @@ nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--
 .nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
 .ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
 .ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
-.ctrl-btn.lang-btn{font-size:12px;font-weight:700;font-family:var(--mono);color:var(--tx-2)}
 .nav-btns{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:16px;position:relative}
 .nav-btns::before{content:'';position:absolute;top:-12px;bottom:-12px;left:-40px;width:40px;pointer-events:none;background:linear-gradient(to right,rgba(0,0,0,0),var(--glass))}
 .wrap{max-width:1000px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
@@ -188,24 +187,12 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
     if (typeof mcRun === 'function' && typeof currentMC !== 'undefined') mcRun(currentMC);
   }
   window.addEventListener('resize', () => { if (typeof mcRun === 'function' && typeof currentMC !== 'undefined') mcRun(currentMC); });
-  // Langue (partagee avec l'accueil via localStorage), cf. tools/nav.py.
-  // Seules les entrees de la nav portent data-fr/data-en sur cette page : le
-  // CORPS reste francais, aucune traduction n'existe pour lui (h1, filtres,
-  // libelles de tags). Hors perimetre, a arbitrer.
-  function applyBrowseLang(lang){
-    document.querySelectorAll('[data-fr][data-en]').forEach(function(el){
-      el.textContent = lang === 'fr' ? el.dataset.fr : el.dataset.en;
-    });
-    root.setAttribute('data-lang', lang);
-    root.setAttribute('lang', lang);
-    document.getElementById('langBtn').textContent = lang === 'fr' ? 'FR' : 'EN';
-  }
-  function toggleLang(){
-    const next = (root.getAttribute('data-lang') || 'fr') === 'fr' ? 'en' : 'fr';
-    localStorage.setItem('lang', next);
-    applyBrowseLang(next);
-  }
-  applyBrowseLang(localStorage.getItem('lang') || 'fr');
+  // AUCUNE bascule de langue sur cette page, et c'est un RETRAIT assume, pas un
+  // oubli : cf. `tools/nav.py` (_PAGES["demos"]["bouton_langue"] = False) et la
+  // garde `test_la_langue_annoncee_est_celle_du_contenu`. Mesure du 2026-10-19,
+  // parseur HTML sur l'artefact publie : 33 chaines de texte visible hors nav
+  // (28 distinctes), dont 0 traduisible — un bouton EN aurait annonce une langue
+  // qu'aucune de ces 33 chaines ne livre. Le bouton revient avec la traduction.
 </script>
 </body>
 </html>
