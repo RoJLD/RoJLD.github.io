@@ -420,12 +420,6 @@ def destinations_ordonnees_de_la_nav_par_page() -> dict[str, tuple[str, ...]]:
     return out
 
 
-def destinations_de_la_nav_par_page() -> dict[str, frozenset[str]]:
-    """Même relevé, vu comme un ensemble — vue dérivée, conservée pour ses lecteurs."""
-    return {rel: frozenset(dests)
-            for rel, dests in destinations_ordonnees_de_la_nav_par_page().items()}
-
-
 @functools.lru_cache(maxsize=1)
 def cles_nav_de_site_texts() -> tuple[str, ...]:
     """Les clés `nav_*` de `site_texts.json`, dans l'ordre du fichier.
