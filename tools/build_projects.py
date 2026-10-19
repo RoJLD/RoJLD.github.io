@@ -14,6 +14,8 @@ import html
 import json
 import pathlib
 
+import nav
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "projects" / "index.html"
 
@@ -135,6 +137,7 @@ def render_projects_page(profile: dict) -> str:
         f'<button class="f-btn" data-filter="{e(t)}">{e(tag_label(t, labels))}</button>' for t in all_tags
     )
     cards = "\n".join(render_card(p, labels) for p in projects)
+    nav_block = nav.render_nav("projects")
 
     return f"""<!DOCTYPE html>
 <html lang="fr" data-theme="dark">
@@ -199,25 +202,12 @@ header.hd p{{color:var(--tx-2);font-size:16px;font-weight:300;max-width:560px;ma
 .p-link:hover{{background:var(--accent-g);border-color:var(--accent)}}
 .p-status{{font-size:12px;color:var(--tx-3);padding:6px 0;font-style:italic}}
 footer{{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-top:1px solid var(--border)}}
-@media(max-width:640px){{.wrap{{padding:0 18px}}.grid{{grid-template-columns:1fr}}.nav-r a:not(.nav-projects){{display:none}}header.hd{{padding:110px 0 10px}}}}
+@media(max-width:640px){{.wrap{{padding:0 18px}}.grid{{grid-template-columns:1fr}}.nav-r a:not(.on){{display:none}}header.hd{{padding:110px 0 10px}}}}
 </style>
 </head>
 <body>
 <div class="blob b1"></div><div class="blob b2"></div>
-<nav><div class="nav-i">
-  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
-  <div class="nav-r">
-    <a href="/#experience">Expérience</a>
-    <a href="/demos/">Démos</a>
-    <a class="nav-projects on" href="/projects/">Projets</a>
-    <a href="/explorer/">Explorer</a>
-    <a href="/highlights/">Highlights</a>
-    <a href="/academy/">Academy</a>
-    <a href="/graph/">Graphe</a>
-    <a href="/#contact">Contact</a>
-    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
-  </div>
-</div></nav>
+{nav_block}
 
 <div class="wrap">
 <header class="hd">

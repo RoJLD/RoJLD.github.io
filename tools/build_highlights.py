@@ -12,6 +12,8 @@ import html
 import json
 import pathlib
 
+import nav
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "highlights" / "index.html"
 
@@ -222,20 +224,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
 </head>
 <body>
 <div class="blob b1"></div><div class="blob b2"></div>
-<nav><div class="nav-i">
-  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
-  <div class="nav-r">
-    <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
-    <a href="/demos/" data-fr="Démos" data-en="Demos">Démos</a>
-    <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
-    <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
-    <a class="on" href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
-    <a href="/academy/" data-fr="Academy" data-en="Academy">Academy</a>
-    <a href="/graph/" data-fr="Graphe" data-en="Graph">Graphe</a>
-    <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Langue">FR</button>
-    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
-  </div>
-</div></nav>
+@@NAV@@
 
 <div class="wrap">
 <header class="hd">
@@ -455,6 +444,7 @@ def render_highlights_page(profile):
     )
     labels = {L: {"fr": domain_label(profile, L)[0], "en": domain_label(profile, L)[1]} for L in lenses}
     return (PAGE_TEMPLATE
+            .replace("@@NAV@@", nav.render_nav("highlights"))
             .replace("@@CHIPS@@", _chips(profile, lenses))
             .replace("@@SECTIONS@@", sections)
             .replace("@@CAPS@@", json.dumps(CAPS))

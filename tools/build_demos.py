@@ -12,6 +12,8 @@ import html
 import json
 import pathlib
 
+import nav
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "demos" / "index.html"
 HLJS = "11.9.0"
@@ -134,20 +136,7 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
 </head>
 <body>
 <div class="blob b1"></div>
-<nav><div class="nav-i">
-  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
-  <div class="nav-r">
-    <a href="/#experience">Expérience</a>
-    <a class="on" href="/demos/">Démos</a>
-    <a href="/projects/">Projets</a>
-    <a href="/explorer/">Explorer</a>
-    <a href="/highlights/">Highlights</a>
-    <a href="/academy/">Academy</a>
-    <a href="/graph/">Graphe</a>
-    <a href="/#contact">Contact</a>
-    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
-  </div>
-</div></nav>
+@@NAV@@
 <div class="wrap">
 <header class="hd">
   <h1>Démos interactives</h1>
@@ -205,6 +194,7 @@ def render_demos_page(profile: dict) -> str:
     cards = "\n".join(render_card(d) for d in demos)
     widget_js = "\n".join(_read(f"demos/widgets/{d['id']}.js") for d in demos)
     return (TEMPLATE
+            .replace("@@NAV@@", nav.render_nav("demos"))
             .replace("@@FILTERS@@", filter_btns)
             .replace("@@CARDS@@", cards)
             .replace("@@WIDGET_JS@@", widget_js)

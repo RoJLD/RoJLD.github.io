@@ -12,6 +12,8 @@ import json
 import math
 import pathlib
 
+import nav
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "graph" / "index.html"
 
@@ -87,20 +89,7 @@ footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
 </style>
 </head>
 <body>
-<nav><div class="nav-i">
-  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
-  <div class="nav-r">
-    <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
-    <a href="/demos/" data-fr="Démos" data-en="Demos">Démos</a>
-    <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
-    <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
-    <a href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
-    <a href="/academy/" data-fr="Academy" data-en="Academy">Academy</a>
-    <a class="on" href="/graph/" data-fr="Graphe" data-en="Graph">Graphe</a>
-    <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Langue">FR</button>
-    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
-  </div>
-</div></nav>
+@@NAV@@
 
 <div class="wrap">
 <header class="hd">
@@ -632,6 +621,7 @@ def render_graph_page(profile):
     data = assemble(profile)
     updated = profile.get("$updated", "")  # une seule date pour tout le site
     return (PAGE_TEMPLATE
+            .replace("@@NAV@@", nav.render_nav("graph"))
             .replace("@@EDGES_SVG@@", _edges_svg(data))
             .replace("@@NODES_SVG@@", _nodes_svg(data))
             .replace("@@LEGEND@@", _legend(profile))
