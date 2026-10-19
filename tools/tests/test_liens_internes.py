@@ -849,6 +849,93 @@ def test_le_generateur_emet_toute_la_nav(page):
         f"le générateur de /{page}/ n'émet plus {manquants} dans sa nav")
 
 
+# ── Les artefacts publiés SONT la sortie de leurs générateurs ───────────────
+#
+# Mesuré le 2026-10-19 sur une copie VIERGE de la branche (`git archive HEAD |
+# tar -x`, `git init` + commit, puis `py -3.13 tools/build_site.py`, rc 0) : DEUX
+# fichiers suivis bougeaient — `projects/index.html` et `demos/index.html`.
+# L'écart était un commentaire JS resté dans sa version d'avant la dernière
+# édition du générateur, et il publiait un chiffre FAUX : `/demos/` annonçait
+# « 31 chaînes de texte visible hors nav » quand le parseur qu'il cite en mesure
+# 33 (28 distinctes). Les quatre autres pages étaient identiques à leur sortie :
+# la divergence n'était donc pas un artefact de la comparaison.
+#
+# Aucune garde de ce dépôt ne voyait cela. Les cinq `test_*_idempotent` existants
+# (`test_build_demos.py::test_idempotent` et ses quatre frères) comparent le
+# générateur À LUI-MÊME (`render(p) == render(p)`) : ils prouvent qu'il est
+# déterministe, pas que le fichier publié est sa sortie. Mesuré avec les deux
+# pages périmées : 1631 passed, 6 skipped — le vert de référence exact.
+#
+# Un fichier dérivé qui peut diverger de son générateur sans un seul rouge est un
+# deuxième lieu de vérité — le défaut même que la nav unifiée corrige, replacé
+# une couche plus bas. La garde vit ICI parce que `test_liens_internes.py` est le
+# seul fichier que joue la porte « Publier » (cf. docstring du module) : posée
+# ailleurs, elle serait muette à l'instant où elle compterait.
+
+
+@functools.lru_cache(maxsize=1)
+def _html_regenere() -> dict[str, str]:
+    """{page publiée: le HTML que son générateur produit MAINTENANT}.
+
+    Population dérivée, aucune liste de pages écrite ici : les cinq sous-pages
+    viennent de `_rendu_des_builders()` (table tenue par
+    `test_la_table_des_generateurs_couvre_toutes_les_destinations`), l'accueil de
+    `build_site.build_html`.
+
+    LIMITE NOMMÉE pour l'accueil : `build_html` INJECTE dans le fichier qu'on lui
+    donne (régions `<!-- BUILD:x -->` et `/* BUILD:i18n_x */`, puis
+    synchronisation du texte statique FR) au lieu de le réécrire. La comparaison
+    couvre donc ses dix régions générées et ce texte statique, pas son balisage
+    écrit à la main — qui n'a aucun générateur, donc rien d'où diverger
+    (arbitrage 1 du 2026-10-15, cf. le docstring de `tools/nav.py`).
+    """
+    import build_site  # noqa: E401
+    out = {f"{page}/index.html": html
+           for page, html in _rendu_des_builders().items()}
+    out["index.html"] = build_site.build_html(_index_html(), _real_profile())
+    return out
+
+
+def test_la_table_des_artefacts_couvre_toutes_les_pages_de_la_nav():
+    """Plancher : la garde ci-dessous ne doit pas pouvoir rétrécir en silence.
+
+    Ses cas sont paramétrés sur une population DÉCOUVERTE
+    (`corpus_publie.pages_de_la_nav_partagee()`), et `_html_regenere()` doit la
+    couvrir en entier : une page qui sortirait de la table perdrait son cas de
+    test en même temps que la couverture qu'il apporte — c'est le défaut que
+    `corpus_publie` documente en tête.
+    """
+    nav = set(corpus_publie.pages_de_la_nav_partagee())
+    assert len(nav) >= 6, f"seules {len(nav)} page(s) de nav découvertes : {sorted(nav)}"
+    assert set(_html_regenere()) == nav, (
+        f"la table des artefacts régénérés {sorted(_html_regenere())} ne couvre pas "
+        f"les pages de la nav partagée {sorted(nav)}")
+
+
+@pytest.mark.parametrize("rel", sorted(corpus_publie.pages_de_la_nav_partagee()))
+def test_l_artefact_publie_est_la_sortie_de_son_generateur(rel):
+    """Le fichier servi est, caractère pour caractère, ce que son générateur produit.
+
+    Prouvée ROUGE par mutation le 2026-10-19, dans les deux sens qui comptent :
+    une édition du générateur sans régénération (un chiffre du commentaire de
+    `build_demos.py` changé) et une édition de l'artefact sans son générateur.
+    Les deux nomment la page et la première ligne qui diverge.
+    """
+    attendu = _html_regenere()[rel]
+    publie = (ROOT / rel).read_text(encoding="utf-8")
+    if publie == attendu:
+        return
+    a, b = attendu.splitlines(), publie.splitlines()
+    no = next((i for i in range(max(len(a), len(b)))
+               if a[i:i + 1] != b[i:i + 1]), 0) + 1
+    vu = (b[no - 1] if no - 1 < len(b) else "<fin de fichier>")[:160]
+    veut = (a[no - 1] if no - 1 < len(a) else "<fin de fichier>")[:160]
+    pytest.fail(f"""{rel} n'est plus la sortie de son générateur — premier écart ligne {no} ({len(b)} lignes publiées, {len(a)} attendues)
+  publié  : {vu}
+  attendu : {veut}
+  remède : `py -3.13 tools/build_site.py`, puis committer l'artefact régénéré""")
+
+
 def test_la_nav_partagee_mene_toujours_a_l_academy():
     """Spec § 9.3 : retirer la page n'est pas retirer le lien.
 
