@@ -62,19 +62,22 @@ _MARQUE = "nav-brand"
 RETOUR_ACCUEIL = "/"
 
 
-def _destinations_ecrites(rel: str) -> set[str]:
-    """Les `href` écrits dans le bloc `<nav>` de la page servie `rel`.
+def _destinations_ecrites(rel: str) -> list[str]:
+    """Les `href` écrits dans le bloc `<nav>` de la page servie `rel`, EN ORDRE.
+
+    Une LISTE depuis le 2026-10-19, et non plus un ensemble : un ensemble perd
+    l'ordre des onze entrées (que rien ne vérifiait) et perd les doublons.
 
     Lu sur l'ARTEFACT publié, pas sur la sortie du générateur : c'est ce qu'un
     visiteur reçoit. La garde jumelle sur la sortie des générateurs vit dans
     `test_liens_internes.py::test_le_generateur_emet_toute_la_nav`.
     """
     txt = (ROOT / rel).read_text(encoding="utf-8")
-    vus: set[str] = set()
+    vus: list[str] = []
     for bloc in _BLOC_NAV.findall(txt):
         if _MARQUE not in bloc:
             continue
-        vus |= {h.strip() for h in _HREF.findall(bloc)}
+        vus += [h.strip() for h in _HREF.findall(bloc)]
     assert vus, f"{rel} : aucun bloc <nav> portant la marque {_MARQUE!r}"
     return vus
 
@@ -95,21 +98,80 @@ def test_la_table_des_pages_couvre_exactement_nav_py():
 
 @pytest.mark.parametrize("rel", sorted(PAGES))
 def test_chaque_page_declare_exactement_les_destinations_de_nav_py(rel):
-    """Les destinations écrites dans la page servie sont celles que `nav.py` rend.
+    """Les destinations écrites dans la page servie sont celles que `nav.py` rend,
+    dans le même ORDRE.
 
     L'attendu ne vient pas d'une liste recopiée ici : il vient de `nav.ENTREES`,
     l'unique source. Une entrée ajoutée à `nav.py` et non republiée rougit ; une
     entrée perdue par une page rougit ; et comme `nav.py` rend la même liste aux
     six pages (aux ancres près, `#blog` sur l'accueil et `/#blog` ailleurs),
     l'égalité deux à deux des six navs en découle.
+
+    Séquences et non ensembles depuis le 2026-10-19 : l'ordre de la barre est ce
+    qu'un visiteur lit et ce que la tabulation suit, et rien ne le tenait. Deux
+    entrées permutées entre `nav.py` et une page publiée passaient vertes.
+
+    Ce que ce test ne peut PAS voir, et c'est pourquoi les deux planchers
+    ci-dessous existent : `nav.ENTREES` est ici l'attendu ET la source des cinq
+    sous-pages. Une entrée retirée de `nav.ENTREES`, les cinq pages régénérées et
+    la même ligne retirée de l'accueil écrit à la main — tout coïncide, et ce
+    test est vert sur une nav amputée.
     """
     page = PAGES[rel]
-    ecrites = _destinations_ecrites(rel) - {RETOUR_ACCUEIL}
-    attendues = set(nav.destinations(page))
+    ecrites = [d for d in _destinations_ecrites(rel) if d != RETOUR_ACCUEIL]
+    attendues = list(nav.destinations(page))
     assert ecrites == attendues, (
-        f"{rel} : la nav ne déclare pas les destinations de nav.py — "
-        f"absente(s) {sorted(attendues - ecrites)}, "
-        f"en trop {sorted(ecrites - attendues)}")
+        f"{rel} : la nav ne déclare pas les destinations de nav.py dans son ordre "
+        f"— écrit {ecrites}, attendu {attendues} ; "
+        f"absente(s) {sorted(set(attendues) - set(ecrites))}, "
+        f"en trop {sorted(set(ecrites) - set(attendues))}")
+
+
+def test_la_liste_de_nav_py_egale_les_cles_nav_de_site_texts():
+    """PLANCHER 1 : la liste des entrées, confrontée à un fichier qui n'est pas elle.
+
+    Mesuré le 2026-10-19 par mutation, sur une copie vierge
+    (`git archive | tar -x`) : retirer `("nav_edu", "#education")` de
+    `nav.ENTREES`, régénérer les cinq sous-pages et retirer la ligne
+    correspondante de `index.html` laissait la suite ENTIÈREMENT VERTE. Onze
+    entrées devenaient dix, et tous les témoins étaient d'accord — parce qu'ils
+    dérivaient tous de la même liste. La même mutation sur une entrée de
+    RÉPERTOIRE (`("nav_graph", "graph/")`) rougissait, elle, parce que le dossier
+    `graph/` reste sur le disque et que la topologie ne ferme plus. Les ancres
+    n'ont aucun équivalent topologique : il leur faut ce plancher.
+
+    `site_texts.json` est le témoin parce qu'il existe pour une AUTRE raison —
+    les libellés, éditables depuis le cockpit — et qu'il est déjà tenu dans les
+    deux langues par `test_site_texts.py`. Les deux sens sont exigés : une clé
+    sans entrée est un libellé que personne n'affiche, une entrée sans clé fait
+    lever `NavError` à la construction.
+    """
+    cles_nav = [cle for cle, _ in nav.ENTREES]
+    cles_textes = list(corpus_publie.cles_nav_de_site_texts())
+    assert cles_nav == cles_textes, (
+        f"`nav.ENTREES` et les clés `nav_*` de site_texts.json divergent — "
+        f"nav.py {cles_nav}, site_texts {cles_textes} ; "
+        f"entrée(s) sans libellé {sorted(set(cles_nav) - set(cles_textes))}, "
+        f"libellé(s) sans entrée {sorted(set(cles_textes) - set(cles_nav))}")
+
+
+def test_l_accueil_declare_les_memes_entrees_dans_le_meme_ordre():
+    """PLANCHER 2 : l'accueil écrit à la main, témoin de la liste ET de l'ordre.
+
+    L'accueil n'est pas généré (arbitrage 1) : ses onze `data-i18n` sont tapés à
+    la main. Ils ne peuvent donc pas suivre une mutation de `nav.ENTREES` sans
+    que quelqu'un les édite — c'est ce qui en fait un témoin, et pas un reflet.
+
+    Avec le plancher 1, la mutation « ancre » doit désormais franchir TROIS
+    fichiers écrits pour des raisons différentes (`tools/nav.py`,
+    `site_texts.json`, `index.html`) pour passer inaperçue, là où elle n'en
+    franchissait qu'un seul plus un `git`-régénère.
+    """
+    assert list(corpus_publie.cles_i18n_de_la_nav_de_l_accueil()) == \
+        [cle for cle, _ in nav.ENTREES], (
+        f"la nav de l'accueil ne déclare plus les entrées de nav.py dans l'ordre "
+        f"— accueil {list(corpus_publie.cles_i18n_de_la_nav_de_l_accueil())}, "
+        f"nav.py {[cle for cle, _ in nav.ENTREES]}")
 
 
 def test_chaque_sous_page_ramene_a_l_accueil():

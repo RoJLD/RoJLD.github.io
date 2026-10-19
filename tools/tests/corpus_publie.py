@@ -33,6 +33,7 @@ bruit. Les planchers nomment donc explicitement ce qui doit exister.
 from __future__ import annotations
 
 import functools
+import json
 import pathlib
 import re
 import sys
@@ -323,8 +324,24 @@ def destinations_nav_servies_ailleurs() -> tuple[str, ...]:
 _DESTINATION_NAV = re.compile(r'href="(/[^"]*|#[^"]*)"')
 
 
-def _normaliser_destination(rel: str, href: str) -> str | None:
-    """Destination canonique d'un href de nav, vue depuis la page `rel`, ou None.
+# Préfixe d'une destination que la normalisation NE RECONNAÎT PAS.
+#
+# `_normaliser_destination` rendait `None` dans ce cas, et son unique appelant
+# écrivait `if dest: vues.add(dest)` : toute forme inattendue était donc écartée
+# EN SILENCE. Mesuré le 2026-10-19 : `href="/graph"` (sans barre finale),
+# `href="/a/b/"` ou `href="/x.html"` dans la nav disparaissaient du témoin, et la
+# page semblait déclarer une destination de moins — mais si les SIX pages
+# portaient la même forme, l'ensemble comparé rétrécissait partout à la fois et
+# l'égalité restait verte. Un témoin qui jette ce qu'il ne comprend pas ne
+# rapporte plus ce que les pages déclarent : il rapporte ce qu'il sait lire.
+#
+# La destination inconnue est donc NOMMÉE et rendue, à charge pour le test de la
+# refuser (`test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises`).
+NON_RECONNUE = "?? forme de destination non reconnue : "
+
+
+def _normaliser_destination(rel: str, href: str) -> str:
+    """Destination canonique d'un href de nav, vue depuis la page `rel`.
 
     `#education` écrit sur l'accueil et `/#education` écrit sur une sous-page
     désignent la MÊME chose : la section `education` de l'accueil. Les deux se
@@ -337,6 +354,10 @@ def _normaliser_destination(rel: str, href: str) -> str | None:
     l'accueil : elle rend une destination qui lui est propre, afin de ne jamais
     pouvoir passer pour l'ancre de l'accueil (c'est la régression publiée que
     `test_validateur_refuse_une_ancre_nue` garde côté profil).
+
+    Une forme inconnue rend `NON_RECONNUE + href` et JAMAIS `None` : cf. le
+    commentaire ci-dessus. Le silence est le seul verdict qu'un témoin n'a pas le
+    droit de rendre.
     """
     href = href.strip()
     if href.startswith("#"):
@@ -346,7 +367,7 @@ def _normaliser_destination(rel: str, href: str) -> str | None:
     if href.startswith("/#"):
         return href
     m = re.fullmatch(r"/([^/#?]+)/", href)
-    return f"/{m.group(1)}/" if m else None
+    return f"/{m.group(1)}/" if m else NON_RECONNUE + href
 
 
 @functools.lru_cache(maxsize=1)
@@ -373,24 +394,76 @@ def pages_de_la_nav_partagee() -> tuple[str, ...]:
 
 
 @functools.lru_cache(maxsize=1)
-def destinations_de_la_nav_par_page() -> dict[str, frozenset[str]]:
-    """Pour chaque page de la nav partagée, ses destinations NORMALISÉES.
+def destinations_ordonnees_de_la_nav_par_page() -> dict[str, tuple[str, ...]]:
+    """Pour chaque page de la nav partagée, ses destinations DANS L'ORDRE du document.
 
-    Ce module ne décide de rien : il rapporte ce que chaque page déclare. C'est
-    au test d'exiger que les ensembles coïncident.
+    Une SÉQUENCE, pas un ensemble, et c'est la correction du 2026-10-19 : un
+    ensemble perd l'ORDRE et perd les DOUBLONS. Deux pertes mesurées sur ce
+    corpus — l'ordre des onze entrées n'était vérifié par rien (une nav
+    réordonnée passait verte sur les six pages), et une entrée dupliquée pendant
+    qu'une autre disparaît laisse l'ensemble inchangé en taille comme en contenu
+    dès que les deux partagent un href.
+
+    Ce module ne décide de rien : il rapporte ce que chaque page déclare, y
+    compris une forme qu'il ne sait pas lire (préfixe `NON_RECONNUE`). C'est au
+    test d'exiger que les séquences coïncident.
     """
-    out: dict[str, frozenset[str]] = {}
+    out: dict[str, tuple[str, ...]] = {}
     for rel in pages_de_la_nav_partagee():
-        vues: set[str] = set()
+        vues: list[str] = []
         for bloc in _BLOC_NAV.findall(_texte(rel)):
             if _NAV_PARTAGEE not in bloc:
                 continue
-            for href in _DESTINATION_NAV.findall(bloc):
-                dest = _normaliser_destination(rel, href)
-                if dest:
-                    vues.add(dest)
-        out[rel] = frozenset(vues)
+            vues += [_normaliser_destination(rel, href)
+                     for href in _DESTINATION_NAV.findall(bloc)]
+        out[rel] = tuple(vues)
     return out
+
+
+def destinations_de_la_nav_par_page() -> dict[str, frozenset[str]]:
+    """Même relevé, vu comme un ensemble — vue dérivée, conservée pour ses lecteurs."""
+    return {rel: frozenset(dests)
+            for rel, dests in destinations_ordonnees_de_la_nav_par_page().items()}
+
+
+@functools.lru_cache(maxsize=1)
+def cles_nav_de_site_texts() -> tuple[str, ...]:
+    """Les clés `nav_*` de `site_texts.json`, dans l'ordre du fichier.
+
+    TROISIÈME témoin de la liste des entrées de nav, et le seul qui ne vive ni
+    dans `tools/nav.py` ni dans un artefact publié. Il est nécessaire, et la
+    mesure du 2026-10-19 dit pourquoi : `nav.ENTREES` était à la fois la SOURCE
+    des cinq sous-pages et l'ATTENDU de la garde qui les juge. Retirer une entrée
+    de cette liste, régénérer les cinq pages et retirer la même ligne de
+    l'accueil écrit à la main laissait la suite ENTIÈREMENT VERTE — onze entrées
+    devenaient dix et tous les témoins étaient d'accord. C'est exactement la
+    classe de régression pour laquelle la nav unifiée a été écrite.
+
+    `site_texts.json` est un témoin indépendant parce qu'il existe pour une autre
+    raison : c'est la source des LIBELLÉS, éditable depuis le cockpit, et deux
+    gardes la tiennent déjà dans les deux langues
+    (`test_site_texts.py::test_chaque_cle_de_la_page_existe_en_francais_et_en_anglais`
+    et `::test_le_texte_statique_fr_egale_le_dictionnaire`). Une entrée de nav
+    supprimée y laisse donc sa clé, en français comme en anglais.
+    """
+    textes = json.loads((ROOT / "site_texts.json").read_text(encoding="utf-8"))
+    return tuple(k for k in textes["fr"] if k.startswith("nav_"))
+
+
+@functools.lru_cache(maxsize=1)
+def cles_i18n_de_la_nav_de_l_accueil() -> tuple[str, ...]:
+    """Les `data-i18n` du bloc `<nav>` de l'accueil, dans l'ordre du document.
+
+    QUATRIÈME témoin, et il porte l'ORDRE. L'accueil n'est pas généré (arbitrage
+    1 du 2026-10-15) : ces onze attributs sont écrits à la main, donc ils ne
+    peuvent pas suivre une mutation de `nav.ENTREES` sans que quelqu'un les
+    édite. Ils disent à la fois quelles entrées existent et dans quel ordre la
+    barre les montre.
+    """
+    for bloc in _BLOC_NAV.findall(_texte("index.html")):
+        if _NAV_PARTAGEE in bloc:
+            return tuple(re.findall(r'data-i18n="([^"]+)"', bloc))
+    return ()
 
 
 def _resoudre(depuis: str, href: str) -> str | None:

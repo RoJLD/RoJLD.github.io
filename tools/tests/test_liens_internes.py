@@ -876,7 +876,7 @@ def test_la_nav_partagee_mene_toujours_a_l_academy():
 
 
 def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises():
-    """La fermeture de la nav, ANCRES comprises et accueil compris.
+    """La nav des six pages : MÊMES destinations, MÊME ordre, ancres comprises.
 
     `test_les_destinations_de_nav_viennent_bien_du_disque` compare deux lectures
     qui ne regardent que les répertoires : elles s'accordaient sur six noms
@@ -888,15 +888,37 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
     compétences, le blog ni le contact, et la nav étant `position:fixed`, rien
     ne défilait pour les atteindre.
 
-    L'attendu n'est pas une liste : c'est l'UNION de ce que les pages déclarent.
-    Une entrée ajoutée à une seule page oblige les cinq autres à la porter ; une
-    entrée retirée de toutes quitte l'union, mais la topologie des répertoires
-    rougit alors dans le test cité ci-dessus. Les deux gardes se tiennent.
+    CE QUE CE TEST DISAIT DE FAUX JUSQU'AU 2026-10-19, et qu'il ne dit plus :
+    « une entrée retirée de toutes quitte l'union, mais la topologie des
+    répertoires rougit alors dans le test cité ci-dessus ». C'est vrai d'une
+    destination de RÉPERTOIRE (`destinations_nav()` continue de voir le dossier,
+    la topologie ne ferme plus) et FAUX d'une ANCRE : aucun calcul topologique de
+    ce dépôt ne voit `/#education`. Mesuré par mutation, les onze entrées passées
+    à dix sur les SIX pages : la perte d'un répertoire (`/graph/`) rougissait,
+    la perte d'une ancre (`/#education`) laissait la suite ENTIÈREMENT VERTE —
+    c'est-à-dire précisément la classe de régression pour laquelle la nav unifiée
+    a été écrite. Un commentaire qui affirme une couverture qu'on n'a pas est
+    pire qu'un angle mort : il invite à ne pas chercher.
+
+    Trois exigences, chacune fermant une des trois fuites mesurées :
+
+      1. les six pages déclarent la MÊME SÉQUENCE, pas le même ensemble.
+         L'union ne peut plus servir d'attendu — elle n'a pas d'ordre — donc la
+         comparaison est deux à deux contre la séquence de l'accueil, la seule
+         page écrite à la main. L'ordre des onze entrées n'était tenu par rien
+         (une barre réordonnée passait verte sur les six pages) et un ensemble
+         perd les doublons ;
+      2. un PLANCHER, qui est la seule réponse à une perte uniforme : le nombre
+         d'entrées vient des clés `nav_*` de `site_texts.json`, un témoin qui ne
+         vit ni dans `nav.py` ni dans les artefacts (cf.
+         `corpus_publie.cles_nav_de_site_texts`) ;
+      3. aucune destination ne doit porter le préfixe `NON_RECONNUE` : une forme
+         d'href que le témoin ne sait pas lire était écartée en silence.
 
     Témoin DISTINCT de `test_nav_unifiee.py`, et c'est délibéré : celui-là
     confronte chaque page à la source (`tools/nav.py`), celui-ci ne regarde que
-    les artefacts entre eux. Un dépôt où `nav.py` disparaîtrait garde cette
-    garde-ci.
+    les artefacts, plus `site_texts.json` pour son plancher. Un dépôt où
+    `nav.py` disparaîtrait garde cette garde-ci.
 
     `/` est exclu, et il faut le dire : les cinq sous-pages portent
     `<a class="nav-brand" href="/">`, l'accueil un `<span class="nav-brand">`
@@ -906,19 +928,82 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
     `test_nav_unifiee.py::test_chaque_sous_page_ramene_a_l_accueil` : chaque
     sous-page porte un lien vers `/`, l'accueil n'en a pas besoin.
     """
-    par_page = {rel: dests - {"/"}
-                for rel, dests in corpus_publie.destinations_de_la_nav_par_page().items()}
+    ordonnees = corpus_publie.destinations_ordonnees_de_la_nav_par_page()
+    par_page = {rel: tuple(d for d in dests if d != "/")
+                for rel, dests in ordonnees.items()}
     assert len(par_page) >= 6, (
         f"seules {len(par_page)} page(s) portent la nav partagée : {sorted(par_page)}")
     assert "index.html" in par_page, (
         "l'accueil ne porte plus la marque de la nav partagée — il sortait déjà "
         "du calcul de fermeture par répertoires, il ne doit pas sortir de celui-ci")
-    union = frozenset().union(*par_page.values())
-    manques = {rel: sorted(union - dests) for rel, dests in par_page.items()
-               if dests != union}
-    assert not manques, (
-        "la nav partagée n'est pas la même partout — destination(s) absente(s) "
-        f"par page : {manques} (union déclarée : {sorted(union)})")
+
+    # (3) Le silence d'abord : une forme non reconnue fausserait tout le reste.
+    illisibles = {rel: [d for d in dests if d.startswith(corpus_publie.NON_RECONNUE)]
+                  for rel, dests in par_page.items()}
+    illisibles = {rel: v for rel, v in illisibles.items() if v}
+    assert not illisibles, (
+        "des href de la nav ne se normalisent pas, donc ne sont comparés à rien : "
+        f"{illisibles} — écrire `/x/` (répertoire) ou `/#x` (section de l'accueil)")
+
+    # (2) Le plancher : une perte UNIFORME ne peut pas se cacher dans l'union.
+    attendu = len(corpus_publie.cles_nav_de_site_texts())
+    assert attendu >= 11, (
+        f"`site_texts.json` ne déclare plus que {attendu} clé(s) `nav_*` : le "
+        "plancher de ce test rétrécirait avec la nav qu'il garde (11 le 2026-10-19)")
+    courtes = {rel: len(dests) for rel, dests in par_page.items()
+               if len(dests) != attendu}
+    assert not courtes, (
+        f"la nav ne déclare plus {attendu} destinations (le nombre de clés `nav_*` "
+        f"de site_texts.json) : {courtes} — une entrée perdue sur TOUTES les pages "
+        "ne se voit pas dans leur union, seul ce plancher la nomme")
+
+    # (1) L'égalité deux à deux, ordre et doublons compris.
+    reference = par_page["index.html"]
+    ecarts = {rel: list(dests) for rel, dests in par_page.items()
+              if dests != reference}
+    assert not ecarts, (
+        "la nav partagée n'est pas la même partout, ou pas dans le même ordre — "
+        f"{ecarts} (l'accueil déclare : {list(reference)})")
+
+
+@pytest.mark.parametrize("href, reconnue", [
+    ("/graph/", True),             # la forme correcte d'une page du site
+    ("/#education", True),         # la forme correcte d'une section de l'accueil
+    ("/", True),                   # la marque
+    ("/graph", False),             # la faute de frappe : barre finale oubliée
+    ("/articles/x.html", False),   # un fichier, pas un répertoire
+    ("/a/b/", False),              # deux segments
+    ("/graph/?v=2", False),        # une query dans une destination de nav
+])
+def test_une_destination_non_reconnue_est_nommee_et_jamais_jetee(href, reconnue):
+    """Le témoin n'a pas le droit de rendre le silence — capacité DORMANTE.
+
+    `_normaliser_destination` rendait `None` pour toute forme inattendue, et son
+    unique appelant écrivait `if dest: vues.add(dest)` : la destination était
+    écartée sans un mot. Mesuré le 2026-10-19 : si les SIX pages portaient la
+    même forme inattendue, l'ensemble comparé rétrécissait partout à la fois et
+    l'égalité restait verte — un témoin qui jette ce qu'il ne comprend pas ne
+    rapporte plus ce que les pages déclarent, il rapporte ce qu'il sait lire.
+
+    Pourquoi un test à entrées fabriquées plutôt qu'une mutation du corpus :
+    aucune page publiée ne porte aujourd'hui une de ces formes (mesuré, les 6
+    navs ne déclarent que `/x/`, `/#x` et `/`), donc la branche est DORMANTE, au
+    même titre que `poster` dans `URL_ATTR` ou la query de `resolve`. Et la
+    mutation qui en fabrique une rougit AVANT d'arriver jusqu'ici : écrire
+    `/graph` au lieu de `/graph/` sort `graph/` du groupe fermé de la nav, et
+    c'est le plancher de population du test ci-dessus qui parle (mesuré :
+    « seules 5 page(s) portent la nav partagée »). Le contrat se vérifie donc là
+    où le corpus est muet.
+
+    Les deux sens sont exercés : un témoin qui préfixerait TOUT passerait la
+    moitié de ce test sans rien distinguer.
+    """
+    vu = corpus_publie._normaliser_destination("explorer/index.html", href)
+    assert vu.startswith(corpus_publie.NON_RECONNUE) != reconnue, (
+        f"{href!r} : le témoin rend {vu!r} — une forme "
+        f"{'reconnue' if reconnue else 'inconnue'} ne doit "
+        f"{'pas ' if reconnue else ''}être nommée comme non reconnue")
+    assert vu, f"{href!r} : le témoin rend une valeur vide, donc jetable en silence"
 
 
 # ── L'amputation mobile : aucune destination ne disparaît au doigt ───────────
