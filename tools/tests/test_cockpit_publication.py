@@ -310,7 +310,8 @@ def test_chaque_entree_du_perimetre_et_des_sources_existe_dans_le_site():
 
 
 # ── Ce que la porte NOMME doit exister. Même motif que le périmètre orphelin ci-dessus, un
-# cran plus haut : `verifier()` nomme des chemins d'outils ET trois node-ids de tests. Mesuré
+# cran plus haut : `verifier()` nomme des chemins d'outils et de fichiers de tests, ET deux
+# node-ids `fichier::test`. Mesuré
 # le 2026-10-15 : `pytest f.py::test_absent` sort en 4 (« ERROR: not found », et aucun des
 # node-ids voisins ne tourne), `pytest f_mal_ecrit.py` sort en 4 aussi — donc un nom faux
 # fait bien ROUGIR la porte, il ne passe pas en silence. Ce test-ci sert à l'attraper AVANT

@@ -41,8 +41,9 @@ Trois propriétés mesurées, aux 13 largeurs, sur les six pages de la nav parta
                             sous 1024 px, 26 à 27 au-dessus.
 
 Ce fichier est HORS de la porte du cockpit (`tools/cockpit/publication.py::
-verifier()` joue `test_liens_internes.py`, `validate_profile.py`, `build_site.py`
-et trois node-ids, rien d'autre). C'est une limite nommée : un « Publier » ne
+verifier()` lance `validate_profile.py` et `build_site.py`, puis joue en entier
+`test_liens_internes.py` et `test_cockpit_public_isole.py`, plus deux node-ids de
+`test_validate_profile.py` — et rien d'autre). C'est une limite nommée : un « Publier » ne
 mesure pas la mise en page. L'y ajouter ferait dépendre le bouton de Robin d'un
 Chromium et de fonts.googleapis.com — à arbitrer, pas à décider ici.
 """

@@ -20,8 +20,11 @@ Aucun réseau : les liens externes sont hors périmètre par construction.
 Ce fichier porte AUSSI les gardes des liens RoJLD du corpus (§ « Les liens RoJLD
 du profil »), qui ne sont pas des liens internes. Ce n'est pas un fourre-tout,
 c'est la porte : `tools/cockpit/publication.py::verifier()` — ce que joue le
-bouton « Publier » — lance ce FICHIER en entier, plus `validate_profile.py`,
-`build_site.py` et trois node-ids de confidentialité, et rien d'autre. Mesuré le
+bouton « Publier » — lance ce FICHIER en entier, ainsi que
+`test_cockpit_public_isole.py` en entier et deux node-ids de
+`test_validate_profile.py` (les gardes de confidentialité), en plus de
+`validate_profile.py` et `build_site.py`. Des deux fichiers de tests joués en
+entier, celui-ci est le seul qui porte sur le corpus publié. Mesuré le
 2026-10-15 sur une copie de l'arbre : les deux liens morts remis dans
 `profile.json`, la porte rendait 5 contrôles sur 5 « OK » et régénérait
 `/projects/` avec les deux boutons morts, pendant que la suite pytest, elle,
@@ -860,8 +863,9 @@ def test_le_generateur_emet_toute_la_nav(page):
 # 33 (28 distinctes). Les quatre autres pages étaient identiques à leur sortie :
 # la divergence n'était donc pas un artefact de la comparaison.
 #
-# Aucune garde de ce dépôt ne voyait cela. Les cinq `test_*_idempotent` existants
-# (`test_build_demos.py::test_idempotent` et ses quatre frères) comparent le
+# Aucune garde de ce dépôt ne voyait cela. Les sept `test_*_idempotent` existants
+# (`test_build_demos.py::test_idempotent` et ses six frères, dans six fichiers :
+# browse, cv_templates, demos, highlights, projects, et deux dans build_site) comparent le
 # générateur À LUI-MÊME (`render(p) == render(p)`) : ils prouvent qu'il est
 # déterministe, pas que le fichier publié est sa sortie. Mesuré avec les deux
 # pages périmées : 1631 passed, 6 skipped — le vert de référence exact.
@@ -869,8 +873,10 @@ def test_le_generateur_emet_toute_la_nav(page):
 # Un fichier dérivé qui peut diverger de son générateur sans un seul rouge est un
 # deuxième lieu de vérité — le défaut même que la nav unifiée corrige, replacé
 # une couche plus bas. La garde vit ICI parce que `test_liens_internes.py` est le
-# seul fichier que joue la porte « Publier » (cf. docstring du module) : posée
-# ailleurs, elle serait muette à l'instant où elle compterait.
+# seul fichier de tests SUR LE CORPUS PUBLIÉ que joue la porte « Publier » (elle
+# joue aussi `test_cockpit_public_isole.py`, qui porte sur l'isolement du cockpit ;
+# cf. docstring du module) : posée ailleurs, elle serait muette à l'instant où
+# elle compterait.
 
 
 @functools.lru_cache(maxsize=1)
@@ -1744,9 +1750,10 @@ def test_match_declare_un_alias_par_competence():
 # Le sitemap et robots.txt
 #
 # Ils vivent ICI, et non dans un `test_sitemap.py`, pour la raison que la
-# docstring de ce fichier donne deja : `publication.py::verifier()` ne joue que ce
-# FICHIER, plus validate_profile.py, build_site.py et trois node-ids de
-# confidentialite. Une garde de corpus posee ailleurs est hors de la porte.
+# docstring de ce fichier donne deja : de tous les fichiers de tests que joue
+# `publication.py::verifier()` (celui-ci, `test_cockpit_public_isole.py`, et deux
+# node-ids de `test_validate_profile.py`), celui-ci est le seul qui porte sur le
+# corpus publie. Une garde de corpus posee ailleurs est hors de la porte.
 # ---------------------------------------------------------------------------
 
 

@@ -331,19 +331,19 @@ def render_boutons(page: str) -> str:
 # payée en permanence.
 #
 # COMMENT REPRODUIRE, car la méthode change le chiffre. La page doit être
-# CHARGÉE à la largeur visée. Mesuré le 2026-10-19 : un `set_viewport_size` de
-# 1280 px vers 390 px sur une page déjà peinte rend 189 à 191 px au lieu de 193,
-# et 184 au lieu de 188 sur `/graph/` — le re-calcul de mise en page ne refait pas
-# tous les retours à la ligne. C'est la voie que suit `test_nav_navigateur.py`,
-# à dessein (13 largeurs sans recharger = 6 chargements au lieu de 78) : ses
-# hauteurs ne sont donc pas comparables à ce tableau, et il ne juge pas la
+# CHARGÉE à la largeur visée. `test_nav_navigateur.py` suit une autre voie, à
+# dessein (un chargement puis 13 largeurs sans recharger = 6 chargements au lieu
+# de 78), et cette voie ne rend pas les mêmes hauteurs de barre qu'un chargement
+# à chaque largeur — quelques pixels d'écart à 390 px, mesuré le 2026-10-19. Ses
+# hauteurs ne sont donc pas comparables à ce tableau, et ce test ne juge pas la
 # hauteur de la barre.
 #
 # POURQUOI PAS l'autre branche, que la décision mobile proposait en premier —
-# déplacer `.nav-btns` AVANT `.nav-r` dans le balisage : mesuré, elle ne corrige
-# pas le défaut, elle le déplace au-dessus du seuil. Il y a 0 inversion à
-# >= 1024 px aujourd'hui ; les boutons placés avant la rangée dans le DOM en
-# produiraient sur 7 largeurs × 6 pages.
+# déplacer `.nav-btns` AVANT `.nav-r` dans le balisage. Déplacés seuls, les
+# boutons quittent le bord droit au-dessus du seuil ; pour les y garder il faut
+# un `order:` au-dessus de 1024 px, et c'est lui qui recrée les inversions :
+# 42 sur 42 cas (7 largeurs × 6 pages), mesuré. Cette branche échange donc un
+# défaut contre un autre — la mise en page, ou l'ordre de tabulation.
 #
 # LES SIX ENDROITS qui renvoient ici : `index.html` (écrit à la main, arbitrage 1
 # du 2026-10-15) et les cinq littéraux de style de `build_projects`,
