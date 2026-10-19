@@ -771,6 +771,15 @@ def build(profile_path=None, index_path=None, write=True, today=None):
         build_cv_templates.build_cv_templates(write=write)
     except Exception as exc:
         raise BuildError(f"génération du bundle templates CV échouée : {exc}")
+    # Régénère sitemap.xml et robots.txt. Branché ICI, et pas laissé à une commande
+    # séparée, parce que la porte « Publier » du cockpit lance `build_site.py` : un
+    # fichier dérivé sans écrivain dans la porte qui tourne dérive (leçon du
+    # 2026-10-15, « une garde citée n'est pas une garde qui s'exécute »).
+    try:
+        import build_sitemap
+        build_sitemap.build_sitemap(write=write)
+    except Exception as exc:
+        raise BuildError(f"génération du sitemap échouée : {exc}")
     return out
 
 

@@ -14,3 +14,13 @@ Dockerfile* text eol=lf
 
 # Les lanceurs PowerShell du cockpit sont lus par PowerShell 5.1 sous Windows : CRLF.
 *.ps1 text eol=crlf
+
+# Les deux fichiers d'indexation sont ECRITS en LF par tools/build_sitemap.py.
+# Sans la declaration ci-dessous, leur fin de ligne dependrait du core.autocrlf de
+# celui qui regenere : un poste en autocrlf=false committerait du CRLF sans le
+# moindre avertissement, produisant un diff de fichier entier que RIEN
+# n'attraperait — le test de fraicheur compare du texte lu par Python, qui
+# normalise les fins de ligne a la lecture.
+# Meme raison que pour *.sh ci-dessus : on inscrit la propriete dans le depot.
+sitemap.xml text eol=lf
+robots.txt text eol=lf
