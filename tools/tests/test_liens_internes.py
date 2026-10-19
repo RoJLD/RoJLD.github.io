@@ -1738,3 +1738,148 @@ def test_match_declare_un_alias_par_competence():
     aliased = set(re.findall(r'^\s*"([^"]+)":\s*\[', body, re.M))
     missing = [n for n in _skill_names() if n not in aliased]
     assert not missing, f"compétences sans alias (jamais détectables) : {missing}"
+
+
+# ---------------------------------------------------------------------------
+# Le sitemap et robots.txt
+#
+# Ils vivent ICI, et non dans un `test_sitemap.py`, pour la raison que la
+# docstring de ce fichier donne deja : `publication.py::verifier()` ne joue que ce
+# FICHIER, plus validate_profile.py, build_site.py et trois node-ids de
+# confidentialite. Une garde de corpus posee ailleurs est hors de la porte.
+# ---------------------------------------------------------------------------
+
+
+def _sitemap_module():
+    import build_sitemap
+    return build_sitemap
+
+
+def _urls_du_fichier() -> set[str]:
+    txt = (ROOT / "sitemap.xml").read_text(encoding="utf-8")
+    return set(re.findall(r"<loc>([^<]+)</loc>", txt))
+
+
+def test_le_sitemap_declare_exactement_les_pages_suivies_et_servies():
+    """Les URL du fichier egalent celles que la derivation rend.
+
+    Deux lectures independantes du meme fait : le fichier commite d'un cote, la
+    derivation depuis `git ls-files` de l'autre. Si l'une derive, l'egalite rougit.
+    """
+    bs = _sitemap_module()
+    attendu = set(bs.urls())
+    trouve = _urls_du_fichier()
+    assert trouve == attendu, (
+        f"sitemap.xml a derive — en trop : {sorted(trouve - attendu)} ; "
+        f"manquantes : {sorted(attendu - trouve)}")
+
+
+def test_le_sitemap_ne_declare_aucune_page_que_git_ne_suit_pas():
+    """Le piege mesure : `pages_publiees()` lit le DISQUE, pas git.
+
+    Sur le poste de l'Architecte elle rend 20 pages contre 14 dans un checkout
+    propre : les six de plus sont les maquettes internes de
+    `.superpowers/brainstorm/`, ignorees par `.gitignore` parce que ce depot est
+    PUBLIC. Un sitemap derive du disque les declarerait a un explorateur. Cette
+    garde refuse qu'une URL du sitemap designe un fichier que git ne suit pas.
+    """
+    bs = _sitemap_module()
+    suivies = set(bs.pages_suivies())
+    h = bs.hote()
+    connues = {bs.url_de(p, h) for p in suivies} | set(bs.racines_deleguees(h))
+    intrus = sorted(_urls_du_fichier() - connues)
+    assert not intrus, (
+        "URL ne correspondant ni a une page suivie par git ni a une racine "
+        f"declaree dans servi_ailleurs : {intrus}")
+
+
+def test_toute_page_servie_est_declaree_ou_ecartee_sciemment():
+    """Aucune page ne peut apparaitre sans qu'on ait tranche son sort.
+
+    C'est le but de `PAS_DES_PAGES_D_ATTERRISSAGE` : une liste explicite, et non un
+    filtre malin. Ajouter une page au site sans decider si elle doit etre indexee
+    fait rougir ce test.
+    """
+    bs = _sitemap_module()
+    h = bs.hote()
+    declarees = _urls_du_fichier()
+    ecartees = set(bs.PAS_DES_PAGES_D_ATTERRISSAGE)
+    sans_verdict = sorted(
+        p for p in bs.pages_suivies()
+        if p not in ecartees and bs.url_de(p, h) not in declarees)
+    assert not sans_verdict, (
+        "pages servies ni declarees ni ecartees — tranchez leur sort dans "
+        f"build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE : {sans_verdict}")
+
+
+def test_robots_declare_le_sitemap_sur_l_hote_du_CNAME():
+    """L'hote se lit dans CNAME, jamais en dur : sinon il peut diverger du servi."""
+    bs = _sitemap_module()
+    h = bs.hote()
+    assert h == (ROOT / "CNAME").read_text(encoding="utf-8").strip()
+    txt = (ROOT / "robots.txt").read_text(encoding="utf-8")
+    assert f"Sitemap: https://{h}/sitemap.xml" in txt, txt
+    assert "Allow: /" in txt, txt
+    assert f"https://{h}/" in _sitemap_module().rendu_sitemap(bs.urls())
+
+
+def test_les_deux_fichiers_du_depot_sont_a_jour():
+    """Anti-derive : le fichier commite doit etre EXACTEMENT ce que rend le build.
+
+    Sans cette garde, un fichier derive vieillit en silence — le motif mesure le
+    2026-10-15 sur `pending_pushes.jsonl`, arrete au 14 septembre pendant que la
+    porte affichait « enqueue ».
+    """
+    bs = _sitemap_module()
+    xml, txt = bs.build_sitemap(write=False)
+    assert (ROOT / "sitemap.xml").read_text(encoding="utf-8") == xml,         "sitemap.xml du depot != generation fraiche ; relancez tools/build_site.py"
+    assert (ROOT / "robots.txt").read_text(encoding="utf-8") == txt,         "robots.txt du depot != generation fraiche ; relancez tools/build_site.py"
+
+
+def test_la_derivation_ecarte_bien_l_outillage_et_les_widgets():
+    """Contre-vacuite de la DERIVATION, sur une entree dont la reponse est connue.
+
+    Sans cette epreuve, un filtre casse (qui laisserait tout passer, ou rien)
+    rendrait les egalites ci-dessus vertes en ne gardant rien du tout.
+    """
+    bs = _sitemap_module()
+    suivies = bs.pages_suivies()
+    assert "index.html" in suivies
+    assert not [p for p in suivies if p.startswith("tools/")],         "une fixture de test est entree dans le corpus servi"
+    liste = bs.urls()
+    h = bs.hote()
+    assert f"https://{h}/" in liste
+    for widget in bs.PAS_DES_PAGES_D_ATTERRISSAGE:
+        assert bs.url_de(widget, h) not in liste, f"{widget} devait etre ecarte"
+    assert bs.url_de("index.html", h) == f"https://{h}/"
+    assert bs.url_de("projects/index.html", h) == f"https://{h}/projects/"
+    assert bs.url_de("radar.html", h) == f"https://{h}/radar.html"
+
+
+def test_le_sitemap_declare_les_racines_servies_par_un_autre_depot():
+    """`/academy/` appartient au domaine meme si ce depot ne la sert pas.
+
+    Mesure du 2026-10-14 : le depot-projet RoJLD/academy l'emporte sur le dossier
+    `academy/` de ce depot (retire depuis). L'URL repond 200 sur l'hote ; la
+    laisser hors du sitemap reviendrait a decrire le deploiement au lieu du site.
+    La source est `servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT`, pas une liste ecrite
+    a la main ici : ajouter une delegation la fait entrer dans le sitemap, et ce
+    test rougit si le generateur cesse de la lire.
+    """
+    import servi_ailleurs
+    bs = _sitemap_module()
+    h = bs.hote()
+    declarees = _urls_du_fichier()
+    assert servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT, \
+        "aucune delegation declaree : ce test ne garderait rien"
+    for prefixe in servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT:
+        attendue = f"https://{h}/{prefixe}"
+        assert attendue in declarees, (
+            f"{attendue} est servie par "
+            f"{servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT[prefixe]} et absente du sitemap")
+    # Et seule la RACINE : ce depot ne connait pas les URL internes de l'autre.
+    profondes = sorted(
+        u for u in declarees
+        for prefixe in servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT
+        if u.startswith(f"https://{h}/{prefixe}") and u != f"https://{h}/{prefixe}")
+    assert not profondes, f"URL internes d'un autre depot, inventees ici : {profondes}"
