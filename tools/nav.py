@@ -281,6 +281,75 @@ def render_boutons(page: str) -> str:
             f'{indent}</div>')
 
 
+# ── Ordre de tabulation sous 1024 px : pourquoi AUCUN `order:` ──────────────
+#
+# Cette explication vit ICI, dans un commentaire Python que personne ne
+# télécharge, et les six feuilles de style n'en gardent qu'une ligne qui y
+# renvoie. Mesuré le 2026-10-19 : la version longue faisait 924 octets UTF-8
+# (916 caractères) et était SERVIE à chaque visiteur sur chacune des six pages,
+# soit 5 544 octets de rationnel de conception payés par le réseau. La ligne
+# courte en fait 204 (202 caractères) : 1 224 octets en tout, −4 320, −78 %.
+# Un visiteur ne lit pas une décision d'architecture ; un développeur, si — et il
+# a le dépôt. Le commentaire était d'ailleurs la seule chose que ces six copies
+# ne pouvaient pas garder d'accord : il annonçait 180 px là où le commit qui l'a
+# posé mesurait 193 (cf. ci-dessous).
+#
+# LE DÉFAUT. Le bloc `@media(max-width:1023px)` des six pages posait
+# `.nav-brand{order:1}`, `.nav-btns{order:2}` et `.nav-r{order:3}` : les deux
+# boutons passaient VISUELLEMENT au-dessus de la rangée, alors que le DOM les
+# garde APRÈS elle. La tabulation suit le DOM, pas `order`. Mesuré le 2026-10-19
+# par tabulation RÉELLE (`Tab` en boucle, `document.activeElement` et sa boîte
+# relevés à chaque arrêt, Chromium 145, pages servies en HTTP avec les octets
+# servis comparés au disque, polices prouvées par l'inventaire `FontFaceSet` —
+# `document.fonts.check()` rend `true` aussi quand la feuille Google n'a jamais
+# été chargée, il ne prouve rien), 6 pages × 13 largeurs :
+#
+#     AVANT   36 inversions ordre-visuel/ordre-de-tabulation, TOUTES sous
+#             1024 px, zéro au-dessus. À 390 px le focus descendait jusqu'à
+#             « Contact » (y=115) puis remontait de 105 px sur « FR » (y=10).
+#     APRÈS   0 inversion, 78 cas.
+#
+# WCAG 2.4.3 Focus Order, niveau A, et 1.3.2. Correctif : aucun `order:` dans le
+# bloc, donc l'ordre visuel sous le seuil est celui du DOM — marque, rangée,
+# boutons — soit trois rangées empilées.
+#
+# CE QUE ÇA COÛTE EN HAUTEUR, et c'est le chiffre que la feuille de style a
+# annoncé FAUX sur les six pages jusqu'au 2026-10-19 (elle disait « 155 -> 180 px
+# a 390 px » ; le commit qui l'a posée mesurait, lui, 193) :
+#
+#     largeur    cinq pages          /graph/
+#     390 px     155 -> 193  (+38)   152 -> 188  (+36)
+#     480 px     124 -> 163  (+39)   122 -> 159  (+37)
+#     1023 px     94 -> 132  (+38)    93 -> 129  (+36)
+#
+# `/graph/` est 3 à 4 px plus basse, et la cause est mesurée : son `body` porte
+# `line-height:1.6` quand les cinq autres portent `1.7`. À `font-size:11px`, une
+# entrée de nav y fait 17,6 px de hauteur de ligne contre 18,7 ailleurs, et la
+# marque 30,4 px contre 32,3 — mêmes `font-size` et mêmes marges internes (5 px)
+# de part et d'autre. La barre est `position:static` sous le seuil (décision
+# mobile du 2026-10-15), donc cette hauteur part au défilement au lieu d'être
+# payée en permanence.
+#
+# COMMENT REPRODUIRE, car la méthode change le chiffre. La page doit être
+# CHARGÉE à la largeur visée. Mesuré le 2026-10-19 : un `set_viewport_size` de
+# 1280 px vers 390 px sur une page déjà peinte rend 189 à 191 px au lieu de 193,
+# et 184 au lieu de 188 sur `/graph/` — le re-calcul de mise en page ne refait pas
+# tous les retours à la ligne. C'est la voie que suit `test_nav_navigateur.py`,
+# à dessein (13 largeurs sans recharger = 6 chargements au lieu de 78) : ses
+# hauteurs ne sont donc pas comparables à ce tableau, et il ne juge pas la
+# hauteur de la barre.
+#
+# POURQUOI PAS l'autre branche, que la décision mobile proposait en premier —
+# déplacer `.nav-btns` AVANT `.nav-r` dans le balisage : mesuré, elle ne corrige
+# pas le défaut, elle le déplace au-dessus du seuil. Il y a 0 inversion à
+# >= 1024 px aujourd'hui ; les boutons placés avant la rangée dans le DOM en
+# produiraient sur 7 largeurs × 6 pages.
+#
+# LES SIX ENDROITS qui renvoient ici : `index.html` (écrit à la main, arbitrage 1
+# du 2026-10-15) et les cinq littéraux de style de `build_projects`,
+# `build_demos`, `build_browse`, `build_highlights`, `build_graph`.
+
+
 def render_nav(page: str) -> str:
     """Le bloc `<nav>` complet de la page `page`, marque et boutons compris.
 
