@@ -130,37 +130,57 @@ _RIEN: dict[str, list[str]] = {"annoncent_sans_livrer": [],
 # Noms VOLONTAIREMENT synthétiques (`p1`…`p6`) : ce ne sont pas des pages de ce
 # dépôt, et aucun de ces cas ne doit être retouché quand le corpus change. C'est
 # la différence exacte avec la contre-vacuité qu'ils remplacent.
+#
+# Chaque cas porte un `id=` ÉCRIT, et non dérivé de ses arguments. Mesuré le
+# 2026-10-19 : un id dérivé par `ids=lambda v: str(v)[:60]` prend le `repr` d'un
+# `frozenset`, dont l'ordre dépend de la randomisation des hachages de chaînes —
+# quatre `PYTHONHASHSEED` (1, 7, 42, 99) ont donné quatre id différents pour le
+# MÊME cas, le plus long faisant 362 caractères. Un cas qu'on ne peut pas nommer
+# deux fois de suite n'est sélectionnable ni par `-k` ni par node-id, et un
+# rapport de run diffère du suivant sans qu'une ligne de code ait changé.
 _CAS_FABRIQUES = [
-    ("état du 2026-10-19 : quatre pages traduites basculent, deux non traduites "
-     "ne basculent pas",
-     frozenset({"p1", "p2", "p3", "p4"}), frozenset({"p1", "p2", "p3", "p4"}),
-     frozenset({"p1", "p2", "p3", "p4"}), _RIEN),
-    ("état FUTUR : la dette de traduction est payée, les six pages basculent",
-     frozenset({"p1", "p2", "p3", "p4", "p5", "p6"}),
-     frozenset({"p1", "p2", "p3", "p4", "p5", "p6"}),
-     frozenset({"p1", "p2", "p3", "p4", "p5", "p6"}), _RIEN),
-    ("une page bascule sans être traduite (le défaut du 2026-10-19)",
-     frozenset({"p1", "p2", "p5"}), frozenset({"p1", "p2", "p5"}),
-     frozenset({"p1", "p2"}),
-     {"annoncent_sans_livrer": ["p5"], "traduites_sans_basculer": [],
-      "temoins_divergents": []}),
-    ("une page traduite ne bascule pas (le défaut du 2026-10-15)",
-     frozenset({"p1", "p2"}), frozenset({"p1", "p2"}),
-     frozenset({"p1", "p2", "p5"}),
-     {"annoncent_sans_livrer": [], "traduites_sans_basculer": ["p5"],
-      "temoins_divergents": []}),
-    ("la page lit le choix mémorisé mais n'écrit pas `lang`",
-     frozenset({"p1", "p2"}), frozenset({"p1"}), frozenset({"p1", "p2"}),
-     {"annoncent_sans_livrer": [], "traduites_sans_basculer": [],
-      "temoins_divergents": ["p2"]}),
-    ("corpus VIDE : aucune faute à nommer, et c'est pourquoi le test de corpus "
-     "porte son propre plancher",
-     frozenset(), frozenset(), frozenset(), _RIEN),
+    pytest.param(
+        "état du 2026-10-19 : quatre pages traduites basculent, deux non "
+        "traduites ne basculent pas",
+        frozenset({"p1", "p2", "p3", "p4"}), frozenset({"p1", "p2", "p3", "p4"}),
+        frozenset({"p1", "p2", "p3", "p4"}), _RIEN,
+        id="etat-du-2026-10-19"),
+    pytest.param(
+        "état FUTUR : la dette de traduction est payée, les six pages basculent",
+        frozenset({"p1", "p2", "p3", "p4", "p5", "p6"}),
+        frozenset({"p1", "p2", "p3", "p4", "p5", "p6"}),
+        frozenset({"p1", "p2", "p3", "p4", "p5", "p6"}), _RIEN,
+        id="etat-futur-tout-traduit"),
+    pytest.param(
+        "une page bascule sans être traduite (le défaut du 2026-10-19)",
+        frozenset({"p1", "p2", "p5"}), frozenset({"p1", "p2", "p5"}),
+        frozenset({"p1", "p2"}),
+        {"annoncent_sans_livrer": ["p5"], "traduites_sans_basculer": [],
+         "temoins_divergents": []},
+        id="bascule-sans-etre-traduite"),
+    pytest.param(
+        "une page traduite ne bascule pas (le défaut du 2026-10-15)",
+        frozenset({"p1", "p2"}), frozenset({"p1", "p2"}),
+        frozenset({"p1", "p2", "p5"}),
+        {"annoncent_sans_livrer": [], "traduites_sans_basculer": ["p5"],
+         "temoins_divergents": []},
+        id="traduite-sans-basculer"),
+    pytest.param(
+        "la page lit le choix mémorisé mais n'écrit pas `lang`",
+        frozenset({"p1", "p2"}), frozenset({"p1"}), frozenset({"p1", "p2"}),
+        {"annoncent_sans_livrer": [], "traduites_sans_basculer": [],
+         "temoins_divergents": ["p2"]},
+        id="temoins-divergents"),
+    pytest.param(
+        "corpus VIDE : aucune faute à nommer, et c'est pourquoi le test de "
+        "corpus porte son propre plancher",
+        frozenset(), frozenset(), frozenset(), _RIEN,
+        id="corpus-vide"),
 ]
 
 
 @pytest.mark.parametrize("nom, lecture, ecriture, traduites, attendu",
-                         _CAS_FABRIQUES, ids=lambda v: str(v)[:60])
+                         _CAS_FABRIQUES)
 def test_le_verdict_de_langue_refuse_les_deux_sens(nom, lecture, ecriture,
                                                    traduites, attendu):
     """Les deux sens sont refusés, et l'état FUTUR du corpus reste vert.
