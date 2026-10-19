@@ -19,13 +19,17 @@ html{scroll-behavior:smooth}
 body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
 .blob{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}.b1{width:700px;height:700px;top:-300px;right:-200px;background:var(--accent);opacity:.04}.b2{width:500px;height:500px;bottom:-200px;left:-150px;background:var(--warm);opacity:.03}
 nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
-.nav-i{max-width:1000px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
-.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em;text-decoration:none}.nav-brand b{color:var(--accent)}
-.nav-r{display:flex;align-items:center;gap:20px}
-.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease)}
+.nav-i{max-width:none;margin:0;padding:0 24px 0 max(24px,calc(50% - 468px));display:flex;align-items:center;position:relative}
+.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em;text-decoration:none;white-space:nowrap;flex-shrink:0;margin-right:28px}.nav-brand b{color:var(--accent)}
+.nav-r{display:flex;align-items:center;gap:20px;flex:1 1 auto;min-width:0;padding-block:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-padding-inline:8px}
+.nav-r::-webkit-scrollbar{display:none}
+.nav-r>a{flex-shrink:0}
+.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease);min-height:24px;padding-block:3px}
 .nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
 .ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
 .ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
+.nav-btns{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:16px;position:relative}
+.nav-btns::before{content:'';position:absolute;top:-12px;bottom:-12px;left:-40px;width:40px;pointer-events:none;background:linear-gradient(to right,rgba(0,0,0,0),var(--glass))}
 .wrap{max-width:1000px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
 header.hd{padding:130px 0 20px;text-align:center}
 header.hd h1{font-family:var(--serif);font-size:clamp(38px,6vw,56px);font-weight:400;letter-spacing:-.03em;margin-bottom:10px}
@@ -61,7 +65,10 @@ header.hd p{color:var(--tx-2);font-size:16px;font-weight:300;max-width:560px;mar
 .p-link:hover{background:var(--accent-g);border-color:var(--accent)}
 .p-status{font-size:12px;color:var(--tx-3);padding:6px 0;font-style:italic}
 footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-top:1px solid var(--border)}
-@media(max-width:640px){.wrap{padding:0 18px}.grid{grid-template-columns:1fr}.nav-r a:not(.nav-projects){display:none}header.hd{padding:110px 0 10px}}
+@media(max-width:640px){.wrap{padding:0 18px}.grid{grid-template-columns:1fr}header.hd{padding:110px 0 10px}}
+@media(max-width:1620px){.nav-r{gap:14px}.nav-r a{font-size:11px;letter-spacing:.02em;padding-block:4px}.nav-brand{font-size:18px;margin-right:20px}.nav-i{padding-left:max(20px,calc(50% - 468px));padding-right:20px}.nav-btns{margin-left:12px}.ctrl-btn{width:34px;height:34px}}
+@media(max-width:1150px){.nav-r{gap:11px}.nav-r a{font-size:10.5px;letter-spacing:.01em;padding-block:4px}.nav-brand{font-size:17px;margin-right:14px}.nav-i{padding-left:max(14px,calc(50% - 468px));padding-right:14px}.nav-btns{margin-left:8px}.ctrl-btn{width:32px;height:32px}}
+@media(max-width:1023px){/* AUCUN `order:` ici : sous ce seuil l'ordre visuel doit rester celui du DOM (WCAG 2.4.3, niveau A). Mesures, hauteurs et contre-exemple : tools/nav.py, section « ordre de tabulation sous 1024 px ». */nav{position:static;padding:10px 0}.nav-i{flex-wrap:wrap;row-gap:6px;padding:0 18px}.nav-brand{font-size:19px}.nav-btns{margin-left:auto}.nav-btns::before{display:none}.ctrl-btn{width:38px;height:38px}.nav-r{flex:1 1 100%;flex-wrap:wrap;row-gap:2px;column-gap:14px;overflow:visible;padding-block:0}.nav-r a{font-size:11px;letter-spacing:.02em;padding-block:5px}header.hd{padding:22px 0 10px}.filters{top:0}}
 </style>
 </head>
 <body>
@@ -69,14 +76,19 @@ footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-
 <nav><div class="nav-i">
   <a class="nav-brand" href="/">R<b>.</b> Denis</a>
   <div class="nav-r">
-    <a href="/#experience">Expérience</a>
-    <a href="/demos/">Démos</a>
-    <a class="nav-projects on" href="/projects/">Projets</a>
-    <a href="/explorer/">Explorer</a>
-    <a href="/highlights/">Highlights</a>
-    <a href="/academy/">Academy</a>
-    <a href="/graph/">Graphe</a>
-    <a href="/#contact">Contact</a>
+    <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
+    <a href="/#education" data-fr="Formation" data-en="Education">Formation</a>
+    <a href="/#skills" data-fr="Compétences" data-en="Skills">Compétences</a>
+    <a href="/demos/" data-fr="Démos" data-en="Demos">Démos</a>
+    <a class="on" href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
+    <a href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
+    <a href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
+    <a href="/academy/" data-fr="Academy" data-en="Academy">Academy</a>
+    <a href="/graph/" data-fr="Graphe" data-en="Graph">Graphe</a>
+    <a href="/#blog" data-fr="Blog" data-en="Blog">Blog</a>
+    <a href="/#contact" data-fr="Contact" data-en="Contact">Contact</a>
+  </div>
+  <div class="nav-btns">
     <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
   </div>
 </div></nav>
@@ -334,6 +346,12 @@ def gbm_paths(S0, mu, sigma, T, steps, n):
     localStorage.setItem('theme', next);
     document.getElementById('themeBtn').textContent = next === 'light' ? '☀️' : '🌙';
   }
+  // AUCUNE bascule de langue sur cette page, et c'est un RETRAIT assume, pas un
+  // oubli : cf. `tools/nav.py` (_PAGES["projects"]["bouton_langue"] = False) et la
+  // garde `test_la_langue_annoncee_est_celle_du_contenu`. Mesure du 2026-10-19,
+  // parseur HTML sur l'artefact publie : 174 chaines de texte visible hors nav
+  // (89 distinctes), dont 0 traduisible — un bouton EN aurait annonce une langue
+  // qu'aucune de ces 174 chaines ne livre. Le bouton revient avec la traduction.
 </script>
 </body>
 </html>

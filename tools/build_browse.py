@@ -14,6 +14,8 @@ import json
 import pathlib
 import re
 
+import nav
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "explorer" / "index.html"
 
@@ -210,14 +212,18 @@ html{scroll-behavior:smooth}
 body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.7;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
 .blob{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}.b1{width:700px;height:700px;top:-300px;right:-200px;background:var(--accent);opacity:.04}.b2{width:500px;height:500px;bottom:-200px;left:-150px;background:var(--warm);opacity:.03}
 nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
-.nav-i{max-width:1000px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
-.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em;text-decoration:none}.nav-brand b{color:var(--accent)}
-.nav-r{display:flex;align-items:center;gap:18px}
-.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease)}
+.nav-i{max-width:none;margin:0;padding:0 24px 0 max(24px,calc(50% - 468px));display:flex;align-items:center;position:relative}
+.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);letter-spacing:-.03em;text-decoration:none;white-space:nowrap;flex-shrink:0;margin-right:28px}.nav-brand b{color:var(--accent)}
+.nav-r{display:flex;align-items:center;gap:18px;flex:1 1 auto;min-width:0;padding-block:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-padding-inline:8px}
+.nav-r::-webkit-scrollbar{display:none}
+.nav-r>a{flex-shrink:0}
+.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease);min-height:24px;padding-block:3px}
 .nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
 .ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
 .ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}
-.ctrl-btn.lang-btn{font-size:12px;font-weight:700;font-family:var(--mono)}
+.nav-btns{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:16px;position:relative}
+.nav-btns::before{content:'';position:absolute;top:-12px;bottom:-12px;left:-40px;width:40px;pointer-events:none;background:linear-gradient(to right,rgba(0,0,0,0),var(--glass))}
+.ctrl-btn.lang-btn{font-size:12px;font-weight:700;font-family:var(--mono);color:var(--tx-2)}
 .wrap{max-width:1000px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
 header.hd{padding:130px 0 10px;text-align:center}
 header.hd h1{font-family:var(--serif);font-size:clamp(38px,6vw,56px);font-weight:400;letter-spacing:-.03em;margin-bottom:10px}
@@ -249,25 +255,15 @@ header.hd p{color:var(--tx-2);font-size:16px;font-weight:300;max-width:580px;mar
 .e-cta{color:var(--accent);font-size:13px;font-weight:600;margin-top:auto}
 .e-empty{text-align:center;color:var(--tx-3);padding:50px 0;font-size:14px}
 footer{text-align:center;padding:40px 0;color:var(--tx-3);font-size:12px;border-top:1px solid var(--border)}
-@media(max-width:640px){.wrap{padding:0 18px}.grid{grid-template-columns:1fr}.nav-r a:not(.on){display:none}header.hd{padding:110px 0 6px}.e-count{margin-left:0}}
+@media(max-width:640px){.wrap{padding:0 18px}.grid{grid-template-columns:1fr}header.hd{padding:110px 0 6px}.e-count{margin-left:0}}
+@media(max-width:1620px){.nav-r{gap:14px}.nav-r a{font-size:11px;letter-spacing:.02em;padding-block:4px}.nav-brand{font-size:18px;margin-right:20px}.nav-i{padding-left:max(20px,calc(50% - 468px));padding-right:20px}.nav-btns{margin-left:12px}.ctrl-btn{width:34px;height:34px}}
+@media(max-width:1150px){.nav-r{gap:11px}.nav-r a{font-size:10.5px;letter-spacing:.01em;padding-block:4px}.nav-brand{font-size:17px;margin-right:14px}.nav-i{padding-left:max(14px,calc(50% - 468px));padding-right:14px}.nav-btns{margin-left:8px}.ctrl-btn{width:32px;height:32px}}
+@media(max-width:1023px){/* AUCUN `order:` ici : sous ce seuil l'ordre visuel doit rester celui du DOM (WCAG 2.4.3, niveau A). Mesures, hauteurs et contre-exemple : tools/nav.py, section « ordre de tabulation sous 1024 px ». */nav{position:static;padding:10px 0}.nav-i{flex-wrap:wrap;row-gap:6px;padding:0 18px}.nav-brand{font-size:19px}.nav-btns{margin-left:auto}.nav-btns::before{display:none}.ctrl-btn{width:38px;height:38px}.nav-r{flex:1 1 100%;flex-wrap:wrap;row-gap:2px;column-gap:14px;overflow:visible;padding-block:0}.nav-r a{font-size:11px;letter-spacing:.02em;padding-block:5px}header.hd{padding:22px 0 6px}.e-controls{top:0}}
 </style>
 </head>
 <body>
 <div class="blob b1"></div><div class="blob b2"></div>
-<nav><div class="nav-i">
-  <a class="nav-brand" href="/">R<b>.</b> Denis</a>
-  <div class="nav-r">
-    <a href="/#experience" data-fr="Expérience" data-en="Experience">Expérience</a>
-    <a href="/demos/" data-fr="Démos" data-en="Demos">Démos</a>
-    <a href="/projects/" data-fr="Projets" data-en="Projects">Projets</a>
-    <a class="on" href="/explorer/" data-fr="Explorer" data-en="Explore">Explorer</a>
-    <a href="/highlights/" data-fr="Highlights" data-en="Highlights">Highlights</a>
-    <a href="/academy/" data-fr="Academy" data-en="Academy">Academy</a>
-    <a href="/graph/" data-fr="Graphe" data-en="Graph">Graphe</a>
-    <button class="ctrl-btn lang-btn" onclick="toggleLang()" id="langBtn" title="Langue">FR</button>
-    <button class="ctrl-btn" onclick="tgTheme()" id="themeBtn" title="Thème">🌙</button>
-  </div>
-</div></nav>
+@@NAV@@
 
 <div class="wrap">
 <header class="hd">
@@ -413,6 +409,7 @@ def render_browse_page(profile) -> str:
     cards = "\n".join(render_card(en) for en in aggregate(profile))
     updated = profile.get("$updated", "")  # une seule date pour tout le site
     return (PAGE_TEMPLATE
+            .replace("@@NAV@@", nav.render_nav("explorer"))
             .replace("@@CHIPS@@", _chips())
             .replace("@@CARDS@@", cards)
             .replace("@@UPDATED@@", e(updated)))

@@ -20,8 +20,11 @@ Aucun réseau : les liens externes sont hors périmètre par construction.
 Ce fichier porte AUSSI les gardes des liens RoJLD du corpus (§ « Les liens RoJLD
 du profil »), qui ne sont pas des liens internes. Ce n'est pas un fourre-tout,
 c'est la porte : `tools/cockpit/publication.py::verifier()` — ce que joue le
-bouton « Publier » — lance ce FICHIER en entier, plus `validate_profile.py`,
-`build_site.py` et trois node-ids de confidentialité, et rien d'autre. Mesuré le
+bouton « Publier » — lance ce FICHIER en entier, ainsi que
+`test_cockpit_public_isole.py` en entier et deux node-ids de
+`test_validate_profile.py` (les gardes de confidentialité), en plus de
+`validate_profile.py` et `build_site.py`. Des deux fichiers de tests joués en
+entier, celui-ci est le seul qui porte sur le corpus publié. Mesuré le
 2026-10-15 sur une copie de l'arbre : les deux liens morts remis dans
 `profile.json`, la porte rendait 5 contrôles sur 5 « OK » et régénérait
 `/projects/` avec les deux boutons morts, pendant que la suite pytest, elle,
@@ -849,6 +852,96 @@ def test_le_generateur_emet_toute_la_nav(page):
         f"le générateur de /{page}/ n'émet plus {manquants} dans sa nav")
 
 
+# ── Les artefacts publiés SONT la sortie de leurs générateurs ───────────────
+#
+# Mesuré le 2026-10-19 sur une copie VIERGE de la branche (`git archive HEAD |
+# tar -x`, `git init` + commit, puis `py -3.13 tools/build_site.py`, rc 0) : DEUX
+# fichiers suivis bougeaient — `projects/index.html` et `demos/index.html`.
+# L'écart était un commentaire JS resté dans sa version d'avant la dernière
+# édition du générateur, et il publiait un chiffre FAUX : `/demos/` annonçait
+# « 31 chaînes de texte visible hors nav » quand le parseur qu'il cite en mesure
+# 33 (28 distinctes). Les quatre autres pages étaient identiques à leur sortie :
+# la divergence n'était donc pas un artefact de la comparaison.
+#
+# Aucune garde de ce dépôt ne voyait cela. Les sept `test_*_idempotent` existants
+# (`test_build_demos.py::test_idempotent` et ses six frères, dans six fichiers :
+# browse, cv_templates, demos, highlights, projects, et deux dans build_site) comparent le
+# générateur À LUI-MÊME (`render(p) == render(p)`) : ils prouvent qu'il est
+# déterministe, pas que le fichier publié est sa sortie. Mesuré avec les deux
+# pages périmées : 1631 passed, 6 skipped — le vert de référence exact.
+#
+# Un fichier dérivé qui peut diverger de son générateur sans un seul rouge est un
+# deuxième lieu de vérité — le défaut même que la nav unifiée corrige, replacé
+# une couche plus bas. La garde vit ICI parce que `test_liens_internes.py` est le
+# seul fichier de tests SUR LE CORPUS PUBLIÉ que joue la porte « Publier » (elle
+# joue aussi `test_cockpit_public_isole.py`, qui porte sur l'isolement du cockpit ;
+# cf. docstring du module) : posée ailleurs, elle serait muette à l'instant où
+# elle compterait.
+
+
+@functools.lru_cache(maxsize=1)
+def _html_regenere() -> dict[str, str]:
+    """{page publiée: le HTML que son générateur produit MAINTENANT}.
+
+    Population dérivée, aucune liste de pages écrite ici : les cinq sous-pages
+    viennent de `_rendu_des_builders()` (table tenue par
+    `test_la_table_des_generateurs_couvre_toutes_les_destinations`), l'accueil de
+    `build_site.build_html`.
+
+    LIMITE NOMMÉE pour l'accueil : `build_html` INJECTE dans le fichier qu'on lui
+    donne (régions `<!-- BUILD:x -->` et `/* BUILD:i18n_x */`, puis
+    synchronisation du texte statique FR) au lieu de le réécrire. La comparaison
+    couvre donc ses dix régions générées et ce texte statique, pas son balisage
+    écrit à la main — qui n'a aucun générateur, donc rien d'où diverger
+    (arbitrage 1 du 2026-10-15, cf. le docstring de `tools/nav.py`).
+    """
+    import build_site  # noqa: E401
+    out = {f"{page}/index.html": html
+           for page, html in _rendu_des_builders().items()}
+    out["index.html"] = build_site.build_html(_index_html(), _real_profile())
+    return out
+
+
+def test_la_table_des_artefacts_couvre_toutes_les_pages_de_la_nav():
+    """Plancher : la garde ci-dessous ne doit pas pouvoir rétrécir en silence.
+
+    Ses cas sont paramétrés sur une population DÉCOUVERTE
+    (`corpus_publie.pages_de_la_nav_partagee()`), et `_html_regenere()` doit la
+    couvrir en entier : une page qui sortirait de la table perdrait son cas de
+    test en même temps que la couverture qu'il apporte — c'est le défaut que
+    `corpus_publie` documente en tête.
+    """
+    nav = set(corpus_publie.pages_de_la_nav_partagee())
+    assert len(nav) >= 6, f"seules {len(nav)} page(s) de nav découvertes : {sorted(nav)}"
+    assert set(_html_regenere()) == nav, (
+        f"la table des artefacts régénérés {sorted(_html_regenere())} ne couvre pas "
+        f"les pages de la nav partagée {sorted(nav)}")
+
+
+@pytest.mark.parametrize("rel", sorted(corpus_publie.pages_de_la_nav_partagee()))
+def test_l_artefact_publie_est_la_sortie_de_son_generateur(rel):
+    """Le fichier servi est, caractère pour caractère, ce que son générateur produit.
+
+    Prouvée ROUGE par mutation le 2026-10-19, dans les deux sens qui comptent :
+    une édition du générateur sans régénération (un chiffre du commentaire de
+    `build_demos.py` changé) et une édition de l'artefact sans son générateur.
+    Les deux nomment la page et la première ligne qui diverge.
+    """
+    attendu = _html_regenere()[rel]
+    publie = (ROOT / rel).read_text(encoding="utf-8")
+    if publie == attendu:
+        return
+    a, b = attendu.splitlines(), publie.splitlines()
+    no = next((i for i in range(max(len(a), len(b)))
+               if a[i:i + 1] != b[i:i + 1]), 0) + 1
+    vu = (b[no - 1] if no - 1 < len(b) else "<fin de fichier>")[:160]
+    veut = (a[no - 1] if no - 1 < len(a) else "<fin de fichier>")[:160]
+    pytest.fail(f"""{rel} n'est plus la sortie de son générateur — premier écart ligne {no} ({len(b)} lignes publiées, {len(a)} attendues)
+  publié  : {vu}
+  attendu : {veut}
+  remède : `py -3.13 tools/build_site.py`, puis committer l'artefact régénéré""")
+
+
 def test_la_nav_partagee_mene_toujours_a_l_academy():
     """Spec § 9.3 : retirer la page n'est pas retirer le lien.
 
@@ -873,6 +966,187 @@ def test_la_nav_partagee_mene_toujours_a_l_academy():
         f"découvertes : {NAV_SERVIE_AILLEURS}) — le lien devait survivre au retrait "
         "de la page (spec § 9.3)")
     assert servi_ailleurs.depot_qui_sert("academy/") == "RoJLD/academy"
+
+
+def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises():
+    """La nav des six pages : MÊMES destinations, MÊME ordre, ancres comprises.
+
+    `test_les_destinations_de_nav_viennent_bien_du_disque` compare deux lectures
+    qui ne regardent que les répertoires : elles s'accordaient sur six noms
+    pendant que l'accueil portait 11 entrées, /projects/ et /demos/ 8, et
+    /explorer/, /highlights/, /graph/ 7. Mesuré le 2026-10-15 : `/#education`,
+    `/#skills` et `/#blog` n'existaient sur AUCUNE page sauf l'accueil, et
+    `/#contact` manquait sur trois des cinq sous-pages. Aucun rouge — un
+    visiteur de /explorer/ n'avait aucun chemin de nav vers la formation, les
+    compétences, le blog ni le contact, et la nav étant `position:fixed`, rien
+    ne défilait pour les atteindre.
+
+    CE QUE CE TEST DISAIT DE FAUX JUSQU'AU 2026-10-19, et qu'il ne dit plus :
+    « une entrée retirée de toutes quitte l'union, mais la topologie des
+    répertoires rougit alors dans le test cité ci-dessus ». C'est vrai d'une
+    destination de RÉPERTOIRE (`destinations_nav()` continue de voir le dossier,
+    la topologie ne ferme plus) et FAUX d'une ANCRE : aucun calcul topologique de
+    ce dépôt ne voit `/#education`. Mesuré par mutation, les onze entrées passées
+    à dix sur les SIX pages : la perte d'un répertoire (`/graph/`) rougissait,
+    la perte d'une ancre (`/#education`) laissait la suite ENTIÈREMENT VERTE —
+    c'est-à-dire précisément la classe de régression pour laquelle la nav unifiée
+    a été écrite. Un commentaire qui affirme une couverture qu'on n'a pas est
+    pire qu'un angle mort : il invite à ne pas chercher.
+
+    Trois exigences, chacune fermant une des trois fuites mesurées :
+
+      1. les six pages déclarent la MÊME SÉQUENCE, pas le même ensemble.
+         L'union ne peut plus servir d'attendu — elle n'a pas d'ordre — donc la
+         comparaison est deux à deux contre la séquence de l'accueil, la seule
+         page écrite à la main. L'ordre des onze entrées n'était tenu par rien
+         (une barre réordonnée passait verte sur les six pages) et un ensemble
+         perd les doublons ;
+      2. un PLANCHER, qui est la seule réponse à une perte uniforme : le nombre
+         d'entrées vient des clés `nav_*` de `site_texts.json`, un témoin qui ne
+         vit ni dans `nav.py` ni dans les artefacts (cf.
+         `corpus_publie.cles_nav_de_site_texts`) ;
+      3. aucune destination ne doit porter le préfixe `NON_RECONNUE` : une forme
+         d'href que le témoin ne sait pas lire était écartée en silence.
+
+    Témoin DISTINCT de `test_nav_unifiee.py`, et c'est délibéré : celui-là
+    confronte chaque page à la source (`tools/nav.py`), celui-ci ne regarde que
+    les artefacts, plus `site_texts.json` pour son plancher. Un dépôt où
+    `nav.py` disparaîtrait garde cette garde-ci.
+
+    `/` est exclu, et il faut le dire : les cinq sous-pages portent
+    `<a class="nav-brand" href="/">`, l'accueil un `<span class="nav-brand">`
+    SANS href — il ne se lie pas à lui-même. `/` est donc le résidu
+    irréductible de l'égalité, et le soustraire sans le nommer est la façon
+    dont une garde pourrit. L'invariant réel vit à côté, dans
+    `test_nav_unifiee.py::test_chaque_sous_page_ramene_a_l_accueil` : chaque
+    sous-page porte un lien vers `/`, l'accueil n'en a pas besoin.
+    """
+    ordonnees = corpus_publie.destinations_ordonnees_de_la_nav_par_page()
+    par_page = {rel: tuple(d for d in dests if d != "/")
+                for rel, dests in ordonnees.items()}
+    assert len(par_page) >= 6, (
+        f"seules {len(par_page)} page(s) portent la nav partagée : {sorted(par_page)}")
+    assert "index.html" in par_page, (
+        "l'accueil ne porte plus la marque de la nav partagée — il sortait déjà "
+        "du calcul de fermeture par répertoires, il ne doit pas sortir de celui-ci")
+
+    # (3) Le silence d'abord : une forme non reconnue fausserait tout le reste.
+    illisibles = {rel: [d for d in dests if d.startswith(corpus_publie.NON_RECONNUE)]
+                  for rel, dests in par_page.items()}
+    illisibles = {rel: v for rel, v in illisibles.items() if v}
+    assert not illisibles, (
+        "des href de la nav ne se normalisent pas, donc ne sont comparés à rien : "
+        f"{illisibles} — écrire `/x/` (répertoire) ou `/#x` (section de l'accueil)")
+
+    # (2) Le plancher : une perte UNIFORME ne peut pas se cacher dans l'union.
+    attendu = len(corpus_publie.cles_nav_de_site_texts())
+    assert attendu >= 11, (
+        f"`site_texts.json` ne déclare plus que {attendu} clé(s) `nav_*` : le "
+        "plancher de ce test rétrécirait avec la nav qu'il garde (11 le 2026-10-19)")
+    courtes = {rel: len(dests) for rel, dests in par_page.items()
+               if len(dests) != attendu}
+    assert not courtes, (
+        f"la nav ne déclare plus {attendu} destinations (le nombre de clés `nav_*` "
+        f"de site_texts.json) : {courtes} — une entrée perdue sur TOUTES les pages "
+        "ne se voit pas dans leur union, seul ce plancher la nomme")
+
+    # (1) L'égalité deux à deux, ordre et doublons compris.
+    reference = par_page["index.html"]
+    ecarts = {rel: list(dests) for rel, dests in par_page.items()
+              if dests != reference}
+    assert not ecarts, (
+        "la nav partagée n'est pas la même partout, ou pas dans le même ordre — "
+        f"{ecarts} (l'accueil déclare : {list(reference)})")
+
+
+@pytest.mark.parametrize("href, reconnue", [
+    ("/graph/", True),             # la forme correcte d'une page du site
+    ("/#education", True),         # la forme correcte d'une section de l'accueil
+    ("/", True),                   # la marque
+    ("/graph", False),             # la faute de frappe : barre finale oubliée
+    ("/articles/x.html", False),   # un fichier, pas un répertoire
+    ("/a/b/", False),              # deux segments
+    ("/graph/?v=2", False),        # une query dans une destination de nav
+])
+def test_une_destination_non_reconnue_est_nommee_et_jamais_jetee(href, reconnue):
+    """Le témoin n'a pas le droit de rendre le silence — capacité DORMANTE.
+
+    `_normaliser_destination` rendait `None` pour toute forme inattendue, et son
+    unique appelant écrivait `if dest: vues.add(dest)` : la destination était
+    écartée sans un mot. Mesuré le 2026-10-19 : si les SIX pages portaient la
+    même forme inattendue, l'ensemble comparé rétrécissait partout à la fois et
+    l'égalité restait verte — un témoin qui jette ce qu'il ne comprend pas ne
+    rapporte plus ce que les pages déclarent, il rapporte ce qu'il sait lire.
+
+    Pourquoi un test à entrées fabriquées plutôt qu'une mutation du corpus :
+    aucune page publiée ne porte aujourd'hui une de ces formes (mesuré, les 6
+    navs ne déclarent que `/x/`, `/#x` et `/`), donc la branche est DORMANTE, au
+    même titre que `poster` dans `URL_ATTR` ou la query de `resolve`. Et la
+    mutation qui en fabrique une rougit AVANT d'arriver jusqu'ici : écrire
+    `/graph` au lieu de `/graph/` sort `graph/` du groupe fermé de la nav, et
+    c'est le plancher de population du test ci-dessus qui parle (mesuré :
+    « seules 5 page(s) portent la nav partagée »). Le contrat se vérifie donc là
+    où le corpus est muet.
+
+    Les deux sens sont exercés : un témoin qui préfixerait TOUT passerait la
+    moitié de ce test sans rien distinguer.
+    """
+    vu = corpus_publie._normaliser_destination("explorer/index.html", href)
+    assert vu.startswith(corpus_publie.NON_RECONNUE) != reconnue, (
+        f"{href!r} : le témoin rend {vu!r} — une forme "
+        f"{'reconnue' if reconnue else 'inconnue'} ne doit "
+        f"{'pas ' if reconnue else ''}être nommée comme non reconnue")
+    assert vu, f"{href!r} : le témoin rend une valeur vide, donc jetable en silence"
+
+
+# ── L'amputation mobile : aucune destination ne disparaît au doigt ───────────
+#
+# Quatre générateurs et l'accueil portaient une règle qui CACHE les liens de la
+# nav sous un seuil de largeur, chacun la sienne :
+#
+#   build_browse.py     @media(max-width:640px){… .nav-r a:not(.on){display:none} …}
+#   build_graph.py      @media(max-width:640px){… .nav-r a:not(.on){display:none} …}
+#   build_highlights.py @media(max-width:640px){… .nav-r a:not(.on){display:none} …}
+#   build_projects.py   @media(max-width:640px){… .nav-r a:not(.nav-projects){display:none} …}
+#   index.html          @media(max-width:480px){.nav-r a:not(:nth-child(-n+3)){display:none}}
+#
+# Mesuré au navigateur à 390 px : l'accueil ne gardait que 3 onglets sur 11, les
+# sous-pages 1 sur 7 — et aucun menu dépliant n'existait. Dans tout le document,
+# à cette largeur, il n'y avait AUCUN lien visible vers /projects/, /explorer/,
+# /highlights/, /academy/ ni /graph/. La nav étant `position:fixed`, rien ne
+# défilait pour les atteindre : les sections étaient inaccessibles au téléphone.
+#
+# Cacher un lien est légitime — derrière un dépliant qui le rend. Le supprimer de
+# l'affichage sans contrepartie ne l'est pas.
+_CACHE_UN_LIEN_DE_NAV = re.compile(
+    r"\.nav-r[^{};]*\ba\b[^{}]*\{[^{}]*display\s*:\s*none")
+# Le dépliant : une règle d'ÉTAT qui rend aux liens un `display` autre que
+# `none`. `aria-expanded` seul ne suffit pas comme preuve — l'accueil en porte
+# quatre, sur les accordéons de section, qui n'ont rien à voir avec la nav.
+_REND_LES_LIENS = re.compile(
+    r'(?::checked|\[aria-expanded="true"\]|\.(?:open|ouvert))[^{}]*\.nav-r'
+    r"[^{}]*\{[^{}]*display\s*:\s*(?!none)")
+
+
+@pytest.mark.parametrize("page", NAV_DESTINATIONS)
+def test_aucune_regle_ne_cache_un_lien_de_nav_sans_le_rendre(page):
+    html = (ROOT / page / "index.html").read_text(encoding="utf-8")
+    caches = _CACHE_UN_LIEN_DE_NAV.findall(html)
+    assert not caches or _REND_LES_LIENS.search(html), (
+        f"{page}/index.html : une règle cache les liens de la nav "
+        f"({caches[:1]}) et rien ne les rend — au téléphone, les sections "
+        "deviennent inatteignables, la nav étant `position:fixed`")
+
+
+def test_l_accueil_non_plus_ne_cache_aucun_lien_de_nav_sans_le_rendre():
+    """Même garde sur l'accueil, qui n'est pas dans `NAV_DESTINATIONS` : ce
+    n'est pas un répertoire. C'est la page la plus amputée que la mesure ait
+    trouvée (3 onglets sur 11 à 390 px) et elle sortait du champ paramétré."""
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    caches = _CACHE_UN_LIEN_DE_NAV.findall(html)
+    assert not caches or _REND_LES_LIENS.search(html), (
+        f"index.html : une règle cache les liens de la nav ({caches[:1]}) et "
+        "rien ne les rend")
 
 
 # --- La marque de la nav doit vivre DANS la nav ------------------------------
@@ -1476,9 +1750,10 @@ def test_match_declare_un_alias_par_competence():
 # Le sitemap et robots.txt
 #
 # Ils vivent ICI, et non dans un `test_sitemap.py`, pour la raison que la
-# docstring de ce fichier donne deja : `publication.py::verifier()` ne joue que ce
-# FICHIER, plus validate_profile.py, build_site.py et trois node-ids de
-# confidentialite. Une garde de corpus posee ailleurs est hors de la porte.
+# docstring de ce fichier donne deja : de tous les fichiers de tests que joue
+# `publication.py::verifier()` (celui-ci, `test_cockpit_public_isole.py`, et deux
+# node-ids de `test_validate_profile.py`), celui-ci est le seul qui porte sur le
+# corpus publie. Une garde de corpus posee ailleurs est hors de la porte.
 # ---------------------------------------------------------------------------
 
 
