@@ -1,0 +1,142 @@
+{
+  "$comment": "Temoin des depots PUBLICS de l'owner. Regenerer : python tools/sync_github_projects.py --temoin data/depots_publics_rojld.json",
+  "owner": "RoJLD",
+  "releve": "2026-10-15",
+  "repos": [
+    {
+      "name": "2024-ECE-Ing4-Fin-Sudoku-Gr01",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "academy",
+      "has_pages": true,
+      "fork": false
+    },
+    {
+      "name": "AGAGI",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "agenthub",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "AppGroup",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "career-ops",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "chia-blockchain",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "Elysium-splash",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "fork-cohabitation",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "free-claude-code",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "Fusion",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "GitNexus",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "glossopetrae",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "hedge-fund",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "HMMstudio",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "honest-backtest",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "honest-inference",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "mutual_information",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "OctoPrint-BedLevelVisualizer",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "open-pixel-art",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "patrimoine",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "plane",
+      "has_pages": false,
+      "fork": true
+    },
+    {
+      "name": "PPE_Recherche_et_fixation_mon-taire",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "quant-marketdata",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "repo-template",
+      "has_pages": false,
+      "fork": false
+    },
+    {
+      "name": "RoJLD.github.io",
+      "has_pages": true,
+      "fork": false
+    },
+    {
+      "name": "workspace-config",
+      "has_pages": false,
+      "fork": false
+    }
+  ]
+}

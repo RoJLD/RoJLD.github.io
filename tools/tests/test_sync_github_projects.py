@@ -239,3 +239,81 @@ def test_main_json_output_is_ascii(tmp_path, capsys):
 
 def test_report_header_mentions_profile_json():
     assert "profile.json" in s.render_report({"dead_links": [], "missing": []})
+
+
+# ── Le relevé des dépôts publics (`--temoin`) ────────────────────────────────
+
+def test_temoin_depots_publics_ne_garde_que_le_necessaire():
+    """Le relevé ne retient que ce dont une garde hors-ligne a besoin : le nom, la
+    publication de Pages, le caractère de fork. Un relevé qui recopierait la
+    réponse GitHub entière changerait à chaque étoile reçue, donc à chaque commit.
+    """
+    repos = [{"name": "Zeta", "has_pages": False, "fork": False, "stargazers_count": 7},
+             {"name": "alpha", "has_pages": True, "fork": True}]
+    t = s.temoin_depots_publics(repos, owner="RoJLD", releve="2026-10-15")
+    assert t["owner"] == "RoJLD" and t["releve"] == "2026-10-15"
+    assert t["repos"] == [{"name": "alpha", "has_pages": True, "fork": True},
+                          {"name": "Zeta", "has_pages": False, "fork": False}]
+    assert "--temoin" in t["$comment"]   # le fichier porte sa propre commande de régénération
+
+
+def test_main_temoin_ecrit_le_releve_et_sort_sans_rapport(tmp_path, capsys):
+    """`--temoin` relève, il ne juge pas : le catalogue dérive ici (ELYSIUM absent
+    des dépôts rendus) et le code de sortie reste 0.
+    """
+    cat = _write_catalog(tmp_path, "https://github.com/RoJLD/ELYSIUM")
+    cible = tmp_path / "temoin.json"
+    rc = s.main(["--catalog", str(cat), "--temoin", str(cible)],
+                fetch_fn=lambda u: [{"name": "HMMstudio", "has_pages": False, "fork": False}])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Liens morts" not in out
+    assert out.isascii()
+    ecrit = json.loads(cible.read_text(encoding="utf-8"))
+    assert [r["name"] for r in ecrit["repos"]] == ["HMMstudio"]
+
+
+# ── Les gardes de corpus de ces liens vivent dans test_liens_internes.py ─────
+#
+# Elles sont nées ici le 2026-10-15 (§ « Les liens RoJLD du profil ») et en sont
+# parties le même jour : `publication.py::verifier()`, la porte du bouton
+# « Publier », joue `tools/tests/test_liens_internes.py` en entier et ne joue PAS
+# ce fichier. Mesuré sur une copie de l'arbre, les deux liens morts remis dans
+# `profile.json` : la porte rendait 5 contrôles sur 5 « OK » quand `pytest
+# tools/tests/test_sync_github_projects.py` rendait « 2 failed ».
+#
+# Ce qui reste ici juge l'OUTIL (`--temoin`, `catalog_github_refs`, `diff_catalog`)
+# et n'a pas à être dans la porte. Ce qui juge le CORPUS PUBLIÉ — le profil
+# confronté au relevé des dépôts publics — doit l'être : à poser dans
+# `test_liens_internes.py`, pas ici.
+
+
+# ── Le détecteur lisait UN champ de `links`, le défaut était dans un autre ────
+
+def test_catalog_github_refs_lit_tous_les_champs_de_links():
+    """Mesuré le 2026-10-15 : le `links.live` de `hmm-studio` visait une URL morte
+    et n'entrait JAMAIS dans `dead_links` — la fonction ne lisait que
+    `links.github`. Le détecteur du dépôt était aveugle au champ même où était le
+    défaut, et une garde bâtie sur lui refermait le dossier en y laissant le lien
+    mort. `render_links` (build_projects.py) affiche pourtant les cinq champs.
+    """
+    catalog = {"projects": [
+        {"id": "a", "links": {"live": "https://github.com/RoJLD/mort-dans-live"}},
+        {"id": "b", "links": {"demo": "https://github.com/RoJLD/mort-dans-demo"}},
+        {"id": "c", "links": {"github": "https://github.com/RoJLD/vivant",
+                              "article": "https://github.com/RoJLD/vivant/blob/main/README.md"}},
+    ]}
+    assert s.catalog_github_refs(catalog) == [
+        ("a", "rojld/mort-dans-live"),
+        ("b", "rojld/mort-dans-demo"),
+        ("c", "rojld/vivant"),   # deux champs, un seul dépôt : pas de doublon dans dead_links
+    ]
+
+
+def test_diff_signale_un_lien_mort_hors_du_champ_github():
+    """Le rapport doit nommer le fautif quel que soit le champ de `links` qui le porte."""
+    catalog = {"projects": [{"id": "hmm", "links": {
+        "github": "https://github.com/RoJLD/HMMstudio",
+        "live": "https://github.com/RoJLD/HMMstudio-studio"}}]}
+    diff = s.diff_catalog(catalog, [_gh_repo("HMMstudio")])
+    assert diff["dead_links"] == [{"id": "hmm", "key": "rojld/hmmstudio-studio"}]

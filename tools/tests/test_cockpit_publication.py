@@ -309,6 +309,53 @@ def test_chaque_entree_du_perimetre_et_des_sources_existe_dans_le_site():
     assert absentes == [], f"entrées du périmètre ou des sources absentes du site : {absentes}"
 
 
+# ── Ce que la porte NOMME doit exister. Même motif que le périmètre orphelin ci-dessus, un
+# cran plus haut : `verifier()` nomme des chemins d'outils ET trois node-ids de tests. Mesuré
+# le 2026-10-15 : `pytest f.py::test_absent` sort en 4 (« ERROR: not found », et aucun des
+# node-ids voisins ne tourne), `pytest f_mal_ecrit.py` sort en 4 aussi — donc un nom faux
+# fait bien ROUGIR la porte, il ne passe pas en silence. Ce test-ci sert à l'attraper AVANT
+# que Robin clique « Publier » et reçoive un rouge qui ne parle pas de son profil.
+#
+# Il ne dit rien du trou inverse — une garde qui existe mais que la porte ne nomme pas. Celui-là
+# ne se ferme pas par un test : il se ferme en posant la garde dans un fichier que la porte joue
+# EN ENTIER (cf. l'en-tête de tools/tests/test_liens_internes.py).
+
+def _cibles_nommees_par_verifier() -> list:
+    """Les chaînes de `verifier()` qui désignent un fichier du dépôt (outil ou test)."""
+    import ast
+    arbre = ast.parse((SITE / "tools" / "cockpit" / "publication.py").read_text(encoding="utf-8"))
+    fn = next(n for n in ast.walk(arbre)
+              if isinstance(n, ast.FunctionDef) and n.name == "verifier")
+    return [n.value for n in ast.walk(fn)
+            if isinstance(n, ast.Constant) and isinstance(n.value, str)
+            and n.value.startswith("tools/")]
+
+
+def test_la_porte_ne_nomme_que_des_fichiers_et_des_tests_qui_existent():
+    import ast
+    cibles = _cibles_nommees_par_verifier()
+    # Contre-vacuité : si l'extraction cesse de voir les cibles, ce test ne juge plus rien.
+    assert len(cibles) >= 4, f"cibles de verifier() introuvables dans le source : {cibles}"
+    assert any("::" in c for c in cibles), "aucun node-id nommé : l'extraction a dérivé"
+
+    manquants = []
+    for cible in cibles:
+        chemin, _, suite = cible.partition("::")
+        fichier = SITE / chemin
+        if not fichier.is_file():
+            manquants.append(f"{cible} (fichier absent)")
+            continue
+        if not suite:
+            continue
+        noms = {n.name for n in ast.walk(ast.parse(fichier.read_text(encoding="utf-8")))
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}
+        manquants += [f"{cible} (test absent : {part})" for part in suite.split("::")
+                      if part not in noms]
+    assert manquants == [], (
+        f"la porte de publication nomme ce qui n'existe pas : {manquants} — "
+        "une porte qui nomme un test absent sort en 4 et ne vérifie plus rien")
+
+
 # ── « Vérifier » lancé par le cockpit (pythonw) : mesuré le 2026-10-12, les deux gardes de
 # confidentialité échouaient en WinError 6. Sous pythonw (sous-système GUI), la capture par
 # descripteurs de pytest ferme le handle d'entrée standard que Windows garde en STD_INPUT_HANDLE :
