@@ -40,13 +40,17 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{font-family:var(--sans);background:var(--bg-0);color:var(--tx-1);line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s var(--ease),color .5s var(--ease)}
 nav{position:fixed;top:0;width:100%;z-index:100;padding:12px 0;background:var(--glass);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border)}
-.nav-i{max-width:1200px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between}
-.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);text-decoration:none}.nav-brand b{color:var(--accent)}
-.nav-r{display:flex;align-items:center;gap:18px}
-.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease)}
+.nav-i{max-width:none;margin:0;padding:0 24px 0 max(24px,calc(50% - 576px));display:flex;align-items:center;position:relative}
+.nav-brand{font-family:var(--serif);font-size:19px;color:var(--tx-1);text-decoration:none;white-space:nowrap;flex-shrink:0;margin-right:28px}.nav-brand b{color:var(--accent)}
+.nav-r{display:flex;align-items:center;gap:18px;flex:1 1 auto;min-width:0;padding-block:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scroll-padding-inline:8px}
+.nav-r::-webkit-scrollbar{display:none}
+.nav-r>a{flex-shrink:0}
+.nav-r a{color:var(--tx-3);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;transition:color .3s var(--ease);min-height:24px;padding-block:3px}
 .nav-r a:hover{color:var(--tx-1)}.nav-r a.on{color:var(--accent)}
 .ctrl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg-2);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all .3s var(--ease)}
 .ctrl-btn:hover{border-color:var(--accent);transform:scale(1.1)}.ctrl-btn.lang-btn{font-size:12px;font-weight:700;font-family:var(--mono)}
+.nav-btns{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:16px;position:relative}
+.nav-btns::before{content:'';position:absolute;top:-12px;bottom:-12px;left:-40px;width:40px;pointer-events:none;background:linear-gradient(to right,rgba(0,0,0,0),var(--glass))}
 .wrap{max-width:1200px;margin:0 auto;padding:96px 24px 24px;position:relative}
 header.hd{text-align:center;margin-bottom:16px}
 header.hd h1{font-family:var(--serif);font-size:clamp(34px,5vw,48px);font-weight:400;letter-spacing:-.03em}
@@ -85,7 +89,10 @@ header.hd p{color:var(--tx-2);font-size:15px;max-width:600px;margin:6px auto 0}
 .g-panel .gp-close{position:absolute;top:10px;right:12px;cursor:pointer;color:var(--tx-3);font-size:18px;line-height:1}
 .g-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--tx-2);font-size:14px;font-family:var(--sans);pointer-events:none}
 footer{text-align:center;padding:32px 0 8px;color:var(--tx-3);font-size:12px}
-@media(max-width:640px){.wrap{padding:88px 14px 18px}.nav-r a:not(.on){display:none}.g-cv{margin-left:0;width:100%}.g-panel{top:auto;bottom:12px;right:12px;left:12px;width:auto}.g-stage{height:62vh}}
+@media(max-width:640px){.wrap{padding:88px 14px 18px}.g-cv{margin-left:0;width:100%}.g-panel{top:auto;bottom:12px;right:12px;left:12px;width:auto}.g-stage{height:62vh}}
+@media(max-width:1620px){.nav-r{gap:14px}.nav-r a{font-size:11px;letter-spacing:.02em;padding-block:4px}.nav-brand{font-size:18px;margin-right:20px}.nav-i{padding-left:max(20px,calc(50% - 576px));padding-right:20px}.nav-btns{margin-left:12px}.ctrl-btn{width:34px;height:34px}}
+@media(max-width:1150px){.nav-r{gap:11px}.nav-r a{font-size:10.5px;letter-spacing:.01em;padding-block:4px}.nav-brand{font-size:17px;margin-right:14px}.nav-i{padding-left:max(14px,calc(50% - 576px));padding-right:14px}.nav-btns{margin-left:8px}.ctrl-btn{width:32px;height:32px}}
+@media(max-width:1023px){nav{position:static;padding:10px 0}.nav-i{flex-wrap:wrap;row-gap:6px;padding:0 18px}.nav-brand{order:1;margin-right:auto;font-size:19px}.nav-btns{order:2;margin-left:8px}.nav-btns::before{display:none}.ctrl-btn{width:38px;height:38px}.nav-r{order:3;flex:1 1 100%;flex-wrap:wrap;row-gap:2px;column-gap:14px;overflow:visible;padding-block:0}.nav-r a{font-size:11px;letter-spacing:.02em;padding-block:5px}.wrap{padding:22px 14px 18px}}
 </style>
 </head>
 <body>
