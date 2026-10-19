@@ -875,6 +875,102 @@ def test_la_nav_partagee_mene_toujours_a_l_academy():
     assert servi_ailleurs.depot_qui_sert("academy/") == "RoJLD/academy"
 
 
+def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises():
+    """La fermeture de la nav, ANCRES comprises et accueil compris.
+
+    `test_les_destinations_de_nav_viennent_bien_du_disque` compare deux lectures
+    qui ne regardent que les répertoires : elles s'accordaient sur six noms
+    pendant que l'accueil portait 11 entrées, /projects/ et /demos/ 8, et
+    /explorer/, /highlights/, /graph/ 7. Mesuré le 2026-10-15 : `/#education`,
+    `/#skills` et `/#blog` n'existaient sur AUCUNE page sauf l'accueil, et
+    `/#contact` manquait sur trois des cinq sous-pages. Aucun rouge — un
+    visiteur de /explorer/ n'avait aucun chemin de nav vers la formation, les
+    compétences, le blog ni le contact, et la nav étant `position:fixed`, rien
+    ne défilait pour les atteindre.
+
+    L'attendu n'est pas une liste : c'est l'UNION de ce que les pages déclarent.
+    Une entrée ajoutée à une seule page oblige les cinq autres à la porter ; une
+    entrée retirée de toutes quitte l'union, mais la topologie des répertoires
+    rougit alors dans le test cité ci-dessus. Les deux gardes se tiennent.
+
+    Témoin DISTINCT de `test_nav_unifiee.py`, et c'est délibéré : celui-là
+    confronte chaque page à la source (`tools/nav.py`), celui-ci ne regarde que
+    les artefacts entre eux. Un dépôt où `nav.py` disparaîtrait garde cette
+    garde-ci.
+
+    `/` est exclu, et il faut le dire : les cinq sous-pages portent
+    `<a class="nav-brand" href="/">`, l'accueil un `<span class="nav-brand">`
+    SANS href — il ne se lie pas à lui-même. `/` est donc le résidu
+    irréductible de l'égalité, et le soustraire sans le nommer est la façon
+    dont une garde pourrit. L'invariant réel vit à côté, dans
+    `test_nav_unifiee.py::test_chaque_sous_page_ramene_a_l_accueil` : chaque
+    sous-page porte un lien vers `/`, l'accueil n'en a pas besoin.
+    """
+    par_page = {rel: dests - {"/"}
+                for rel, dests in corpus_publie.destinations_de_la_nav_par_page().items()}
+    assert len(par_page) >= 6, (
+        f"seules {len(par_page)} page(s) portent la nav partagée : {sorted(par_page)}")
+    assert "index.html" in par_page, (
+        "l'accueil ne porte plus la marque de la nav partagée — il sortait déjà "
+        "du calcul de fermeture par répertoires, il ne doit pas sortir de celui-ci")
+    union = frozenset().union(*par_page.values())
+    manques = {rel: sorted(union - dests) for rel, dests in par_page.items()
+               if dests != union}
+    assert not manques, (
+        "la nav partagée n'est pas la même partout — destination(s) absente(s) "
+        f"par page : {manques} (union déclarée : {sorted(union)})")
+
+
+# ── L'amputation mobile : aucune destination ne disparaît au doigt ───────────
+#
+# Quatre générateurs et l'accueil portaient une règle qui CACHE les liens de la
+# nav sous un seuil de largeur, chacun la sienne :
+#
+#   build_browse.py     @media(max-width:640px){… .nav-r a:not(.on){display:none} …}
+#   build_graph.py      @media(max-width:640px){… .nav-r a:not(.on){display:none} …}
+#   build_highlights.py @media(max-width:640px){… .nav-r a:not(.on){display:none} …}
+#   build_projects.py   @media(max-width:640px){… .nav-r a:not(.nav-projects){display:none} …}
+#   index.html          @media(max-width:480px){.nav-r a:not(:nth-child(-n+3)){display:none}}
+#
+# Mesuré au navigateur à 390 px : l'accueil ne gardait que 3 onglets sur 11, les
+# sous-pages 1 sur 7 — et aucun menu dépliant n'existait. Dans tout le document,
+# à cette largeur, il n'y avait AUCUN lien visible vers /projects/, /explorer/,
+# /highlights/, /academy/ ni /graph/. La nav étant `position:fixed`, rien ne
+# défilait pour les atteindre : les sections étaient inaccessibles au téléphone.
+#
+# Cacher un lien est légitime — derrière un dépliant qui le rend. Le supprimer de
+# l'affichage sans contrepartie ne l'est pas.
+_CACHE_UN_LIEN_DE_NAV = re.compile(
+    r"\.nav-r[^{};]*\ba\b[^{}]*\{[^{}]*display\s*:\s*none")
+# Le dépliant : une règle d'ÉTAT qui rend aux liens un `display` autre que
+# `none`. `aria-expanded` seul ne suffit pas comme preuve — l'accueil en porte
+# quatre, sur les accordéons de section, qui n'ont rien à voir avec la nav.
+_REND_LES_LIENS = re.compile(
+    r'(?::checked|\[aria-expanded="true"\]|\.(?:open|ouvert))[^{}]*\.nav-r'
+    r"[^{}]*\{[^{}]*display\s*:\s*(?!none)")
+
+
+@pytest.mark.parametrize("page", NAV_DESTINATIONS)
+def test_aucune_regle_ne_cache_un_lien_de_nav_sans_le_rendre(page):
+    html = (ROOT / page / "index.html").read_text(encoding="utf-8")
+    caches = _CACHE_UN_LIEN_DE_NAV.findall(html)
+    assert not caches or _REND_LES_LIENS.search(html), (
+        f"{page}/index.html : une règle cache les liens de la nav "
+        f"({caches[:1]}) et rien ne les rend — au téléphone, les sections "
+        "deviennent inatteignables, la nav étant `position:fixed`")
+
+
+def test_l_accueil_non_plus_ne_cache_aucun_lien_de_nav_sans_le_rendre():
+    """Même garde sur l'accueil, qui n'est pas dans `NAV_DESTINATIONS` : ce
+    n'est pas un répertoire. C'est la page la plus amputée que la mesure ait
+    trouvée (3 onglets sur 11 à 390 px) et elle sortait du champ paramétré."""
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    caches = _CACHE_UN_LIEN_DE_NAV.findall(html)
+    assert not caches or _REND_LES_LIENS.search(html), (
+        f"index.html : une règle cache les liens de la nav ({caches[:1]}) et "
+        "rien ne les rend")
+
+
 # --- La marque de la nav doit vivre DANS la nav ------------------------------
 #
 # `destinations_nav()` cherche `nav-brand` n'importe où dans la page ;

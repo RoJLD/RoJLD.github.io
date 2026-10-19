@@ -23,6 +23,7 @@ import build_site as bs  # noqa: E402
 import build_browse  # noqa: E402
 import build_highlights  # noqa: E402
 from lang_switch_harness import run_lang_switch  # noqa: E402
+import corpus_publie  # noqa: E402
 
 # La porte de l'oracle est commune à tout le dépôt (`conftest.node_requis`) :
 # skip sur un poste sans node, ÉCHEC si `ELYSIUM_REQUIRE_NODE=1`. Le `skipif`
@@ -68,3 +69,25 @@ def test_la_bascule_fr_ramene_vers_la_page_francaise(nom, node_requis):
     assert out[0]["attrs"]["href"] == "/articles/x.html", (
         f"{nom} : en français le lien doit revenir sur la version FR"
     )
+
+
+def test_chaque_page_de_la_nav_bascule_la_langue():
+    """Le choix de langue doit survivre à chaque saut de la nav.
+
+    `BUILDERS` ci-dessus est une table de DEUX noms écrite à la main : les
+    quatre autres pages de la nav sortaient de son champ sans un rouge. Mesuré
+    au navigateur le 2026-10-15, un `localStorage.lang = "en"` en mémoire :
+    /explorer/, /highlights/, /graph/ et l'accueil rendaient `data-lang="en"` et
+    « Experience » ; /projects/ et /demos/ rendaient `data-lang=null`,
+    `lang="fr"` et « Expérience », bouton de langue ABSENT (`#langBtn` null).
+
+    L'attendu ne vient pas d'une liste : les pages de la nav partagée doivent
+    toutes basculer, comme elles doivent toutes restaurer le thème
+    (`test_theme_clair.test_les_trois_temoins_du_theme_disent_la_meme_chose`).
+    """
+    nav = set(corpus_publie.pages_de_la_nav_partagee())
+    bascule = set(corpus_publie.pages_qui_basculent_la_langue())
+    assert nav, "aucune page de nav découverte"
+    assert nav <= bascule, (
+        f"page(s) de la nav qui ne lisent pas la langue mémorisée : "
+        f"{sorted(nav - bascule)} — un visiteur en anglais les reçoit en français")

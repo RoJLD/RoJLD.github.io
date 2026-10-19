@@ -62,6 +62,7 @@ OUTILLAGE = {".git", "tools", "node_modules", ".pytest_cache", ".github"}
 # Marqueurs observés dans les pages servies.
 _PALETTE_SOMBRE = '[data-theme="dark"]'
 _LECTURE_THEME = "getItem('theme')"
+_LECTURE_LANGUE = "getItem('lang')"
 _ECRITURE_THEME = "setItem('theme'"
 _NAV_PARTAGEE = "nav-brand"
 
@@ -109,6 +110,21 @@ def pages_qui_persistent_le_theme() -> tuple[str, ...]:
     Les deux ensembles doivent coïncider, et c'est au test de l'exiger.
     """
     return tuple(p for p in pages_publiees() if _ECRITURE_THEME in _texte(p))
+
+
+@functools.lru_cache(maxsize=1)
+def pages_qui_basculent_la_langue() -> tuple[str, ...]:
+    """Pages qui LISENT la langue mémorisée (`getItem('lang')`).
+
+    Symétrique exact de `pages_a_boot()` pour le thème, et la propriété
+    défendue est la même : *mon choix suit la navigation*. Mesuré le
+    2026-10-15 : `/projects/` et `/demos/` ne portaient AUCUN mécanisme de
+    langue — ni bouton, ni `data-lang`, ni lecture de la clé. Un visiteur qui
+    avait choisi EN sur l'accueil les recevait en français, et aucune garde ne
+    le disait : la seule qui exerce la bascule
+    (`test_lang_switch_behaviour`) énumère ses deux pages à la main.
+    """
+    return tuple(p for p in pages_publiees() if _LECTURE_LANGUE in _texte(p))
 
 
 def _servie_ailleurs(nom: str) -> bool:
@@ -177,6 +193,94 @@ def destinations_nav_servies_ailleurs() -> tuple[str, ...]:
     peuvent les voir — elles lisent le disque, où ces pages n'existent pas.
     """
     return tuple(sorted(d for d in _groupe_ferme_de_la_nav() if _servie_ailleurs(d)))
+
+
+# ── Les destinations COMPLÈTES de la nav : ancres comprises, accueil compris ──
+#
+# `_LIEN_REPERTOIRE` ne reconnaît qu'une destination écrite `href="/x/"`, et
+# `_groupe_ferme_de_la_nav()` n'itère que les RÉPERTOIRES du dépôt. Deux angles
+# morts qui se cumulaient, mesurés le 2026-10-15 :
+#
+#   * `index.html` à la racine n'est pas un répertoire : la nav de l'accueil
+#     n'entrait dans AUCUN calcul de fermeture ;
+#   * une entrée de nav qui pointe une section (`/#education`, `/#skills`,
+#     `/#blog`, `/#contact`) n'est pas un répertoire : elle était invisible.
+#
+# Résultat : l'accueil portait 11 entrées, /projects/ et /demos/ 8, les trois
+# autres 7 — et la fermeture tenait quand même, parce qu'elle ne comparait que
+# les six répertoires. Quatre destinations manquaient sur cinq pages, et la
+# suite entière restait verte.
+_DESTINATION_NAV = re.compile(r'href="(/[^"]*|#[^"]*)"')
+
+
+def _normaliser_destination(rel: str, href: str) -> str | None:
+    """Destination canonique d'un href de nav, vue depuis la page `rel`, ou None.
+
+    `#education` écrit sur l'accueil et `/#education` écrit sur une sous-page
+    désignent la MÊME chose : la section `education` de l'accueil. Les deux se
+    normalisent donc en `/#education` — sans quoi la nav de l'accueil et celle
+    des sous-pages seraient incomparables, et c'est précisément pour cela que
+    quatre destinations ont pu manquer sur cinq pages sans un rouge.
+
+    Une ancre NUE écrite ailleurs que sur l'accueil (`#contact` sur
+    /projects/) désigne une section de la page courante, pas celle de
+    l'accueil : elle rend une destination qui lui est propre, afin de ne jamais
+    pouvoir passer pour l'ancre de l'accueil (c'est la régression publiée que
+    `test_validateur_refuse_une_ancre_nue` garde côté profil).
+    """
+    href = href.strip()
+    if href.startswith("#"):
+        return "/" + href if rel == "index.html" else rel + href
+    if href in ("/", "/index.html"):
+        return "/"
+    if href.startswith("/#"):
+        return href
+    m = re.fullmatch(r"/([^/#?]+)/", href)
+    return f"/{m.group(1)}/" if m else None
+
+
+@functools.lru_cache(maxsize=1)
+def pages_de_la_nav_partagee() -> tuple[str, ...]:
+    """Les pages QUI PORTENT la nav partagée — l'accueil compris.
+
+    Population dérivée de deux témoins déjà en place, aucun nom écrit ici :
+      * `sections_par_topologie_de_la_nav()` — les répertoires du groupe fermé ;
+      * `pages_atteintes_par_la_nav()` — les cibles des `href` de la nav,
+        résolues sur le disque. C'est elle qui fait entrer `index.html` : toutes
+        les sous-pages pointent la racine par leur marque
+        (`<a class="nav-brand" href="/">`), donc l'accueil EST un membre — mais
+        aucun calcul fondé sur les répertoires ne pouvait le voir.
+
+    Les deux pages d'articles sont hors population, comme `/life-architect/`
+    l'était : elles portent la marque mais une nav d'une seule entrée (retour à
+    l'accueil). Elles restent dans le champ de `pages_atteintes_par_la_nav()` et
+    des gardes de thème ; elles ne sont pas des sections de la nav partagée.
+    """
+    sections = {f"{d}/index.html" for d in sections_par_topologie_de_la_nav()}
+    if "index.html" in pages_atteintes_par_la_nav():
+        sections.add("index.html")
+    return tuple(sorted(sections))
+
+
+@functools.lru_cache(maxsize=1)
+def destinations_de_la_nav_par_page() -> dict[str, frozenset[str]]:
+    """Pour chaque page de la nav partagée, ses destinations NORMALISÉES.
+
+    Ce module ne décide de rien : il rapporte ce que chaque page déclare. C'est
+    au test d'exiger que les ensembles coïncident.
+    """
+    out: dict[str, frozenset[str]] = {}
+    for rel in pages_de_la_nav_partagee():
+        vues: set[str] = set()
+        for bloc in _BLOC_NAV.findall(_texte(rel)):
+            if _NAV_PARTAGEE not in bloc:
+                continue
+            for href in _DESTINATION_NAV.findall(bloc):
+                dest = _normaliser_destination(rel, href)
+                if dest:
+                    vues.add(dest)
+        out[rel] = frozenset(vues)
+    return out
 
 
 def _resoudre(depuis: str, href: str) -> str | None:
