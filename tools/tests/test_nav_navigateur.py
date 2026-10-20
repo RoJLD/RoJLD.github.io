@@ -44,18 +44,25 @@ DÉCOUVERTE par `corpus_publie`, aucune liste de pages écrite ici) :
                             1024 px, 25 à 27 au-dessus — les plus basses sur
                             `/graph/`, dont le `body` porte `line-height:1.6`.
 
+Et, sur la seule page 404, sur le même serveur : LA BASCULE DE LANGUE EXÉCUTÉE,
+au clic puis au rechargement (dernière section du fichier). Les autres gardes
+de langue de la 404 sont statiques : jusqu'au 2026-10-20, aucune ne cliquait le
+bouton.
+
 Ce fichier est HORS de la porte du cockpit (`tools/cockpit/publication.py::
 verifier()` lance `validate_profile.py` et `build_site.py`, puis joue en entier
 `test_liens_internes.py` et `test_cockpit_public_isole.py`, plus deux node-ids de
 `test_validate_profile.py` — et rien d'autre). C'est une limite nommée : un « Publier » ne
-mesure pas la mise en page. L'y ajouter ferait dépendre le bouton de Robin d'un
-Chromium et de fonts.googleapis.com — à arbitrer, pas à décider ici.
+mesure pas la mise en page, et n'exécute pas la bascule de langue de la 404. L'y
+ajouter ferait dépendre le bouton de Robin d'un Chromium et de
+fonts.googleapis.com — à arbitrer, pas à décider ici.
 """
 from __future__ import annotations
 
 import functools
 import http.server
 import os
+import re
 import socket
 import socketserver
 import sys
@@ -66,8 +73,10 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import corpus_publie  # noqa: E402
+import nav  # noqa: E402
 import oracle_playwright  # noqa: E402
 
 # Les 13 largeurs, et la raison de chacune. Les trois paliers de la décision
@@ -429,3 +438,173 @@ def test_aucune_erreur_js_sur_les_pages_mesurees(mesures):
     """Une page qui jette une exception au chargement ne mesure plus rien de sûr."""
     fautives = {rel: v for rel, v in mesures["erreurs"].items() if v}
     assert not fautives, f"erreur(s) JS au chargement : {fautives}"
+
+
+# ── La bascule de langue de la 404, EXÉCUTÉE dans le navigateur ──────────────
+#
+# Les autres gardes de langue de la 404 sont STATIQUES : chaque texte porte
+# `data-fr` et `data-en` (`test_liens_internes.py`), chaque entrée de nav porte
+# les attributs que sa page lit (`test_nav_unifiee.py`), la page lit le choix
+# mémorisé et écrit `lang` (`test_lang_switch_behaviour.py`). Aucune ne faisait
+# tourner la bascule. Relecture adverse du 2026-10-20, porte complète à deux
+# drapeaux sur une copie vierge de 2b777a5, générateur muté puis site régénéré :
+# trois mutations d'une ligne de `applyBrowseLang` (`tools/build_404.py`) la
+# laissaient verte, 1756 passed chacune —
+#
+#     `el.dataset.En`                    titre, h1 et les 11 entrées VIDES en
+#                                        anglais (`dataset.En` est `undefined`) ;
+#     `el.textContent = el.dataset.fr`   `lang="en"`, mais titre, h1 et nav en
+#                                        français ;
+#     `'main [data-fr][data-en]'`        `lang="en"`, mais titre et nav en
+#                                        français.
+#
+# Le test clique le bouton comme un visiteur — `page.click("#langBtn")`, avec les
+# vérifications d'actionnabilité de Playwright (visible, stable, atteint par le
+# pointeur), et non un appel direct de `toggleLang()` — puis lit le DOM RENDU :
+# `lang` sur `<html>`, `document.title`, le h1 et chaque entrée visible de la
+# nav, chacun égal à la valeur `data-en` ou `data-fr` qu'il porte, et cette
+# valeur non vide. Quatre états, dans un contexte de navigateur neuf : au
+# chargement (français), après un clic (anglais), après un second clic
+# (français), puis la page RECHARGÉE après un troisième clic, qui mémorise
+# l'anglais. Ce dernier est le chemin du visiteur qui a choisi l'anglais
+# ailleurs et arrive ici par un lien mort : il ne clique pas, la page doit
+# relire son choix (`getItem('lang')` en fin de corps). Mesuré le 2026-10-20 sur
+# copie vierge : avec cette relecture rendue inerte (`=== 'EN'`), les trois
+# premiers états restaient verts. Le texte comparé est `textContent`, pas
+# `innerText` : la nav est en `text-transform:uppercase`, et `innerText`
+# rendrait « EXPERIENCE ».
+#
+# Prouvé le 2026-10-20 sur copies vierges, générateur muté puis site régénéré,
+# ce fichier et les six fichiers de langue et de 404 joués à deux drapeaux :
+# chacune des trois mutations ci-dessus rougit `premier-clic-en` et
+# `rechargement-en`, et rien d'autre (2 failed, 711 passed) ; la relecture
+# inerte rougit `rechargement-en` seul ; deux attributs permutés (`<title>`,
+# h1) ou la bascule reformatée (sept lignes devenues douze, mêmes
+# instructions) restent verts (713 passed).
+#
+# Hors champ, et dit pour ne pas être cru gardé :
+#   * le MOMENT où la langue mémorisée est posée (avant ou après le premier
+#     rendu) : relevé, avec sa limite, dans le docstring de `tools/build_404.py`,
+#     et gardé par rien ;
+#   * le reste du texte de la page (le paragraphe, « Adresse demandée », les
+#     raccourcis) : ses attributs sont tenus par `test_liens_internes.py`, mais
+#     ce test ne le relit pas après la bascule ;
+#   * les autres pages au bouton de langue : leur bascule n'est pas exécutée
+#     ici (celle de /explorer/ et /highlights/ l'est dans node, sur le seul
+#     `href` des cartes, par `test_lang_switch_behaviour.py`).
+
+_JS_LANGUE = r"""
+() => {
+  const lire = (el) => ({texte: el.textContent,
+                         fr: el.getAttribute('data-fr'),
+                         en: el.getAttribute('data-en')});
+  const titre = document.querySelector('title');
+  return {
+    lang: document.documentElement.getAttribute('lang'),
+    titre: {texte: document.title,
+            fr: titre ? titre.getAttribute('data-fr') : null,
+            en: titre ? titre.getAttribute('data-en') : null},
+    h1: Array.from(document.querySelectorAll('h1')).map(lire),
+    entrees: Array.from(document.querySelectorAll('.nav-r a'))
+      .filter(el => el.checkVisibility({visibilityProperty: true}))
+      .map(lire),
+  };
+}
+"""
+
+# Les blancs que le navigateur replie sous `white-space:normal` — la même
+# définition que `test_liens_internes._BLANCS_REPLIES`, et pour la même raison :
+# un attribut ou un texte coupé sur deux lignes s'affiche pareil, et l'espace
+# insécable, qui ne se replie pas, ne doit pas être replié ici.
+_BLANCS_REPLIES = re.compile(r"[ \t\n\r]+")
+
+
+def _rendu(texte: str | None) -> str:
+    return _BLANCS_REPLIES.sub(" ", texte or "").strip(" ")
+
+
+# (identifiant, langue attendue, ce qui a précédé le relevé) — dans l'ordre où
+# la fixture les produit, sur une seule page.
+_ETATS_DE_LA_BASCULE = (
+    ("chargement-fr", "fr", "au chargement, sans choix mémorisé"),
+    ("premier-clic-en", "en", "après un clic sur le bouton de langue"),
+    ("second-clic-fr", "fr", "après un second clic"),
+    ("rechargement-en", "en",
+     "rechargée après un troisième clic, qui a mémorisé l'anglais"),
+)
+
+
+@pytest.fixture(scope="module")
+def bascule_de_la_404(site_servi):
+    """Les quatre états de la 404, relevés sur une même page (cf. ci-dessus).
+
+    Un contexte de navigateur NEUF, donc aucun choix de langue mémorisé : la
+    page part en français, et ce sont les clics qui la font changer. Les
+    erreurs JavaScript sont relevées à chaque état : une bascule qui jette
+    après avoir écrit `lang` laisserait un état à moitié fait.
+    """
+    from playwright.sync_api import sync_playwright
+
+    etats: dict[str, dict] = {}
+    erreurs: list[str] = []
+    with sync_playwright() as pw:
+        navigateur = pw.chromium.launch()
+        contexte = navigateur.new_context(viewport={"width": 1280, "height": 900})
+        page = contexte.new_page()
+        page.on("pageerror", lambda e: erreurs.append(str(e)))
+
+        def relever(nom: str) -> None:
+            etats[nom] = dict(page.evaluate(_JS_LANGUE), erreurs=list(erreurs))
+
+        reponse = page.goto(site_servi + _url(corpus_publie.PAGE_D_ERREUR),
+                            wait_until="load")
+        assert reponse is not None and reponse.status == 200, (
+            f"/{corpus_publie.PAGE_D_ERREUR} n'est pas servie "
+            f"({reponse.status if reponse else 'aucune réponse'})")
+        relever("chargement-fr")
+        page.click("#langBtn")
+        relever("premier-clic-en")
+        page.click("#langBtn")
+        relever("second-clic-fr")
+        page.click("#langBtn")
+        page.reload(wait_until="load")
+        relever("rechargement-en")
+        contexte.close()
+        navigateur.close()
+    return etats
+
+
+@pytest.mark.parametrize("nom, langue, quand",
+                         [pytest.param(*e, id=e[0]) for e in _ETATS_DE_LA_BASCULE])
+def test_la_bascule_de_langue_de_la_404_traduit_titre_h1_et_nav(nom, langue, quand,
+                                                                bascule_de_la_404):
+    """La page DIT la langue choisie et l'AFFICHE, à l'aller comme au retour.
+
+    WCAG 3.1.1 (niveau A) : la langue annoncée doit être celle du contenu.
+    `build_404.py` le promet (« LES DEUX LANGUES SONT LIVRÉES ») ; les gardes
+    statiques vérifient les attributs, celle-ci vérifie ce qu'ils deviennent.
+    Chaque faute est nommée : (élément, texte rendu, texte attendu).
+    """
+    etat = bascule_de_la_404[nom]
+    attr = f"data-{langue}"
+    assert not etat["erreurs"], f"/404.html {quand} : erreur(s) JavaScript {etat['erreurs']}"
+    assert etat["h1"], f"/404.html {quand} : plus de h1"
+    assert len(etat["entrees"]) == len(nav.ENTREES), (
+        f"/404.html {quand} : {len(etat['entrees'])} entrée(s) de nav visible(s) "
+        f"pour {len(nav.ENTREES)} dans `nav.ENTREES` — le test ne jugerait pas "
+        "toute la nav")
+    fautes = []
+    if etat["lang"] != langue:
+        fautes.append(("<html lang>", etat["lang"], langue))
+    juges = ([("<title>", etat["titre"])]
+             + [("h1", h) for h in etat["h1"]]
+             + [("nav", e) for e in etat["entrees"]])
+    for quoi, el in juges:
+        attendu, rendu = _rendu(el[langue]), _rendu(el["texte"])
+        if not attendu:
+            fautes.append((quoi, rendu, f"{attr} absent ou vide"))
+        elif rendu != attendu:
+            fautes.append((quoi, rendu, attendu))
+    assert not fautes, (
+        f"/404.html {quand}, langue attendue {langue!r} — "
+        f"{len(fautes)} faute(s) : {fautes}")

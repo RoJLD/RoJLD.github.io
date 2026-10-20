@@ -275,6 +275,9 @@ def test_nav_py_refuse_un_libelle_manquant(tmp_path):
 # Non gardé, et dit pour ne pas être cru gardé : le `title` des deux boutons
 # (« Langue » et « Thème » sur les quatre pages du second dialecte, « Switch
 # language » et « Toggle theme » sur l'accueil), qu'aucune bascule ne réécrit.
+# Cette garde lit les attributs ; que la bascule les APPLIQUE n'est mesuré que
+# pour la 404, au navigateur, par
+# `test_nav_navigateur.py::test_la_bascule_de_langue_de_la_404_traduit_titre_h1_et_nav`.
 
 _LECTEUR_FR_EN = "[data-fr][data-en]"
 _LECTEUR_I18N = "[data-i18n]"

@@ -350,8 +350,10 @@ def render_boutons(page: str) -> str:
 # CHARGÉE à la largeur visée. `test_nav_navigateur.py` suit une autre voie, à
 # dessein : pour la géométrie, un chargement par page, puis ses 13 largeurs sans
 # recharger — treize fois moins de chargements pour cette phase (le clavier, lui,
-# recharge à chacune de ses deux largeurs : 21 chargements en tout pour 7 pages,
-# compté le 2026-10-20). Cette voie ne rend pas les mêmes hauteurs de
+# recharge à chacune de ses deux largeurs : 21 chargements pour 7 pages dans sa
+# fixture `mesures`, compté le 2026-10-20 ; le test de la bascule de langue de
+# la 404 en ajoute deux, un chargement et un rechargement, à 1280 px seulement).
+# Cette voie ne rend pas les mêmes hauteurs de
 # barre qu'un chargement à chaque largeur — quelques pixels d'écart à 390 px,
 # mesuré le 2026-10-19. Ses hauteurs ne sont donc pas comparables à ce tableau,
 # et ce test ne juge pas la hauteur de la barre.
