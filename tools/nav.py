@@ -44,8 +44,10 @@ les deux au lieu d'en imposer un :
 
   * l'accueil traduit par `data-i18n="<clé>"` + le dictionnaire `const i18n`
     injecté par `build_site` ;
-  * les sous-pages traduisent par `data-fr` / `data-en` lus par leur propre
-    `applyBrowseLang`.
+  * les sous-pages et la 404 portent `data-fr` / `data-en`, lus par la bascule
+    de chaque page : `applyBrowseLang` sur la 404, /explorer/ et /highlights/,
+    `applyGraphLang` sur /graph/ ; /projects/ et /demos/ ne les lisent plus
+    (pas de bouton de langue, cf. `render_boutons`).
 
 Unifier les deux dialectes serait un autre chantier (il faudrait embarquer le
 dictionnaire dans les six pages du second dialecte — cinq sous-pages et la 404 —,

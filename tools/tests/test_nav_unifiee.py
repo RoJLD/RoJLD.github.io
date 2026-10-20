@@ -250,8 +250,10 @@ def test_nav_py_refuse_un_libelle_manquant(tmp_path):
 #
 #     accueil            11 entrées `data-i18n`, lues par `[data-i18n]` dans le
 #                        dictionnaire `const i18n` que la page embarque ;
-#     les quatre autres  11 entrées `data-fr` + `data-en`, lues par
-#                        `applyBrowseLang` (`[data-fr][data-en]`).
+#     les quatre autres  11 entrées `data-fr` + `data-en`, lues par le
+#                        sélecteur `[data-fr][data-en]` de la bascule de la
+#                        page : `applyBrowseLang` sur la 404, /explorer/ et
+#                        /highlights/, `applyGraphLang` sur /graph/.
 #
 # Une entrée est donc traduite si elle porte, non vides, les attributs QUE SA
 # PAGE LIT : `data-fr` et `data-en` sur une page dont un script lit
