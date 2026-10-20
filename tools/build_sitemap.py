@@ -50,7 +50,17 @@ HORS_SITE = ("tools/", ".github/")
 #     comme résultat de recherche. Elle dit aussi `noindex`, et c'est cette
 #     directive qui rend l'écart obligatoire et non facultatif : la garde
 #     `test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap` rougit
-#     si une page `noindex` entre dans le sitemap.
+#     si une page `noindex` entre dans le sitemap ;
+#   * les quatre outils autonomes (`analyzer`, `match`, `radar`, `simulator`).
+#     Chacun porte `<meta name="robots" content="noindex">` depuis le commit qui
+#     l'a créé (analyzer 16fc446 le 2026-03-27, match c305360 et simulator
+#     0b8260a le 2026-03-28, radar 9e969ad le 2026-04-01), et le sitemap de #39
+#     (d1f0315, 2026-10-19) les déclarait quand même, faute de lire les
+#     directives des pages. Décision du 2026-10-20 : respecter leur `noindex`
+#     d'origine. Les écarter ne change rien à l'indexation réelle, puisqu'elles
+#     la refusent déjà ; ça retire la contradiction d'un sitemap qui propose des
+#     pages qui se refusent. La même garde `noindex` les tient : en retirer une
+#     d'ici et régénérer le sitemap la fait rougir en nommant la page.
 #
 # Cette liste est VOLONTAIREMENT explicite : le test
 # `test_toute_page_servie_est_declaree_ou_ecartee_sciemment` rougit dès qu'une
@@ -59,8 +69,12 @@ HORS_SITE = ("tools/", ".github/")
 # `…_ou_exclue_consciemment`.)
 PAS_DES_PAGES_D_ATTERRISSAGE = (
     "404.html",
+    "analyzer.html",
     "demos/widgets/bs.html",
     "demos/widgets/mc.html",
+    "match.html",
+    "radar.html",
+    "simulator.html",
 )
 
 

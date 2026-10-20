@@ -1994,22 +1994,6 @@ def test_la_page_404_demande_a_ne_pas_etre_indexee():
         f"{sorted(directives)}) — une page « introuvable » proposée comme résultat")
 
 
-# Contradictions CONNUES, trouvées par la garde ci-dessous le jour de sa pose
-# (2026-10-20) et laissées en l'état parce que les trancher n'appartient pas au
-# lot de la page 404. Ces quatre outils portent `noindex` depuis le commit qui
-# les a créés (2026-03-27 à 2026-04-01) ; le sitemap de #39 (d1f0315, 2026-10-19)
-# les déclare quand même, parce qu'il dérive l'ensemble des pages suivies sans
-# lire leurs directives. L'un des deux a tort — écarter ces pages du sitemap, ou
-# retirer leur `noindex` — et c'est une décision de contenu, à l'Architecte.
-#
-# La liste ne peut que RÉTRÉCIR : une page qui cesse d'être une contradiction
-# fait rougir la garde tant qu'elle reste ici, et toute contradiction NOUVELLE
-# rougit, la page 404 comprise.
-CONTRADICTIONS_NOINDEX_EN_ATTENTE = frozenset({
-    "analyzer.html", "match.html", "radar.html", "simulator.html",
-})
-
-
 def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
     """Un sitemap qui déclare une page `noindex` se contredit.
 
@@ -2020,8 +2004,12 @@ def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
     sitemap ferait passer `test_toute_page_servie_est_declaree_ou_ecartee_sciemment`
     — la page serait alors « déclarée » — et rougirait ici.
 
-    Les contradictions déjà publiées sont nommées au-dessus, pas tues : cf.
-    `CONTRADICTIONS_NOINDEX_EN_ATTENTE`.
+    STRICTE, sans liste d'attente. À sa pose, le 2026-10-20, elle a trouvé quatre
+    contradictions déjà publiées : `analyzer`, `match`, `radar` et `simulator`
+    disent `noindex` depuis leur création, et le sitemap de #39 les déclarait.
+    Elles ont été tenues un temps dans une liste d'attente, puis tranchées le même
+    jour en respectant leur `noindex` : elles sont écartées dans
+    `PAS_DES_PAGES_D_ATTERRISSAGE`, avec leur raison, et la liste a disparu.
     """
     bs = _sitemap_module()
     h = bs.hote()
@@ -2033,16 +2021,10 @@ def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
         "aucune page publiée ne dit `noindex` : cette garde ne garderait rien "
         "(la page 404, au moins, doit le dire)")
     proposees = _urls_du_fichier() | set(bs.urls())
-    contradictions = {rel for rel in refusees if bs.url_de(rel, h) in proposees}
-    nouvelles = sorted(contradictions - CONTRADICTIONS_NOINDEX_EN_ATTENTE)
-    assert not nouvelles, (
-        f"pages qui refusent l'indexation et que le sitemap propose : {nouvelles} "
+    contradictions = sorted(rel for rel in refusees if bs.url_de(rel, h) in proposees)
+    assert not contradictions, (
+        f"pages qui refusent l'indexation et que le sitemap propose : {contradictions} "
         "— les écarter dans build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE")
-    resolues = sorted(CONTRADICTIONS_NOINDEX_EN_ATTENTE - contradictions)
-    assert not resolues, (
-        f"{resolues} ne sont plus des contradictions noindex/sitemap : les retirer "
-        "de CONTRADICTIONS_NOINDEX_EN_ATTENTE, pour que la liste ne couvre jamais "
-        "une page qu'elle n'a plus à couvrir")
 
 
 # Les adresses absentes où la page est supposée servie, et ce que chacune piège
