@@ -294,14 +294,17 @@ def _cas() -> list[tuple[str, int]]:
 
 
 def test_la_population_mesuree_est_celle_de_la_nav_partagee():
-    """Contre-vacuité : six pages et treize largeurs, ou la garde ne mesure rien.
+    """Contre-vacuité : sept pages et treize largeurs, ou la garde ne mesure rien.
 
     Les pages sont DÉCOUVERTES (`corpus_publie`), donc une page qui perdrait la
     marque de la nav sortirait du champ sans un rouge — c'est le défaut que
-    `corpus_publie` documente. Ce plancher le refuse.
+    `corpus_publie` documente. Ce plancher le refuse, à condition d'égaler la
+    population : sept pages depuis la 404 du 2026-10-20. Resté à six, il laissait
+    sortir une page en silence, et son énoncé décrivait le plancher et non la
+    population ; il est donc relevé, et l'énoncé avec lui.
     """
     pages = corpus_publie.pages_de_la_nav_partagee()
-    assert len(pages) >= 6, f"seules {len(pages)} page(s) mesurées : {pages}"
+    assert len(pages) >= 7, f"seules {len(pages)} page(s) mesurées : {pages}"
     assert "index.html" in pages, "l'accueil est sorti de la population mesurée"
     assert len(LARGEURS) == 13, f"{len(LARGEURS)} largeurs au lieu de 13"
     assert min(LARGEURS) <= 320 and max(LARGEURS) >= 1920

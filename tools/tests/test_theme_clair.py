@@ -150,8 +150,12 @@ def test_aucune_section_de_la_nav_n_est_hors_du_champ_du_theme():
     # Réabaissés de nouveau au 2026-10-14 (spec Academy § 9.3) : retrait de
     # `academy/index.html`, servie désormais par le dépôt-projet RoJLD/academy
     # — 9 -> 8 pages à palette, 15 -> 14 pages publiées, mesurés après retrait.
-    assert len(PAGES_A_PALETTE) >= 8, PAGES_A_PALETTE
-    assert len(corpus_publie.pages_publiees()) >= 14, corpus_publie.pages_publiees()
+    # Relevés au 2026-10-20 avec la page 404, qui porte les deux palettes :
+    # 8 -> 9 pages à palette, 14 -> 15 pages publiées (copie vierge, sans les
+    # maquettes non suivies d'un poste). Laissés à 8 et 14, ils ne rougissaient
+    # plus à la première amputation.
+    assert len(PAGES_A_PALETTE) >= 9, PAGES_A_PALETTE
+    assert len(corpus_publie.pages_publiees()) >= 15, corpus_publie.pages_publiees()
 
 
 def _palette(html: str, theme: str) -> set[str] | None:

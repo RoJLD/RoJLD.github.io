@@ -920,9 +920,13 @@ def test_la_table_des_artefacts_couvre_toutes_les_pages_de_la_nav():
     couvrir en entier : une page qui sortirait de la table perdrait son cas de
     test en même temps que la couverture qu'il apporte — c'est le défaut que
     `corpus_publie` documente en tête.
+
+    Le plancher égale la population mesurée : sept pages depuis le 2026-10-20
+    (l'accueil, les cinq sous-pages et la 404). Laissé à six, il laissait sortir
+    une page sans un mot.
     """
     nav = set(corpus_publie.pages_de_la_nav_partagee())
-    assert len(nav) >= 6, f"seules {len(nav)} page(s) de nav découvertes : {sorted(nav)}"
+    assert len(nav) >= 7, f"seules {len(nav)} page(s) de nav découvertes : {sorted(nav)}"
     assert set(_html_regenere()) == nav, (
         f"la table des artefacts régénérés {sorted(_html_regenere())} ne couvre pas "
         f"les pages de la nav partagée {sorted(nav)}")
@@ -1038,7 +1042,9 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
     ordonnees = corpus_publie.destinations_ordonnees_de_la_nav_par_page()
     par_page = {rel: tuple(d for d in dests if d != "/")
                 for rel, dests in ordonnees.items()}
-    assert len(par_page) >= 6, (
+    # Plancher égal à la population mesurée le 2026-10-20 : sept pages, la 404
+    # comprise. À six, une page sortie du groupe fermé passait ce plancher.
+    assert len(par_page) >= 7, (
         f"seules {len(par_page)} page(s) portent la nav partagée : {sorted(par_page)}")
     assert "index.html" in par_page, (
         "l'accueil ne porte plus la marque de la nav partagée — il sortait déjà "
@@ -1093,14 +1099,17 @@ def test_une_destination_non_reconnue_est_nommee_et_jamais_jetee(href, reconnue)
     rapporte plus ce que les pages déclarent, il rapporte ce qu'il sait lire.
 
     Pourquoi un test à entrées fabriquées plutôt qu'une mutation du corpus :
-    aucune page publiée ne porte aujourd'hui une de ces formes (mesuré, les 6
-    navs ne déclarent que `/x/`, `/#x` et `/`), donc la branche est DORMANTE, au
-    même titre que `poster` dans `URL_ATTR` ou la query de `resolve`. Et la
-    mutation qui en fabrique une rougit AVANT d'arriver jusqu'ici : écrire
-    `/graph` au lieu de `/graph/` sort `graph/` du groupe fermé de la nav, et
-    c'est le plancher de population du test ci-dessus qui parle (mesuré :
-    « seules 5 page(s) portent la nav partagée »). Le contrat se vérifie donc là
-    où le corpus est muet.
+    aucune page publiée ne porte une de ces formes (mesuré le 2026-10-20, les
+    sept navs ne déclarent que `/x/`, `/#x` et `/`), donc la branche est
+    DORMANTE, au même titre que `poster` dans `URL_ATTR` ou la query de
+    `resolve`. Et la mutation qui en fabrique une rougit AVANT d'arriver
+    jusqu'ici : écrire `/graph` au lieu de `/graph/` dans les sept navs sort
+    `graph/` du groupe fermé de la nav, et c'est le plancher de population du
+    test ci-dessus qui parle (mesuré le 2026-10-20 sur copie vierge : « seules 6
+    page(s) portent la nav partagée »). Ce plancher doit donc égaler la
+    population : laissé à six, la même mutation le franchissait et n'était
+    arrêtée qu'un cran plus loin, par le refus des formes non reconnues. Le
+    contrat se vérifie donc là où le corpus est muet.
 
     Les deux sens sont exercés : un témoin qui préfixerait TOUT passerait la
     moitié de ce test sans rien distinguer.
