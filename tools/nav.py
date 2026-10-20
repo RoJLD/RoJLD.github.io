@@ -223,7 +223,8 @@ def render_entrees(page: str, libelles: dict[str, dict[str, str]] | None = None)
     L'entrée active porte `class="on"` — et rien d'autre. `build_projects`
     écrivait `class="nav-projects on"`, la première classe ne servant qu'à sa
     propre règle d'amputation mobile (`.nav-r a:not(.nav-projects)`) : une classe
-    de plus pour exprimer ce que `.on` dit déjà sur les cinq autres pages.
+    de plus pour exprimer ce que `.on` dit déjà sur toute autre page qui a une
+    entrée active (l'accueil et la 404 n'en ont aucune).
     """
     lib = libelles if libelles is not None else charger_libelles()
     dialecte = str(_reglage(page, "dialecte"))
@@ -335,7 +336,8 @@ def render_boutons(page: str) -> str:
 #     1023 px     94 -> 132  (+38)    93 -> 129  (+36)
 #
 # `/graph/` est 3 à 4 px plus basse, et la cause est mesurée : son `body` porte
-# `line-height:1.6` quand les cinq autres portent `1.7`. À `font-size:11px`, une
+# `line-height:1.6` quand toutes les autres pages de la barre portent `1.7` (les
+# cinq du tableau, et la 404 depuis le 2026-10-20). À `font-size:11px`, une
 # entrée de nav y fait 17,6 px de hauteur de ligne contre 18,7 ailleurs, et la
 # marque 30,4 px contre 32,3 — mêmes `font-size` et mêmes marges internes (5 px)
 # de part et d'autre. La barre est `position:static` sous le seuil (décision
@@ -344,11 +346,11 @@ def render_boutons(page: str) -> str:
 #
 # COMMENT REPRODUIRE, car la méthode change le chiffre. La page doit être
 # CHARGÉE à la largeur visée. `test_nav_navigateur.py` suit une autre voie, à
-# dessein (un chargement puis 13 largeurs sans recharger = 6 chargements au lieu
-# de 78), et cette voie ne rend pas les mêmes hauteurs de barre qu'un chargement
-# à chaque largeur — quelques pixels d'écart à 390 px, mesuré le 2026-10-19. Ses
-# hauteurs ne sont donc pas comparables à ce tableau, et ce test ne juge pas la
-# hauteur de la barre.
+# dessein (un chargement par page, puis ses 13 largeurs sans recharger : treize
+# fois moins de chargements), et cette voie ne rend pas les mêmes hauteurs de
+# barre qu'un chargement à chaque largeur — quelques pixels d'écart à 390 px,
+# mesuré le 2026-10-19. Ses hauteurs ne sont donc pas comparables à ce tableau,
+# et ce test ne juge pas la hauteur de la barre.
 #
 # POURQUOI PAS l'autre branche, que la décision mobile proposait en premier —
 # déplacer `.nav-btns` AVANT `.nav-r` dans le balisage. Déplacés seuls, les

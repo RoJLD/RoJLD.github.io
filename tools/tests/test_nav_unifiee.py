@@ -19,10 +19,10 @@ fermé. Un visiteur de `/explorer/` n'avait aucun chemin de nav vers la formatio
 les compétences, le blog ni le contact, et la nav étant `position:fixed`, rien ne
 défilait pour les atteindre.
 
-Arbitrage 1 du 2026-10-15 : `tools/nav.py` est la source des CINQ sous-pages ;
-l'accueil garde son balisage à la main (y mettre une zone BUILD ferait lever
-`BuildError` à `build_site.synchroniser_textes_statiques`, la marque contenant
-`<b>`). Le lien entre les deux est donc ce fichier : un test, pas un générateur.
+Arbitrage 1 du 2026-10-15 : `tools/nav.py` est la source des CINQ sous-pages
+(et, depuis le 2026-10-20, de la 404) ; l'accueil garde son balisage à la main
+(y mettre une zone BUILD ferait lever `BuildError` à
+`build_site.synchroniser_textes_statiques`, la marque contenant `<b>`). Le lien entre les deux est donc ce fichier : un test, pas un générateur.
 """
 from __future__ import annotations
 
@@ -62,13 +62,13 @@ _MARQUE = "nav-brand"
 
 # La marque, et elle seule, est exclue de la comparaison d'égalité.
 #
-# Elle n'est pas une entrée de la barre : les cinq sous-pages portent
+# Elle n'est pas une entrée de la barre : les cinq sous-pages et la 404 portent
 # `<a class="nav-brand" href="/">`, l'accueil un `<span class="nav-brand">` SANS
-# href (index.html:207) — il ne se lie pas à lui-même. Une égalité stricte des
-# ensembles resterait donc ROUGE pour toujours, et `/` en est le résidu
-# irréductible (mesuré : `TOUS LES ENSEMBLES EGAUX ? False`). Soustraire `/` sans
-# le dire est la façon dont une garde pourrit ; l'invariant réel est gardé à côté,
-# par `test_chaque_sous_page_ramene_a_l_accueil`.
+# href (celui de sa nav écrite à la main) — il ne se lie pas à lui-même. Une
+# égalité stricte des ensembles resterait donc ROUGE pour toujours, et `/` en est
+# le résidu irréductible (mesuré : `TOUS LES ENSEMBLES EGAUX ? False`). Soustraire
+# `/` sans le dire est la façon dont une garde pourrit ; l'invariant réel est
+# gardé à côté, par `test_chaque_sous_page_ramene_a_l_accueil`.
 RETOUR_ACCUEIL = "/"
 
 
@@ -122,10 +122,10 @@ def test_chaque_page_declare_exactement_les_destinations_de_nav_py(rel):
     entrées permutées entre `nav.py` et une page publiée passaient vertes.
 
     Ce que ce test ne peut PAS voir, et c'est pourquoi les deux planchers
-    ci-dessous existent : `nav.ENTREES` est ici l'attendu ET la source des cinq
-    sous-pages. Une entrée retirée de `nav.ENTREES`, les cinq pages régénérées et
-    la même ligne retirée de l'accueil écrit à la main — tout coïncide, et ce
-    test est vert sur une nav amputée.
+    ci-dessous existent : `nav.ENTREES` est ici l'attendu ET la source des six
+    pages générées (les cinq sous-pages et la 404). Une entrée retirée de
+    `nav.ENTREES`, ces six pages régénérées et la même ligne retirée de l'accueil
+    écrit à la main — tout coïncide, et ce test est vert sur une nav amputée.
     """
     page = PAGES[rel]
     ecrites = [d for d in _destinations_ecrites(rel) if d != RETOUR_ACCUEIL]
@@ -215,7 +215,8 @@ def test_nav_py_refuse_une_page_inconnue():
 
 def test_nav_py_refuse_un_libelle_manquant(tmp_path):
     """Fail-loud sur `site_texts.json` : une entrée sans libellé est un trou dans
-    la barre, et les cinq générateurs ne jouent pas `valider_site_texts`."""
+    la barre, et les six générateurs de page (cinq sous-pages et la 404) ne
+    jouent pas `valider_site_texts`."""
     import json
 
     textes = json.loads((ROOT / "site_texts.json").read_text(encoding="utf-8"))

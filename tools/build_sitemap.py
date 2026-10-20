@@ -5,10 +5,13 @@ et `404.html` (mesuré en ligne le 2026-10-19). Ce générateur livre les deux p
 le troisième est livré par `tools/build_404.py`, et ce générateur l'écarte du sitemap.
 
 POURQUOI GIT ET PAS LE DISQUE. `corpus_publie.pages_publiees()` parcourt le disque
-par `rglob`, et rend **20** pages sur le poste de l'Architecte contre **14** dans un
-checkout propre : les six de plus sont les maquettes d'architecture internes de
+par `rglob`. Dans un checkout propre, elle rend exactement les pages que git suit
+(15 le 2026-10-20, comptées sur une copie vierge de la branche de la page 404) ;
+sur un poste, elle y ajoute toute page HTML présente sans être suivie. Sur celui
+de l'Architecte, ce sont les maquettes d'architecture internes de
 `.superpowers/brainstorm/`, que `.gitignore` écarte en rappelant que ce dépôt est
-PUBLIC. Un sitemap dérivé du disque les déclarerait à un explorateur — soit vers des
+PUBLIC. L'écart est donc le nombre de ces pages non suivies, et il varie d'un poste
+à l'autre. Un sitemap dérivé du disque les déclarerait à un explorateur — soit vers des
 404 (elles ne sont pas poussées), soit, si elles l'étaient un jour, vers du contenu
 interne. GitHub Pages ne sert que ce qui est suivi : c'est donc git qui dit la
 vérité, et `git ls-files` qui est la source.

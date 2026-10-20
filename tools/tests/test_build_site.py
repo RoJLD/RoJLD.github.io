@@ -443,7 +443,8 @@ def test_carte_replie_sur_le_fr_si_traduction_absente(monkeypatch):
 
 def test_articles_generes_avant_index():
     """`render_blog` teste l'existence de la page EN sur disque : si les articles
-    étaient générés APRÈS index.html (comme les six autres builders), une
+    étaient générés APRÈS index.html (comme tous les autres builders de
+    `build()`, huit le 2026-10-20), une
     construction sur clone frais figerait des liens FR que seule une seconde
     construction corrigerait. L'ordre est donc une contrainte, pas un détail."""
     import inspect, build_site

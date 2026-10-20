@@ -15,9 +15,10 @@ ne peut le voir, parce que la réponse dépend de la mise en page réelle, donc 
 moteur de rendu.
 
 Ce dépôt n'a PAS Playwright dans ses dépendances : `requirements.txt` ne contient
-que `markdown`, et ses 35 oracles de comportement tournent dans node, sans moteur
-de rendu (cf. `oracle_node`). Mais il a déjà la PORTE — `oracle_playwright.porte`
-— et deux gardes qui s'en servent (`test_cockpit_smoke_navigateur`,
+que `markdown`, et ses oracles de comportement tournent dans node, sans moteur
+de rendu (cf. `oracle_node`) — 47 cas qui sautent quand node manque, comptés le
+2026-10-20 sur une copie vierge, suite entière lancée sans node dans le PATH.
+Mais il a déjà la PORTE — `oracle_playwright.porte` — et deux gardes qui s'en servent (`test_cockpit_smoke_navigateur`,
 `test_cockpit_calque_navigateur`). La mesure du 2026-10-19 sur ce poste :
 Playwright présent, Chromium 145, les deux gardes PASSENT (les 6 skips de la
 suite viennent de career-ops et d'un module frère d'ELYSIUM, pas du navigateur).
@@ -38,8 +39,10 @@ DÉCOUVERTE par `corpus_publie`, aucune liste de pages écrite ici) :
   2. L'ORDRE DE TABULATION  = l'ordre visuel (rangée visuelle, puis x). Mesuré
                             par `Tab` RÉEL aux deux largeurs que la décision
                             nomme (390 et 1280 px), et par la géométrie aux 13.
-  3. LA CIBLE FAIT 24 px    hauteur d'entrée >= 24 px (WCAG 2.5.8). Mesuré : 29 px
-                            sous 1024 px, 26 à 27 au-dessus.
+  3. LA CIBLE FAIT 24 px    hauteur d'entrée >= 24 px (WCAG 2.5.8). Mesuré le
+                            2026-10-20 sur les sept pages : 28 à 29 px sous
+                            1024 px, 25 à 27 au-dessus — les plus basses sur
+                            `/graph/`, dont le `body` porte `line-height:1.6`.
 
 Ce fichier est HORS de la porte du cockpit (`tools/cockpit/publication.py::
 verifier()` lance `validate_profile.py` et `build_site.py`, puis joue en entier
@@ -94,10 +97,10 @@ SEUIL_REPLI = 1023
 
 # Tabulation RÉELLE à ces deux largeurs (les deux que la décision nomme) : une
 # frappe `Tab` par arrêt, `document.activeElement` relu à chaque fois. Les 13
-# largeurs sont couvertes par la géométrie ; le clavier coûte ~170 allers-retours
-# et mesuré ~12 s sur les six pages d'alors (2026-10-19), on ne le paie pas à
-# chaque largeur de chaque page — 13 × 7 = 91 cas depuis la page 404 — pour
-# mesurer la même chose.
+# largeurs sont couvertes par la géométrie ; le clavier coûte une frappe et une
+# relecture par arrêt (~170 allers-retours et ~12 s, mesurés sur les six pages
+# d'alors le 2026-10-19), on ne le paie pas à chaque largeur de chaque page
+# — 13 × 7 = 91 cas depuis la page 404 — pour mesurer la même chose.
 LARGEURS_AU_CLAVIER = (390, 1280)
 
 # Familles que ces pages chargent depuis fonts.googleapis.com. Sans elles, la
@@ -334,7 +337,8 @@ def test_la_rangee_de_nav_tient_sans_debordement(rel, largeur, mesures):
     La propriété, et non son indice. `.nav-r` est un scrollport dont la barre est
     masquée : un débordement ne se peint pas. Mesuré avant la mise en page de
     PR2 : 543 px de débordement à 390 px (2 onglets visibles sur 11), 208 px à
-    1024 px, 80 px à 1280 px. Après : 0 px aux 78 cas.
+    1024 px, 80 px à 1280 px. Après, le 2026-10-19 : 0 px aux 78 cas des six
+    pages d'alors.
     """
     r = mesures["par_cas"][(rel, largeur)]["rangee"]
     assert r is not None, f"{rel} : plus de `.nav-r` à {largeur} px"
@@ -382,7 +386,8 @@ def test_la_tabulation_reelle_ne_remonte_jamais(rel, largeur, mesures):
     appuie réellement sur `Tab` et relit `document.activeElement` : il attrape
     aussi ce qu'on n'a pas prévu (un `inert`, un `display:contents`, un élément
     rendu non focalisable). Deux largeurs seulement, de part et d'autre du seuil
-    de repli — le clavier coûte ~12 s, la géométrie couvre les 13.
+    de repli — le clavier coûte une frappe et une relecture par arrêt (cf.
+    `LARGEURS_AU_CLAVIER`), la géométrie couvre les 13.
     """
     sequence = mesures["par_cas"][(rel, largeur)]["clavier"]
     attendu = len(mesures["par_cas"][(rel, largeur)]["focalisables"])
@@ -403,8 +408,8 @@ def test_chaque_entree_de_nav_fait_au_moins_24_px_de_haut(rel, largeur, mesures)
     Mesuré sur `main` avant PR2 : 17 px de hauteur d'entrée à 390 px. Une rangée
     d'onglets n'est pas « un lien en ligne dans une phrase » — l'exception du
     critère ne s'applique pas, et elle ne s'applique pas davantage à 1024 px, où
-    le pointeur est une souris. Mesuré après : 29 px sous le seuil, 26 à 27
-    au-dessus.
+    le pointeur est une souris. Mesuré le 2026-10-20 sur les sept pages : 28 à
+    29 px sous le seuil, 25 à 27 au-dessus (les plus basses sur `/graph/`).
     """
     hauteurs = [e["h"] for e in mesures["par_cas"][(rel, largeur)]["entrees"]]
     assert hauteurs, f"{rel} : aucune entrée de nav mesurée à {largeur} px"

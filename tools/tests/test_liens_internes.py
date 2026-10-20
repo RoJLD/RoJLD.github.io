@@ -77,9 +77,11 @@ EXCLUDED_DIRS = {".git", "tools", "node_modules"}
 # FRANÇAISE de l'article, alors que la version anglaise, elle, était couverte.
 # Une liste relue à l'œil ne trouve pas ça ; une liste confrontée au corpus, si.
 #
-# `content` (52 occurrences, balises meta) est délibérément EXCLU : il porte du
-# texte libre et des URL absolues (`og:image` pointe https://robin-denis.com/…),
-# donc l'y inclure fabriquerait des faux positifs sans couvrir un fichier local.
+# `content` (porté par les seules balises meta : 33 occurrences sur les pages
+# publiées, comptées le 2026-10-20 sur une copie vierge) est délibérément EXCLU :
+# il porte du texte libre et des URL absolues (`og:image` pointe
+# https://robin-denis.com/…), donc l'y inclure fabriquerait des faux positifs
+# sans couvrir un fichier local.
 URL_ATTR = re.compile(
     r'(?:href|data-href-en|data-href-fr|data-href|data-article-en|data-article-fr'
     r'|src|poster)\s*=\s*"([^"]*)"')
@@ -376,7 +378,8 @@ def test_le_scan_ecarte_les_references_internes_au_document():
 # Pourquoi le corpus réel ne pouvait pas fournir cette preuve : il ne contient
 # qu'UNE occurrence de `url(...)` en tout et pour tout, `url(%23n)` sur
 # l'accueil, qui désigne un filtre interne au SVG et non un fichier (compté :
-# `CSS_URL` rend 1 résultat sur les 15 pages publiées, `css_urls` en rend 0).
+# `CSS_URL` rend 1 résultat sur l'ensemble des pages publiées, `css_urls` en
+# rend 0 — recompté le 2026-10-20 sur les 15 pages d'une copie vierge).
 # Sur ce corpus-là, la branche est donc dormante — la mutation est sans effet
 # OBSERVABLE aujourd'hui, ce qui n'en fait pas une mutation bénigne : elle
 # retire au scanner une capacité que la première `url(assets/…)` écrite dans un
@@ -1024,7 +1027,7 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
     les artefacts, plus `site_texts.json` pour son plancher. Un dépôt où
     `nav.py` disparaîtrait garde cette garde-ci.
 
-    `/` est exclu, et il faut le dire : les cinq sous-pages portent
+    `/` est exclu, et il faut le dire : les cinq sous-pages et la 404 portent
     `<a class="nav-brand" href="/">`, l'accueil un `<span class="nav-brand">`
     SANS href — il ne se lie pas à lui-même. `/` est donc le résidu
     irréductible de l'égalité, et le soustraire sans le nommer est la façon
@@ -1795,11 +1798,14 @@ def test_le_sitemap_declare_exactement_les_pages_suivies_et_servies():
 def test_le_sitemap_ne_declare_aucune_page_que_git_ne_suit_pas():
     """Le piege mesure : `pages_publiees()` lit le DISQUE, pas git.
 
-    Sur le poste de l'Architecte elle rend 20 pages contre 14 dans un checkout
-    propre : les six de plus sont les maquettes internes de
-    `.superpowers/brainstorm/`, ignorees par `.gitignore` parce que ce depot est
-    PUBLIC. Un sitemap derive du disque les declarerait a un explorateur. Cette
-    garde refuse qu'une URL du sitemap designe un fichier que git ne suit pas.
+    Dans un checkout propre elle rend exactement les pages que git suit (15 le
+    2026-10-20, comptees sur une copie vierge) ; sur un poste, elle y ajoute
+    toute page HTML presente sans etre suivie. Sur celui de l'Architecte, ce
+    sont les maquettes internes de `.superpowers/brainstorm/`, ignorees par
+    `.gitignore` parce que ce depot est PUBLIC : l'ecart vaut leur nombre, et il
+    varie d'un poste a l'autre. Un sitemap derive du disque les declarerait a un
+    explorateur. Cette garde refuse qu'une URL du sitemap designe un fichier que
+    git ne suit pas.
     """
     bs = _sitemap_module()
     suivies = set(bs.pages_suivies())

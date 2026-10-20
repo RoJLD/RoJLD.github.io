@@ -542,7 +542,10 @@ def pages_atteintes_par_la_nav() -> tuple[str, ...]:
 
     Redondance délibérée : chaque page de nav pointe les autres, donc perdre la
     nav d'UNE page ne fait pas disparaître sa cible du témoin — elle reste vue
-    depuis les sept autres.
+    depuis toutes les autres pages dont la nav la pointe. Compté le 2026-10-20 :
+    chaque sous-page depuis six autres (l'accueil, la 404 et les quatre autres
+    sous-pages), l'accueil depuis huit (les cinq sous-pages, la 404 et les deux
+    pages d'articles, dont la nav n'a que ce retour).
     """
     cibles: set[str] = set()
     for rel in pages_publiees():
@@ -614,7 +617,8 @@ def destinations_nav() -> tuple[str, ...]:
 # La seule sortie est de faire DÉRIVER l'attente. Elle vient désormais de trois
 # signaux disjoints du site publié, qui doivent coïncider :
 #
-#   `pages_atteintes_par_la_nav()`      les `href` de la nav, résolus sur disque
+#   `pages_atteintes()`                 les `href` de la nav, résolus sur disque,
+#                                       plus la page d'erreur (cf. `pages_atteintes`)
 #   `pages_a_boot()`                    `getItem('theme')` — le script de démarrage
 #   `pages_qui_persistent_le_theme()`   `setItem('theme'`  — le basculeur
 #

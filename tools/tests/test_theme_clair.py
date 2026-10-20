@@ -220,7 +220,8 @@ def _paire_du_corps(html: str) -> tuple[str, str]:
 
     Découvertes dans la règle CSS de la page, jamais choisies à la main : c'est
     la paire que le visiteur voit, et elle n'est pas la même partout (les deux
-    pages d'articles peignent `--bg`, les huit autres `--bg-0`).
+    pages d'articles peignent `--bg`, toutes les autres pages à palette
+    `--bg-0` — sept le 2026-10-20).
     """
     m = re.search(r"(?:^|[\s,{}])body\s*\{([^}]*)\}", html)
     assert m, "aucune règle `body { … }` : la paire réellement peinte est introuvable"
@@ -287,8 +288,9 @@ def test_la_palette_claire_est_reellement_claire_et_la_sombre_sombre(page):
 # des fonds clairs. Une garde qui ne regarde qu'une paire ne garde qu'une paire.
 #
 # Le plancher WCAG absolu ne peut PAS être étendu à ces variables : `--tx-3` vaut
-# 2,86 aujourd'hui dans les deux thèmes (texte tertiaire, atténué par choix de
-# charte). Exiger 4,5 partout serait rouge sur la production, donc faux.
+# 2,86 sur le fond clair et 3,48 sur le sombre (mesuré le 2026-10-20, identique
+# sur les neuf pages à palette ; texte tertiaire, atténué par choix de charte).
+# Exiger 4,5 partout serait rouge sur la production, donc faux.
 #
 # L'attendu vient donc de deux SECONDES LECTURES, aucune n'étant la valeur
 # testée ni une constante du dépôt :
