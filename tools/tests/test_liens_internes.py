@@ -2437,6 +2437,36 @@ def textes_de_la_page(texte: str) -> _TextesDuDocument:
     return p
 
 
+# Les blancs qu'un navigateur replie dans un texte rendu sous `white-space:normal`
+# (CSS Text 3) : espace, tabulation, saut de ligne, retour chariot. Toute suite
+# devient UN espace, et ceux des bords disparaissent. L'espace insécable (U+00A0)
+# n'en est PAS : le navigateur le garde, alors que `str.split()` le replierait et
+# rendrait égaux deux textes qui ne s'affichent pas pareil. Aucune règle de la 404
+# ne pose `white-space:pre*` (mesuré le 2026-10-20 : seul `nowrap`, sur la
+# marque, qui replie aussi).
+_BLANCS_REPLIES = re.compile(r"[ \t\n\r]+")
+
+
+def blancs_comme_le_navigateur(texte: str) -> str:
+    """Le texte tel qu'un navigateur le rend : blancs repliés, bords retirés."""
+    return _BLANCS_REPLIES.sub(" ", texte).strip(" ")
+
+
+@pytest.mark.parametrize("ecrit, rendu", [
+    pytest.param("Cette adresse :\n    le lien", "Cette adresse : le lien",
+                 id="retour-et-indentation"),
+    pytest.param("\t A  B \r\n", "A B", id="blancs-aux-bords-et-au-milieu"),
+    pytest.param("A :", "A :", id="insecable-non-replie"),
+])
+def test_les_blancs_se_replient_comme_dans_le_navigateur(ecrit, rendu):
+    """La normalisation de la garde ci-dessous, prouvée sur des cas fabriqués.
+
+    Elle doit rendre égaux deux textes qui s'affichent pareil (texte coupé sur
+    deux lignes), et ceux-là seulement : l'espace insécable reste un caractère.
+    """
+    assert blancs_comme_le_navigateur(ecrit) == rendu
+
+
 @pytest.mark.parametrize("html, non_traduits, masques, attributs", [
     pytest.param("<main><p>Bonjour</p></main>", ["Bonjour"], [], [], id="texte-nu"),
     pytest.param('<main><p data-fr="A" data-en="B">A</p></main>', [], [], [], id="porteur"),
@@ -2487,7 +2517,11 @@ def test_chaque_texte_visible_de_la_404_est_traduit_sauf_exception_nommee():
          exception couvre encore un tel texte de la page, sinon elle couvrirait
          un texte qui n'existe plus ;
       2. le texte ÉCRIT d'un porteur est sa version française : la page est
-         servie en français, et un écart changerait le texte au retour en FR ;
+         servie en français, et un écart changerait le texte au retour en FR.
+         Les deux sont comparés tels que le navigateur les rend
+         (`blancs_comme_le_navigateur`) : un texte coupé sur deux lignes
+         s'affiche comme sur une seule, et la garde rougissait sur ce
+         reformatage (relecture adverse du 2026-10-20) ;
       3. aucun attribut de texte annoncé (`title`, `alt`, `aria-label`,
          `placeholder`) hors nav : la bascule ne les traduit pas.
 
@@ -2515,8 +2549,9 @@ def test_chaque_texte_visible_de_la_404_est_traduit_sauf_exception_nommee():
         f"exceptions qui ne couvrent plus aucun texte nu et masqué de 404.html : "
         f"{perimees} — les retirer de EXCEPTIONS_DE_TRADUCTION_404")
 
-    ecarts = [(balise, fr, ecrit.strip()) for balise, fr, _, ecrit in p.porteurs
-              if ecrit.strip() != fr.strip()]
+    ecarts = [(balise, fr, blancs_comme_le_navigateur(ecrit))
+              for balise, fr, _, ecrit in p.porteurs
+              if blancs_comme_le_navigateur(ecrit) != blancs_comme_le_navigateur(fr)]
     assert not ecarts, (
         f"porteurs dont le texte écrit n'est pas la version française : {ecarts}")
 
