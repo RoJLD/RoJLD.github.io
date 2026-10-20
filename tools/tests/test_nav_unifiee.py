@@ -263,11 +263,14 @@ def test_nav_py_refuse_un_libelle_manquant(tmp_path):
 # l'entrée en français.
 #
 # Hors champ, et pourquoi :
-#   * les pages SANS bouton de langue (`/projects/`, `/demos/`, les deux
-#     articles). Elles ne promettent pas l'anglais (retrait assumé du 2026-10-19,
-#     cf. `nav.render_boutons`), et les entrées de `/projects/` et `/demos/`
-#     portent `data-fr`/`data-en` sans qu'aucun de leurs scripts ne les lise : les
-#     juger ferait rougir la garde sur une promesse que ces pages ne font pas ;
+#   * les pages SANS bouton de langue. `/projects/` et `/demos/` ne promettent
+#     pas l'anglais (retrait assumé du 2026-10-19, cf. `nav.render_boutons`), et
+#     leurs entrées portent `data-fr`/`data-en` sans qu'aucun de leurs scripts ne
+#     les lise : les juger ferait rougir la garde sur une promesse que ces pages
+#     ne font pas. Les deux articles n'ont jamais porté le bouton : chacun est
+#     écrit dans une seule langue (`couverture-dynamique.html` en français,
+#     `couverture-dynamique.en.html` en anglais, `lang="en"`), et leur nav d'une
+#     seule entrée de retour n'est pas la nav partagée de `nav.py` ;
 #   * la marque (un nom propre) et les deux boutons, qui ne sont pas des entrées.
 # Non gardé, et dit pour ne pas être cru gardé : le `title` des deux boutons
 # (« Langue » et « Thème » sur les quatre pages du second dialecte, « Switch
