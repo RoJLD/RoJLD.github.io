@@ -2456,7 +2456,7 @@ def blancs_comme_le_navigateur(texte: str) -> str:
     pytest.param("Cette adresse :\n    le lien", "Cette adresse : le lien",
                  id="retour-et-indentation"),
     pytest.param("\t A  B \r\n", "A B", id="blancs-aux-bords-et-au-milieu"),
-    pytest.param("A :", "A :", id="insecable-non-replie"),
+    pytest.param("A\N{NO-BREAK SPACE}:", "A\N{NO-BREAK SPACE}:", id="insecable-non-replie"),
 ])
 def test_les_blancs_se_replient_comme_dans_le_navigateur(ecrit, rendu):
     """La normalisation de la garde ci-dessous, prouvée sur des cas fabriqués.
