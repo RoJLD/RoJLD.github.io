@@ -2346,9 +2346,17 @@ def test_la_page_404_pose_le_theme_dans_head_avant_le_corps():
 #   * le chemin demandé (`<code id="chemin">`) : vide dans le fichier, le script
 #     y écrit après le chargement l'adresse telle que le visiteur l'a suivie —
 #     rien à traduire, et rien qu'une lecture statique puisse voir.
+#
+# Une exception est portée par l'ÉLÉMENT, pas par le texte seul : elle n'excuse
+# un texte nu que s'il est MASQUÉ aux lecteurs d'écran (`aria-hidden="true"` sur
+# l'élément qui le porte ou sur un de ses ancêtres, ce qui retire tout le
+# sous-arbre de l'arbre d'accessibilité). Jusqu'au 2026-10-20 elle était indexée
+# par le texte, et sa raison n'était pas vérifiée : la relecture adverse a retiré
+# `aria-hidden` du code « 404 », puis ajouté un second « 404 » nu, et les deux
+# mutations passaient vertes.
 EXCEPTIONS_DE_TRADUCTION_404 = {
-    "404": "le code d'erreur HTTP, identique dans les deux langues ; l'élément porte "
-           "`aria-hidden`, un lecteur d'écran ne le lit pas",
+    "404": "le code d'erreur HTTP, identique dans les deux langues, et masqué aux "
+           "lecteurs d'écran : ils ne l'annoncent pas en français sous lang=\"en\"",
 }
 
 # Attributs dont le texte est montré ou annoncé : `applyBrowseLang` ne réécrit
@@ -2364,9 +2372,10 @@ class _TextesDuDocument(_HTMLParser):
     """Chaque texte du document, hors nav, et ce qui décide s'il est traduit.
 
     Rapporte, sans rien décider :
-      * `textes` : (texte, traduit) pour chaque texte visible hors nav, `<title>`
-        compris — `traduit` vaut vrai si un élément ancêtre, lui-même compris,
-        porte `data-fr` ET `data-en` ;
+      * `textes` : (texte, traduit, masqué) pour chaque texte visible hors nav,
+        `<title>` compris — `traduit` vaut vrai si un élément ancêtre, lui-même
+        compris, porte `data-fr` ET `data-en` ; `masqué`, si l'un d'eux porte
+        `aria-hidden="true"` ;
       * `porteurs` : (balise, data-fr, data-en, texte écrit) pour chaque élément
         porteur hors nav ;
       * `attributs` : (balise, attribut, valeur) pour chaque attribut de texte
@@ -2379,7 +2388,7 @@ class _TextesDuDocument(_HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self._pile: list[dict] = []
-        self.textes: list[tuple[str, bool]] = []
+        self.textes: list[tuple[str, bool, bool]] = []
         self.porteurs: list[tuple[str, str, str, str]] = []
         self.attributs: list[tuple[str, str, str]] = []
 
@@ -2416,7 +2425,9 @@ class _TextesDuDocument(_HTMLParser):
             e["texte"] += data
         if not data.strip() or self._dans(self._MUETS | {"nav"}):
             return
-        self.textes.append((data.strip(), any(e["porteur"] for e in self._pile)))
+        self.textes.append((data.strip(), any(e["porteur"] for e in self._pile),
+                            any(e["attrs"].get("aria-hidden", "").strip().lower() == "true"
+                                for e in self._pile)))
 
 
 def textes_de_la_page(texte: str) -> _TextesDuDocument:
@@ -2426,33 +2437,42 @@ def textes_de_la_page(texte: str) -> _TextesDuDocument:
     return p
 
 
-@pytest.mark.parametrize("html, non_traduits, attributs", [
-    pytest.param("<main><p>Bonjour</p></main>", ["Bonjour"], [], id="texte-nu"),
-    pytest.param('<main><p data-fr="A" data-en="B">A</p></main>', [], [], id="porteur"),
-    pytest.param('<main><p data-fr="A">A</p></main>', ["A"], [], id="une-seule-langue"),
-    pytest.param('<main><p data-fr="A" data-en="B"><span>A</span></p></main>', [], [],
+@pytest.mark.parametrize("html, non_traduits, masques, attributs", [
+    pytest.param("<main><p>Bonjour</p></main>", ["Bonjour"], [], [], id="texte-nu"),
+    pytest.param('<main><p data-fr="A" data-en="B">A</p></main>', [], [], [], id="porteur"),
+    pytest.param('<main><p data-fr="A">A</p></main>', ["A"], [], [], id="une-seule-langue"),
+    pytest.param('<main><p data-fr="A" data-en="B"><span>A</span></p></main>', [], [], [],
                  id="ancetre-porteur"),
-    pytest.param('<p data-fr="A" data-en="B">A</p><p>Seul</p>', ["Seul"], [],
+    pytest.param('<p data-fr="A" data-en="B">A</p><p>Seul</p>', ["Seul"], [], [],
                  id="frere-d-un-porteur"),
-    pytest.param("<nav><a>Accueil</a></nav><main></main>", [], [], id="nav-hors-champ"),
+    pytest.param("<nav><a>Accueil</a></nav><main></main>", [], [], [], id="nav-hors-champ"),
     pytest.param("<main><script>var t = 'texte';</script><style>p{}</style></main>",
-                 [], [], id="script-et-style-muets"),
+                 [], [], [], id="script-et-style-muets"),
     pytest.param('<main><img alt="photo"><a title="Aide" data-fr="x" data-en="y">x</a></main>',
-                 [], [("img", "alt", "photo"), ("a", "title", "Aide")],
+                 [], [], [("img", "alt", "photo"), ("a", "title", "Aide")],
                  id="attributs-annonces"),
-    pytest.param("<head><title>Titre</title></head><body></body>", ["Titre"], [],
+    pytest.param("<head><title>Titre</title></head><body></body>", ["Titre"], [], [],
                  id="titre-nu"),
+    pytest.param('<main><p aria-hidden="true">404</p><p>404</p></main>', ["404", "404"],
+                 ["404"], [], id="masque-par-l-element-et-son-jumeau-nu"),
+    pytest.param('<main><div aria-hidden="true"><p>404</p></div></main>', ["404"], ["404"],
+                 [], id="masque-par-un-ancetre"),
+    pytest.param('<main><p aria-hidden="false">404</p></main>', ["404"], [], [],
+                 id="aria-hidden-false-ne-masque-pas"),
 ])
 def test_la_sonde_des_textes_nomme_tout_texte_non_traduit_et_rien_d_autre(
-        html, non_traduits, attributs):
+        html, non_traduits, masques, attributs):
     """La sonde ci-dessous, prouvée sur des cas FABRIQUÉS, dans les deux sens.
 
     Sans ces cas, une sonde qui croirait tout texte traduit (ou ne verrait aucun
     texte) rendrait la garde de la 404 verte en ne mesurant rien ; une sonde qui
-    lirait la nav ou le JavaScript la ferait mordre à faux.
+    lirait la nav ou le JavaScript la ferait mordre à faux. Les trois derniers
+    cas tiennent ce qui porte l'exception : un texte n'est masqué que si
+    l'élément qui le porte, ou un ancêtre, dit `aria-hidden="true"`.
     """
     p = textes_de_la_page(html)
-    assert [t for t, traduit in p.textes if not traduit] == non_traduits
+    assert [t for t, traduit, _ in p.textes if not traduit] == non_traduits
+    assert [t for t, traduit, masque in p.textes if not traduit and masque] == masques
     assert p.attributs == attributs
 
 
@@ -2461,9 +2481,11 @@ def test_chaque_texte_visible_de_la_404_est_traduit_sauf_exception_nommee():
 
     Trois exigences, et la liste d'exceptions tenue dans les deux sens :
 
-      1. aucun texte visible hors nav sans élément porteur, hormis
-         `EXCEPTIONS_DE_TRADUCTION_404` — et chaque exception correspond encore
-         à un texte de la page, sinon elle couvrirait un texte qui n'existe plus ;
+      1. aucun texte visible hors nav sans élément porteur, hormis un texte de
+         `EXCEPTIONS_DE_TRADUCTION_404` MASQUÉ aux lecteurs d'écran
+         (`aria-hidden="true"` sur son élément ou un ancêtre) — et chaque
+         exception couvre encore un tel texte de la page, sinon elle couvrirait
+         un texte qui n'existe plus ;
       2. le texte ÉCRIT d'un porteur est sa version française : la page est
          servie en français, et un écart changerait le texte au retour en FR ;
       3. aucun attribut de texte annoncé (`title`, `alt`, `aria-label`,
@@ -2478,17 +2500,20 @@ def test_chaque_texte_visible_de_la_404_est_traduit_sauf_exception_nommee():
     assert "title" in balises and balises - {"title"}, (
         f"la sonde ne voit pas les porteurs attendus (titre et corps) : {p.porteurs}")
 
-    nus = [t for t, traduit in p.textes if not traduit]
-    non_couverts = sorted(set(nus) - set(EXCEPTIONS_DE_TRADUCTION_404))
+    nus = [(t, masque) for t, traduit, masque in p.textes if not traduit]
+    non_couverts = sorted(t for t, masque in nus
+                          if not (masque and t in EXCEPTIONS_DE_TRADUCTION_404))
     assert not non_couverts, (
         f"textes visibles de 404.html sans `data-fr`/`data-en` : {non_couverts} — "
         "ils restent en français quand le visiteur choisit l'anglais. Les traduire, "
         "ou, s'ils n'ont rien à traduire, les nommer dans EXCEPTIONS_DE_TRADUCTION_404 "
-        "avec leur raison")
-    perimees = sorted(set(EXCEPTIONS_DE_TRADUCTION_404) - set(nus))
+        "avec leur raison ; une exception n'excuse qu'un texte masqué aux lecteurs "
+        "d'écran (aria-hidden=\"true\" sur son élément ou un ancêtre), et ceux-ci ne "
+        f"le sont pas : {sorted(t for t, m in nus if t in EXCEPTIONS_DE_TRADUCTION_404 and not m)}")
+    perimees = sorted(set(EXCEPTIONS_DE_TRADUCTION_404) - {t for t, masque in nus if masque})
     assert not perimees, (
-        f"exceptions qui ne couvrent plus aucun texte nu de 404.html : {perimees} — "
-        "les retirer de EXCEPTIONS_DE_TRADUCTION_404")
+        f"exceptions qui ne couvrent plus aucun texte nu et masqué de 404.html : "
+        f"{perimees} — les retirer de EXCEPTIONS_DE_TRADUCTION_404")
 
     ecarts = [(balise, fr, ecrit.strip()) for balise, fr, _, ecrit in p.porteurs
               if ecrit.strip() != fr.strip()]
