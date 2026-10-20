@@ -771,6 +771,15 @@ def build(profile_path=None, index_path=None, write=True, today=None):
         build_cv_templates.build_cv_templates(write=write)
     except Exception as exc:
         raise BuildError(f"génération du bundle templates CV échouée : {exc}")
+    # Génère la page 404 que GitHub Pages sert à toute adresse absente. Elle porte
+    # la nav de `tools/nav.py` : une entrée ou un libellé changé doit l'atteindre
+    # au même build que les cinq sous-pages, sinon la seule issue d'un visiteur
+    # égaré porte une barre périmée.
+    try:
+        import build_404
+        build_404.build_404(write=write)
+    except Exception as exc:
+        raise BuildError(f"génération de la page 404 échouée : {exc}")
     # Régénère sitemap.xml et robots.txt. Branché ICI, et pas laissé à une commande
     # séparée, parce que la porte « Publier » du cockpit lance `build_site.py` : un
     # fichier dérivé sans écrivain dans la porte qui tourne dérive (leçon du

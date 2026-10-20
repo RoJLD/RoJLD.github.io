@@ -25,8 +25,9 @@ Une garde de dépôt était donc possible, et la voici. Sur un poste sans
 Playwright, la porte rend un skip honnête ; `ELYSIUM_REQUIRE_PLAYWRIGHT=1` le
 transforme en échec.
 
-Trois propriétés mesurées, aux 13 largeurs, sur les six pages de la nav partagée
-(population DÉCOUVERTE par `corpus_publie`, aucune liste de pages écrite ici) :
+Trois propriétés mesurées, aux 13 largeurs, sur les pages de la nav partagée —
+sept depuis la page 404 du 2026-10-20, servie ici à `/404.html` (population
+DÉCOUVERTE par `corpus_publie`, aucune liste de pages écrite ici) :
 
   1. LA RANGÉE TIENT        `scrollWidth <= clientWidth` de `.nav-r` — zéro
                             débordement, donc aucune destination derrière un
@@ -94,10 +95,12 @@ SEUIL_REPLI = 1023
 # Tabulation RÉELLE à ces deux largeurs (les deux que la décision nomme) : une
 # frappe `Tab` par arrêt, `document.activeElement` relu à chaque fois. Les 13
 # largeurs sont couvertes par la géométrie ; le clavier coûte ~170 allers-retours
-# et mesuré ~12 s, on ne le paie pas 78 fois pour mesurer la même chose.
+# et mesuré ~12 s sur les six pages d'alors (2026-10-19), on ne le paie pas à
+# chaque largeur de chaque page — 13 × 7 = 91 cas depuis la page 404 — pour
+# mesurer la même chose.
 LARGEURS_AU_CLAVIER = (390, 1280)
 
-# Familles que les six pages chargent depuis fonts.googleapis.com. Sans elles, la
+# Familles que ces pages chargent depuis fonts.googleapis.com. Sans elles, la
 # largeur du texte n'est pas celle du site publié et la mesure porterait sur une
 # autre page. `document.fonts.check()` ne prouve RIEN ici : il rend `true` aussi
 # quand la feuille n'a jamais été chargée, puisqu'il n'y a alors aucune
@@ -234,10 +237,11 @@ def site_servi():
 
 @pytest.fixture(scope="module")
 def mesures(site_servi):
-    """Une mesure par (page, largeur) : 6 pages chargées une fois, 13 tailles.
+    """Une mesure par (page, largeur) : chaque page chargée une fois, 13 tailles.
 
     `set_viewport_size` au lieu d'un rechargement par largeur : les polices
-    restent chargées et la mesure coûte 6 chargements au lieu de 78.
+    restent chargées et la mesure coûte un chargement par page au lieu de 13 —
+    7 au lieu de 91 depuis la page 404.
     """
     from playwright.sync_api import sync_playwright
 

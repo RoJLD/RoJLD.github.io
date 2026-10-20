@@ -1,4 +1,7 @@
-"""La nav des six pages déclare les mêmes destinations, et elles viennent de `nav.py`.
+"""La nav de chaque page qui la porte déclare les mêmes destinations, venues de `nav.py`.
+
+Sept pages depuis la page 404 du 2026-10-20 : l'accueil, les cinq sous-pages et
+`404.html`.
 
 Pourquoi cette garde existe, mesuré le 2026-10-15 sur le site publié. La barre
 était écrite six fois à la main et les six copies avaient divergé :
@@ -110,9 +113,9 @@ def test_chaque_page_declare_exactement_les_destinations_de_nav_py(rel):
 
     L'attendu ne vient pas d'une liste recopiée ici : il vient de `nav.ENTREES`,
     l'unique source. Une entrée ajoutée à `nav.py` et non republiée rougit ; une
-    entrée perdue par une page rougit ; et comme `nav.py` rend la même liste aux
-    six pages (aux ancres près, `#blog` sur l'accueil et `/#blog` ailleurs),
-    l'égalité deux à deux des six navs en découle.
+    entrée perdue par une page rougit ; et comme `nav.py` rend la même liste à
+    toutes les pages de `PAGES` (aux ancres près, `#blog` sur l'accueil et
+    `/#blog` ailleurs), l'égalité deux à deux de leurs navs en découle.
 
     Séquences et non ensembles depuis le 2026-10-19 : l'ordre de la barre est ce
     qu'un visiteur lit et ce que la tabulation suit, et rien ne le tenait. Deux

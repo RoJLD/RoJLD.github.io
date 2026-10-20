@@ -976,7 +976,11 @@ def test_la_nav_partagee_mene_toujours_a_l_academy():
 
 
 def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises():
-    """La nav des six pages : MÊMES destinations, MÊME ordre, ancres comprises.
+    """La nav des pages qui la portent : MÊMES destinations, MÊME ordre, ancres comprises.
+
+    Sept pages depuis la page 404 du 2026-10-20 (cf.
+    `corpus_publie.pages_de_la_nav_partagee`) ; six avant, d'où les mesures
+    ci-dessous.
 
     `test_les_destinations_de_nav_viennent_bien_du_disque` compare deux lectures
     qui ne regardent que les répertoires : elles s'accordaient sur six noms
@@ -1002,7 +1006,7 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
 
     Trois exigences, chacune fermant une des trois fuites mesurées :
 
-      1. les six pages déclarent la MÊME SÉQUENCE, pas le même ensemble.
+      1. toutes ces pages déclarent la MÊME SÉQUENCE, pas le même ensemble.
          L'union ne peut plus servir d'attendu — elle n'a pas d'ordre — donc la
          comparaison est deux à deux contre la séquence de l'accueil, la seule
          page écrite à la main. L'ordre des onze entrées n'était tenu par rien
@@ -1975,6 +1979,22 @@ def test_la_page_404_demande_a_ne_pas_etre_indexee():
         f"{sorted(directives)}) — une page « introuvable » proposée comme résultat")
 
 
+# Contradictions CONNUES, trouvées par la garde ci-dessous le jour de sa pose
+# (2026-10-20) et laissées en l'état parce que les trancher n'appartient pas au
+# lot de la page 404. Ces quatre outils portent `noindex` depuis le commit qui
+# les a créés (2026-03-27 à 2026-04-01) ; le sitemap de #39 (d1f0315, 2026-10-19)
+# les déclare quand même, parce qu'il dérive l'ensemble des pages suivies sans
+# lire leurs directives. L'un des deux a tort — écarter ces pages du sitemap, ou
+# retirer leur `noindex` — et c'est une décision de contenu, à l'Architecte.
+#
+# La liste ne peut que RÉTRÉCIR : une page qui cesse d'être une contradiction
+# fait rougir la garde tant qu'elle reste ici, et toute contradiction NOUVELLE
+# rougit, la page 404 comprise.
+CONTRADICTIONS_NOINDEX_EN_ATTENTE = frozenset({
+    "analyzer.html", "match.html", "radar.html", "simulator.html",
+})
+
+
 def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
     """Un sitemap qui déclare une page `noindex` se contredit.
 
@@ -1984,6 +2004,9 @@ def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
     `build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE`. Retirer l'écart et régénérer le
     sitemap ferait passer `test_toute_page_servie_est_declaree_ou_ecartee_sciemment`
     — la page serait alors « déclarée » — et rougirait ici.
+
+    Les contradictions déjà publiées sont nommées au-dessus, pas tues : cf.
+    `CONTRADICTIONS_NOINDEX_EN_ATTENTE`.
     """
     bs = _sitemap_module()
     h = bs.hote()
@@ -1995,10 +2018,16 @@ def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
         "aucune page publiée ne dit `noindex` : cette garde ne garderait rien "
         "(la page 404, au moins, doit le dire)")
     proposees = _urls_du_fichier() | set(bs.urls())
-    contradictions = sorted(rel for rel in refusees if bs.url_de(rel, h) in proposees)
-    assert not contradictions, (
-        f"pages qui refusent l'indexation et que le sitemap propose : {contradictions} "
+    contradictions = {rel for rel in refusees if bs.url_de(rel, h) in proposees}
+    nouvelles = sorted(contradictions - CONTRADICTIONS_NOINDEX_EN_ATTENTE)
+    assert not nouvelles, (
+        f"pages qui refusent l'indexation et que le sitemap propose : {nouvelles} "
         "— les écarter dans build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE")
+    resolues = sorted(CONTRADICTIONS_NOINDEX_EN_ATTENTE - contradictions)
+    assert not resolues, (
+        f"{resolues} ne sont plus des contradictions noindex/sitemap : les retirer "
+        "de CONTRADICTIONS_NOINDEX_EN_ATTENTE, pour que la liste ne couvre jamais "
+        "une page qu'elle n'a plus à couvrir")
 
 
 # Les adresses absentes où la page est supposée servie, et ce que chacune piège

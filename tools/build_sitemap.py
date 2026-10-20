@@ -1,7 +1,8 @@
 """build_sitemap.py — `sitemap.xml` et `robots.txt`, dérivés des pages SUIVIES par git.
 
 Les trois fichiers d'indexation du site rendaient 404 : `sitemap.xml`, `robots.txt`
-et `404.html` (mesuré en ligne le 2026-10-19). Ce générateur livre les deux premiers.
+et `404.html` (mesuré en ligne le 2026-10-19). Ce générateur livre les deux premiers ;
+le troisième est livré par `tools/build_404.py`, et ce générateur l'écarte du sitemap.
 
 POURQUOI GIT ET PAS LE DISQUE. `corpus_publie.pages_publiees()` parcourt le disque
 par `rglob`, et rend **20** pages sur le poste de l'Architecte contre **14** dans un
@@ -18,7 +19,9 @@ pire que pas de `lastmod` : un explorateur qui s'y fie revisite au mauvais momen
 ou cesse de revisiter. On déclare l'ensemble des URL, et rien qu'on ne puisse garder
 vrai.
 
-OÙ IL EST BRANCHÉ. `build_site.py` l'appelle comme ses six frères, donc la porte
+OÙ IL EST BRANCHÉ. `build_site.py` l'appelle EN DERNIER, après ses huit frères
+(compté le 2026-10-20 : `build()` importe neuf générateurs, celui-ci compris ; ce
+paragraphe en annonçait six quand ils étaient déjà sept), donc la porte
 « Publier » du cockpit — qui lance `build_site.py` — le rejoue sans que personne ait
 à s'en souvenir. La leçon du 2026-10-15 (« une garde citée n'est pas une garde qui
 s'exécute ») vaut aussi pour un fichier dérivé : s'il n'a pas d'écrivain dans la
@@ -34,14 +37,25 @@ ROOT = Path(__file__).resolve().parents[1]
 # Répertoires suivis par git mais JAMAIS servis comme des pages.
 HORS_SITE = ("tools/", ".github/")
 
-# Pages servies qui ne sont pas des pages d'atterrissage : les deux widgets de
-# démonstration, conçus pour être atteints depuis `/demos/` (et par l'Academy, qui
-# pointe `robin-denis.com/demos/#bs`). Un visiteur qui tomberait dessus depuis un
-# moteur verrait un fragment hors de son cadre.
+# Pages servies qui ne sont pas des pages d'atterrissage :
+#
+#   * les deux widgets de démonstration, conçus pour être atteints depuis `/demos/`
+#     (et par l'Academy, qui pointe `robin-denis.com/demos/#bs`). Un visiteur qui
+#     tomberait dessus depuis un moteur verrait un fragment hors de son cadre ;
+#   * la page 404 (`tools/build_404.py`). GitHub Pages la sert à la place de toute
+#     adresse absente : déclarée, elle serait une page « introuvable » proposée
+#     comme résultat de recherche. Elle dit aussi `noindex`, et c'est cette
+#     directive qui rend l'écart obligatoire et non facultatif : la garde
+#     `test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap` rougit
+#     si une page `noindex` entre dans le sitemap.
+#
 # Cette liste est VOLONTAIREMENT explicite : le test
-# `test_toute_page_servie_est_declaree_ou_exclue_consciemment` rougit dès qu'une
+# `test_toute_page_servie_est_declaree_ou_ecartee_sciemment` rougit dès qu'une
 # page apparaît sans qu'on ait tranché son sort. C'est le but — pas une corvée.
+# (Ce commentaire citait jusqu'au 2026-10-20 un nom de test qui n'existe pas,
+# `…_ou_exclue_consciemment`.)
 PAS_DES_PAGES_D_ATTERRISSAGE = (
+    "404.html",
     "demos/widgets/bs.html",
     "demos/widgets/mc.html",
 )
