@@ -45,7 +45,8 @@ import corpus_publie  # noqa: E402
 import nav  # noqa: E402
 
 # Population : les cinq répertoires DÉCOUVERTS sur le disque (témoin de
-# `corpus_publie`, pas une liste écrite ici), plus l'accueil.
+# `corpus_publie`, pas une liste écrite ici), plus l'accueil et la page d'erreur
+# (cf. ci-dessous) — sept pages.
 #
 # L'accueil est nommé en clair parce que rien ne peut le découvrir : tous les
 # calculs de fermeture de `corpus_publie` itèrent les RÉPERTOIRES du dépôt, et

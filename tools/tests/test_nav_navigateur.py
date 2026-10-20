@@ -240,11 +240,15 @@ def site_servi():
 
 @pytest.fixture(scope="module")
 def mesures(site_servi):
-    """Une mesure par (page, largeur) : chaque page chargée une fois, 13 tailles.
+    """Une mesure par (page, largeur), et la tabulation à deux largeurs.
 
-    `set_viewport_size` au lieu d'un rechargement par largeur : les polices
-    restent chargées et la mesure coûte un chargement par page au lieu de 13 —
-    7 au lieu de 91 depuis la page 404.
+    Géométrie : `set_viewport_size` au lieu d'un rechargement par largeur — les
+    polices restent chargées, et les 13 largeurs coûtent un chargement par page
+    au lieu de 13. Clavier : un rechargement par largeur de
+    `LARGEURS_AU_CLAVIER` (deux), cf. ci-dessous. Mesuré le 2026-10-20 en
+    comptant les `Page.goto` : 21 chargements pour les 7 pages (3 chacune :
+    un pour la géométrie, deux pour le clavier). La géométrie seule en
+    coûterait 91 (7 × 13) si elle rechargeait à chaque largeur.
     """
     from playwright.sync_api import sync_playwright
 

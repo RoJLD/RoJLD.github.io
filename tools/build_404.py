@@ -52,8 +52,11 @@ et toutes atteignables au pointeur, aucune requête en 404 hors le document,
 aucune erreur JavaScript, aucun débordement horizontal ; `data-theme` posé entre
 24 et 167 ms, le premier rendu entre 172 et 1 896 ms ; `lang` et les textes
 anglais posés avant le premier rendu dans les 20 chargements en anglais. Ce
-dernier point n'a PAS la garantie du thème : la bascule de langue vit en fin de
-`<body>`, comme sur les autres pages. Sur trois passages de la même mesure, 10,
+dernier point n'a PAS la garantie du thème : la bascule de langue vit dans
+`<body>`, pas dans `<head>`. Mesuré le 2026-10-20 sur les cinq pages qui lisent
+la langue mémorisée : en fin de corps (aucun élément après son script) sur la
+404, /explorer/, /graph/ et /highlights/ ; sur l'accueil, son script est suivi
+des modales (région `BUILD:modals`). Sur trois passages de la même mesure, 10,
 1 puis 9 chargements anglais sur 20 ont vu un premier rappel
 `requestAnimationFrame` AVANT la bascule ; aucune image n'était peinte à ce
 moment-là (`first-paint` est venu après elle dans les 20 cas), mais c'est une

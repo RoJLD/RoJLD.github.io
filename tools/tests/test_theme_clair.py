@@ -301,11 +301,12 @@ def test_la_palette_claire_est_reellement_claire_et_la_sombre_sombre(page):
 #
 #   * l'AUTRE thème de la même page — la palette sombre est le rendu de
 #     référence, celui qui a été servi pendant des mois, et le clair en a été
-#     dérivé. Mesuré sur les 30 couples (10 pages × 3 variables) : le clair
-#     conserve entre 82,3 % et 91,4 % du contraste du sombre ;
-#   * les AUTRES pages du corpus — neuf fichiers que la mutation ne touche pas.
-#     Mesuré : le contraste d'une variable de texte donnée est identique sur les
-#     dix pages (--tx-1 15,03 · --tx-2 5,83 · --tx-3 2,86, écart nul).
+#     dérivé. Mesuré le 2026-10-20 sur les 27 couples (9 pages × 3 variables) :
+#     le clair conserve entre 82,3 % et 91,4 % du contraste du sombre ;
+#   * les AUTRES pages du corpus — huit fichiers que la mutation ne touche pas.
+#     Mesuré le même jour : le contraste d'une variable de texte donnée est
+#     identique sur les neuf pages (--tx-1 15,03 · --tx-2 5,83 · --tx-3 2,86 en
+#     clair, écart nul).
 #
 # La tolérance retenue (moitié) n'est pas l'attendu — l'attendu est le contraste
 # mesuré ailleurs. Elle dit seulement jusqu'où une charte a le droit de bouger :
