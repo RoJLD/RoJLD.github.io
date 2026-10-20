@@ -670,8 +670,8 @@ def test_la_404_rend_chaque_texte_traduit_dans_la_langue_choisie(nom, langue, qu
         # et la 404 serait accusée à sa place.
         assert (origine["avant"]["lang"], origine["apres"]["lang"]) == ("fr", "en"), (
             f"{origine['page']} : `lang` {origine['avant']['lang']!r} avant le clic "
-            f"et {origine['apres']['lang']!r} après — le choix n'y a pas été fait, "
-            "la 404 n'est pas jugée")
+            f"et {origine['apres']['lang']!r} après, au lieu de 'fr' puis 'en' — "
+            "c'est cette page qui n'a pas basculé ; la 404 n'est pas jugée")
     assert etat["h1"], f"/404.html {quand} : plus de h1"
     assert len(etat["entrees"]) == len(nav.ENTREES), (
         f"/404.html {quand} : {len(etat['entrees'])} entrée(s) de nav visible(s) "
