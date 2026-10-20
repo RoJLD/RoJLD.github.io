@@ -2205,3 +2205,134 @@ def test_aucun_chemin_de_la_page_404_ne_depend_de_l_adresse_servie():
         "404.html écrit des chemins dont la cible dépend de l'adresse servie — à "
         "une profondeur, ils mènent à une autre 404 ou ne chargent pas : "
         + " ; ".join(f"{u!r} -> {c}" for u, c in fautes.items()))
+
+
+# ── Le thème posé dans <head> : la promesse de `build_404`, gardée ──────────
+#
+# `build_404` annonce que le thème mémorisé est posé AVANT que le corps n'existe,
+# pour qu'un visiteur en thème clair ne voie jamais un premier rendu sombre. Le
+# relecteur adverse du 2026-10-20 l'a mesuré vrai, puis a montré que rien ne le
+# gardait : sur une copie vierge, le script du thème déplacé en fin de `<body>`
+# (générateur et artefact régénéré) laissait la porte complète à deux drapeaux
+# verte, 1724 passed, 6 skipped. La garde ci-dessous lit la STRUCTURE du
+# document : où vit le script qui lit `getItem('theme')`, et s'il s'exécute à
+# l'endroit où il est écrit.
+#
+# Seule la 404 fait cette promesse. Les six autres pages qui restaurent le thème
+# le font dans `<body>` (mesuré le 2026-10-20 avec la sonde ci-dessous, six sur
+# six) et n'annoncent rien d'autre ; les juger ici exigerait d'elles ce qu'elles ne
+# prétendent pas, et rougirait le jour où l'une d'elles ferait mieux.
+
+# Types de `<script>` qu'un navigateur exécute comme script CLASSIQUE, donc à
+# l'endroit où il est écrit. `type="module"` est différé jusqu'à la fin de
+# l'analyse, même écrit dans `<head>` : il ne pose plus rien avant le corps.
+_TYPES_CLASSIQUES = frozenset({"", "text/javascript", "application/javascript"})
+
+
+class _ScriptsDuDocument(_HTMLParser):
+    """Chaque `<script>` du document : dans `<head>` ou non, ses attributs, son texte."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._dans_head = False
+        self._courant: dict | None = None
+        self.scripts: list[dict] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "head":
+            self._dans_head = True
+        elif tag == "body":
+            self._dans_head = False
+        elif tag == "script":
+            self._courant = {"dans_head": self._dans_head, "texte": "",
+                             "attrs": {k.lower(): (v or "") for k, v in attrs}}
+
+    def handle_endtag(self, tag):
+        if tag == "head":
+            self._dans_head = False
+        elif tag == "script" and self._courant is not None:
+            self.scripts.append(self._courant)
+            self._courant = None
+
+    def handle_data(self, data):
+        if self._courant is not None:
+            self._courant["texte"] += data
+
+
+def scripts_qui_lisent_le_theme(texte: str) -> list[dict]:
+    """Les `<script>` dont le texte lit le thème mémorisé, dans l'ordre du document.
+
+    Le marqueur est celui de `corpus_publie.pages_a_boot()`, le témoin du
+    démarrage du thème : les deux lectures désignent le même script.
+    """
+    p = _ScriptsDuDocument()
+    p.feed(texte)
+    p.close()
+    return [s for s in p.scripts if corpus_publie._LECTURE_THEME in s["texte"]]
+
+
+def s_execute_ou_il_est_ecrit(script: dict) -> bool:
+    """Script en ligne et classique : le navigateur l'exécute en le rencontrant.
+
+    Un `src` le ferait attendre son téléchargement ; `type="module"` le diffère
+    après l'analyse du document. `defer` et `async` n'ont aucun effet sur un
+    script classique en ligne, et ne sont donc pas regardés.
+    """
+    a = script["attrs"]
+    return "src" not in a and a.get("type", "").strip().lower() in _TYPES_CLASSIQUES
+
+
+@pytest.mark.parametrize("html, attendu", [
+    pytest.param("<html><head><script>t=localStorage.getItem('theme')</script></head>"
+                 "<body></body></html>", [(True, True)], id="dans-head"),
+    pytest.param("<html><head></head><body><p>x</p>"
+                 "<script>t=localStorage.getItem('theme')</script></body></html>",
+                 [(False, True)], id="en-fin-de-body"),
+    pytest.param("<html><head><script type=\"module\">t=localStorage.getItem('theme')"
+                 "</script></head><body></body></html>", [(True, False)], id="module-differe"),
+    pytest.param("<html><head><script src=\"/theme.js\"></script></head><body>"
+                 "<script>var x = 1;</script></body></html>", [], id="aucun-lecteur"),
+])
+def test_la_sonde_du_theme_situe_le_script_et_son_execution(html, attendu):
+    """La sonde ci-dessous, prouvée sur des cas FABRIQUÉS, dans les deux sens.
+
+    Une sonde qui croirait tout script dans `<head>`, ou tout script exécuté sur
+    place, rendrait la garde de la 404 verte en ne mesurant rien.
+    """
+    vus = [(s["dans_head"], s_execute_ou_il_est_ecrit(s))
+           for s in scripts_qui_lisent_le_theme(html)]
+    assert vus == attendu
+
+
+def test_la_page_404_pose_le_theme_dans_head_avant_le_corps():
+    """Le thème mémorisé est appliqué par un script de `<head>`, exécuté sur place.
+
+    C'est ce qui le pose AVANT le premier rendu, par construction : le corps
+    n'existe pas encore quand ce script tourne. Trois exigences :
+
+      1. UN SEUL script lit le thème (le harnais du thème,
+         `theme_boot_harness.extract_script`, exige déjà qu'un seul le fasse) ;
+      2. il est dans `<head>` ;
+      3. il s'exécute où il est écrit — en ligne, classique, ni `src` ni module —
+         et il ÉCRIT `data-theme` : lire sans appliquer ne poserait rien.
+
+    Jugée sur l'artefact publié : l'égalité de l'artefact et de la sortie de
+    `build_404` est tenue par `test_l_artefact_publie_est_la_sortie_de_son_generateur`,
+    donc un générateur muté sans régénération rougit là, et un générateur muté
+    puis régénéré rougit ici.
+    """
+    texte = (ROOT / corpus_publie.PAGE_D_ERREUR).read_text(encoding="utf-8")
+    lecteurs = scripts_qui_lisent_le_theme(texte)
+    assert len(lecteurs) == 1, (
+        f"404.html porte {len(lecteurs)} script(s) qui lisent le thème : la garde "
+        "attend exactement celui de <head>")
+    script = lecteurs[0]
+    assert script["dans_head"], (
+        "le script qui lit le thème n'est plus dans <head> : le corps de la 404 peut "
+        "être peint avant que le thème mémorisé soit posé — un premier rendu sombre "
+        "pour un visiteur en thème clair, ce que build_404 dit éviter")
+    assert s_execute_ou_il_est_ecrit(script), (
+        f"le script du thème est dans <head> mais ne s'exécute pas sur place "
+        f"(attributs : {script['attrs']}) : il ne pose plus le thème avant le corps")
+    assert "'data-theme'" in script["texte"], (
+        "le script de <head> lit le thème sans écrire `data-theme` : il ne l'applique pas")

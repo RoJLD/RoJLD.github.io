@@ -17,10 +17,13 @@ CE QUI DISTINGUE CETTE PAGE DES AUTRES, et pourquoi :
     les polices et l'icône sont des URL complètes. Garde :
     `test_liens_internes.py::test_aucun_chemin_de_la_page_404_ne_depend_de_l_adresse_servie`.
   * LE THÈME EST POSÉ DANS `<head>`, avant que le `<body>` n'existe. Les autres
-    pages le restaurent en fin de `<body>` ; la page d'erreur n'a aucune raison
+    pages le restaurent dans `<body>` ; la page d'erreur n'a aucune raison
     de risquer, pour un visiteur en thème clair, un premier rendu sombre. Seul
     ce script lit `getItem('theme')` — le harnais du thème
     (`theme_boot_harness.extract_script`) exige qu'un seul script le fasse.
+    Garde, qui lit la structure du document (le script est dans `<head>`, en
+    ligne et classique, et écrit `data-theme`) :
+    `test_liens_internes.py::test_la_page_404_pose_le_theme_dans_head_avant_le_corps`.
   * LES DEUX LANGUES SONT LIVRÉES, donc le bouton de langue est là. Chaque texte
     visible porte `data-fr` et `data-en`, `<title>` compris, et la bascule écrit
     `lang` sur le document en même temps qu'elle remplace les textes : la langue
