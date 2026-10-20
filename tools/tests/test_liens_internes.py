@@ -1882,8 +1882,8 @@ def test_la_derivation_ecarte_bien_l_outillage_et_les_widgets():
     liste = bs.urls()
     h = bs.hote()
     assert f"https://{h}/" in liste
-    for widget in bs.PAS_DES_PAGES_D_ATTERRISSAGE:
-        assert bs.url_de(widget, h) not in liste, f"{widget} devait etre ecarte"
+    for ecartee in bs.PAS_DES_PAGES_D_ATTERRISSAGE:
+        assert bs.url_de(ecartee, h) not in liste, f"{ecartee} devait etre ecartee"
     assert bs.url_de("index.html", h) == f"https://{h}/"
     assert bs.url_de("projects/index.html", h) == f"https://{h}/projects/"
     assert bs.url_de("radar.html", h) == f"https://{h}/radar.html"
