@@ -82,7 +82,13 @@ PAGES_GENEREES = corpus_publie.destinations_nav()
 # Déplacer une attente ne la garde pas : une liste que son unique lecteur compare
 # à elle-même ne peut pas diverger. Elle DÉRIVE donc, de trois signaux disjoints
 # du site publié qui doivent coïncider (cf. `test_les_trois_temoins_du_theme_...`).
-PAGES_ATTEIGNABLES = corpus_publie.pages_atteintes_par_la_nav()
+#
+# Le premier signal est « les pages qu'un visiteur ATTEINT » : d'un clic de nav,
+# ou — pour la page d'erreur, cible d'aucun lien — par n'importe quelle adresse
+# absente (cf. `corpus_publie.pages_atteintes`). Le thème choisi doit y survivre
+# aussi : un visiteur en thème clair qui suit un lien périmé ne doit pas tomber
+# sur une page noire.
+PAGES_ATTEIGNABLES = corpus_publie.pages_atteintes()
 PAGES_QUI_PERSISTENT = corpus_publie.pages_qui_persistent_le_theme()
 
 
@@ -92,8 +98,9 @@ def test_les_trois_temoins_du_theme_disent_la_meme_chose():
     Trois lectures indépendantes du site publié, qui n'ont aucune ligne de code
     ni aucun marqueur en commun :
 
-      * `pages_atteintes_par_la_nav()` — les `href` des blocs `<nav>`, résolus
-        sur le disque comme le ferait un navigateur. Ne regarde pas le thème.
+      * `pages_atteintes()` — les `href` des blocs `<nav>`, résolus sur le
+        disque comme le ferait un navigateur, plus la page d'erreur que
+        l'hébergeur sert à toute adresse absente. Ne regarde pas le thème.
       * `pages_a_boot()` — `getItem('theme')`, le script de démarrage.
       * `pages_qui_persistent_le_theme()` — `setItem('theme'`, le basculeur.
 
@@ -110,8 +117,9 @@ def test_les_trois_temoins_du_theme_disent_la_meme_chose():
     nav, boot, persist = (set(PAGES_ATTEIGNABLES), set(PAGES_A_BOOT),
                           set(PAGES_QUI_PERSISTENT))
     assert nav == boot, (
-        f"pages de la nav qui ne restaurent plus le thème : {sorted(nav - boot)} ; "
-        f"pages qui le restaurent sans être dans la nav : {sorted(boot - nav)}")
+        f"pages atteintes (par la nav, ou par une adresse absente pour la page "
+        f"d'erreur) qui ne restaurent plus le thème : {sorted(nav - boot)} ; "
+        f"pages qui le restaurent sans être atteintes : {sorted(boot - nav)}")
     assert boot == persist, (
         f"pages qui restaurent sans mémoriser : {sorted(boot - persist)} ; "
         f"pages qui mémorisent sans restaurer (choix perdu au rechargement) : "
@@ -142,8 +150,12 @@ def test_aucune_section_de_la_nav_n_est_hors_du_champ_du_theme():
     # Réabaissés de nouveau au 2026-10-14 (spec Academy § 9.3) : retrait de
     # `academy/index.html`, servie désormais par le dépôt-projet RoJLD/academy
     # — 9 -> 8 pages à palette, 15 -> 14 pages publiées, mesurés après retrait.
-    assert len(PAGES_A_PALETTE) >= 8, PAGES_A_PALETTE
-    assert len(corpus_publie.pages_publiees()) >= 14, corpus_publie.pages_publiees()
+    # Relevés au 2026-10-20 avec la page 404, qui porte les deux palettes :
+    # 8 -> 9 pages à palette, 14 -> 15 pages publiées (copie vierge, sans les
+    # maquettes non suivies d'un poste). Laissés à 8 et 14, ils ne rougissaient
+    # plus à la première amputation.
+    assert len(PAGES_A_PALETTE) >= 9, PAGES_A_PALETTE
+    assert len(corpus_publie.pages_publiees()) >= 15, corpus_publie.pages_publiees()
 
 
 def _palette(html: str, theme: str) -> set[str] | None:
@@ -212,7 +224,8 @@ def _paire_du_corps(html: str) -> tuple[str, str]:
 
     Découvertes dans la règle CSS de la page, jamais choisies à la main : c'est
     la paire que le visiteur voit, et elle n'est pas la même partout (les deux
-    pages d'articles peignent `--bg`, les huit autres `--bg-0`).
+    pages d'articles peignent `--bg`, toutes les autres pages à palette
+    `--bg-0` — sept le 2026-10-20).
     """
     m = re.search(r"(?:^|[\s,{}])body\s*\{([^}]*)\}", html)
     assert m, "aucune règle `body { … }` : la paire réellement peinte est introuvable"
@@ -279,19 +292,21 @@ def test_la_palette_claire_est_reellement_claire_et_la_sombre_sombre(page):
 # des fonds clairs. Une garde qui ne regarde qu'une paire ne garde qu'une paire.
 #
 # Le plancher WCAG absolu ne peut PAS être étendu à ces variables : `--tx-3` vaut
-# 2,86 aujourd'hui dans les deux thèmes (texte tertiaire, atténué par choix de
-# charte). Exiger 4,5 partout serait rouge sur la production, donc faux.
+# 2,86 sur le fond clair et 3,48 sur le sombre (mesuré le 2026-10-20, identique
+# sur les neuf pages à palette ; texte tertiaire, atténué par choix de charte).
+# Exiger 4,5 partout serait rouge sur la production, donc faux.
 #
 # L'attendu vient donc de deux SECONDES LECTURES, aucune n'étant la valeur
 # testée ni une constante du dépôt :
 #
 #   * l'AUTRE thème de la même page — la palette sombre est le rendu de
 #     référence, celui qui a été servi pendant des mois, et le clair en a été
-#     dérivé. Mesuré sur les 30 couples (10 pages × 3 variables) : le clair
-#     conserve entre 82,3 % et 91,4 % du contraste du sombre ;
-#   * les AUTRES pages du corpus — neuf fichiers que la mutation ne touche pas.
-#     Mesuré : le contraste d'une variable de texte donnée est identique sur les
-#     dix pages (--tx-1 15,03 · --tx-2 5,83 · --tx-3 2,86, écart nul).
+#     dérivé. Mesuré le 2026-10-20 sur les 27 couples (9 pages × 3 variables) :
+#     le clair conserve entre 82,3 % et 91,4 % du contraste du sombre ;
+#   * les AUTRES pages du corpus — huit fichiers que la mutation ne touche pas.
+#     Mesuré le même jour : le contraste d'une variable de texte donnée est
+#     identique sur les neuf pages (--tx-1 15,03 · --tx-2 5,83 · --tx-3 2,86 en
+#     clair, écart nul).
 #
 # La tolérance retenue (moitié) n'est pas l'attendu — l'attendu est le contraste
 # mesuré ailleurs. Elle dit seulement jusqu'où une charte a le droit de bouger :
@@ -481,6 +496,7 @@ BASCULEUR = {
     "highlights/index.html": "tgTheme",
     "graph/index.html": "tgTheme",
     "demos/index.html": "tgTheme",
+    "404.html": "tgTheme",
 }
 
 # Le contrôle qui déclenche la bascule, tel qu'il est ÉCRIT dans la page servie.

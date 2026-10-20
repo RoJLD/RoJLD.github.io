@@ -111,9 +111,13 @@ def render_blog(profile):
 def _article_en_url(fr_url):
     """Délègue au helper partagé de build_articles.
 
-    Trois pages annoncent un article (index #blog, explorer, highlights). La revue
-    a montré qu'une implémentation par surface en laisse deux derrière : elles
-    traduisaient le titre puis envoyaient l'anglophone sur la page française."""
+    Trois pages annoncent un article ET basculent son lien avec la langue (index
+    #blog, explorer, highlights). La revue a montré qu'une implémentation par
+    surface en laisse deux derrière : elles traduisaient le titre puis
+    envoyaient l'anglophone sur la page française. Compté le 2026-10-20 : deux
+    autres pages lient l'article sans passer par ce helper — `/projects/`, qui
+    n'a pas de bascule de langue, et `/graph/`, dont le nœud d'article porte un
+    titre bilingue et un lien français seul."""
     import build_articles
     return build_articles.en_url_or_fallback(fr_url)
 
@@ -771,6 +775,15 @@ def build(profile_path=None, index_path=None, write=True, today=None):
         build_cv_templates.build_cv_templates(write=write)
     except Exception as exc:
         raise BuildError(f"génération du bundle templates CV échouée : {exc}")
+    # Génère la page 404 que GitHub Pages sert à toute adresse absente. Elle porte
+    # la nav de `tools/nav.py` : une entrée ou un libellé changé doit l'atteindre
+    # au même build que les cinq sous-pages, sinon la seule issue d'un visiteur
+    # égaré porte une barre périmée.
+    try:
+        import build_404
+        build_404.build_404(write=write)
+    except Exception as exc:
+        raise BuildError(f"génération de la page 404 échouée : {exc}")
     # Régénère sitemap.xml et robots.txt. Branché ICI, et pas laissé à une commande
     # séparée, parce que la porte « Publier » du cockpit lance `build_site.py` : un
     # fichier dérivé sans écrivain dans la porte qui tourne dérive (leçon du

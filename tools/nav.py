@@ -19,7 +19,8 @@ une page après l'autre.
 Ce que ce module décide, et ce qu'il ne décide pas :
 
   * il décide la LISTE et son ORDRE (`ENTREES`), donc l'ensemble des
-    destinations est le même sur les six pages, par construction ;
+    destinations est le même sur toutes les pages qui portent la barre — sept
+    depuis la page 404 du 2026-10-20 —, par construction ;
   * il ne décide AUCUN libellé : ils viennent de `site_texts.json`, la source
     déjà éditable depuis le cockpit. Un libellé écrit ici serait une deuxième
     source de vérité, et le texte statique FR de l'accueil doit de toute façon
@@ -43,12 +44,14 @@ les deux au lieu d'en imposer un :
 
   * l'accueil traduit par `data-i18n="<clé>"` + le dictionnaire `const i18n`
     injecté par `build_site` ;
-  * les sous-pages traduisent par `data-fr` / `data-en` lus par leur propre
-    `applyBrowseLang`.
+  * les sous-pages et la 404 portent `data-fr` / `data-en`, lus par la bascule
+    de chaque page : `applyBrowseLang` sur la 404, /explorer/ et /highlights/,
+    `applyGraphLang` sur /graph/ ; /projects/ et /demos/ ne les lisent plus
+    (pas de bouton de langue, cf. `render_boutons`).
 
 Unifier les deux dialectes serait un autre chantier (il faudrait embarquer le
-dictionnaire dans cinq pages, ou le retirer de l'accueil) ; unifier la LISTE n'a
-pas à l'attendre.
+dictionnaire dans les six pages du second dialecte — cinq sous-pages et la 404 —,
+ou le retirer de l'accueil) ; unifier la LISTE n'a pas à l'attendre.
 """
 from __future__ import annotations
 
@@ -113,6 +116,14 @@ ENTREES: tuple[tuple[str, str], ...] = (
 #                   corriger ici.
 #   bouton_langue   `/projects/` et `/demos/` n'en portent PAS, et c'est un
 #                   retrait assumé — voir `render_boutons`.
+#
+# `"404"` est la page d'erreur (`404.html`, `tools/build_404.py`). GitHub Pages la
+# sert à TOUTE adresse absente, à toute profondeur : servie à `/a/b/c/nexiste`,
+# une ancre nue `#blog` ou un relatif `projects/` y viseraient une autre page
+# manquante. Elle prend donc les réglages d'une sous-page, dont `href` rend des
+# destinations absolues (`/#blog`, `/projects/`) — et aucune entrée n'y est
+# active, puisqu'aucune cible ne s'appelle `404/`. Elle porte le bouton de
+# langue : elle livre ses deux langues (cf. `build_404`).
 _PAGES: dict[str, dict[str, object]] = {
     "accueil": {
         "nav_attrs": ' id="nav"',
@@ -129,6 +140,7 @@ _PAGES: dict[str, dict[str, object]] = {
     "explorer": {},
     "highlights": {},
     "graph": {},
+    "404": {},
 }
 
 _DEFAUTS: dict[str, object] = {
@@ -163,8 +175,9 @@ def charger_libelles(path: str | Path | None = None) -> dict[str, dict[str, str]
 
     Une clé manquante d'un côté ne doit pas produire une entrée sans libellé :
     `site_texts.json` est validé par `build_site.valider_site_texts` (mêmes clés
-    en fr et en), mais ce module est aussi appelé par les cinq générateurs de
-    sous-page, qui ne jouent pas cette validation. Il la refait sur SES clés.
+    en fr et en), mais ce module est aussi appelé par les six générateurs de
+    page (cinq sous-pages et la 404), qui ne jouent pas cette validation. Il la
+    refait sur SES clés.
     """
     p = Path(path) if path else SITE_TEXTS
     textes = json.loads(p.read_text(encoding="utf-8"))
@@ -212,7 +225,8 @@ def render_entrees(page: str, libelles: dict[str, dict[str, str]] | None = None)
     L'entrée active porte `class="on"` — et rien d'autre. `build_projects`
     écrivait `class="nav-projects on"`, la première classe ne servant qu'à sa
     propre règle d'amputation mobile (`.nav-r a:not(.nav-projects)`) : une classe
-    de plus pour exprimer ce que `.on` dit déjà sur les cinq autres pages.
+    de plus pour exprimer ce que `.on` dit déjà sur toute autre page qui a une
+    entrée active (l'accueil et la 404 n'en ont aucune).
     """
     lib = libelles if libelles is not None else charger_libelles()
     dialecte = str(_reglage(page, "dialecte"))
@@ -239,8 +253,9 @@ def render_boutons(page: str) -> str:
     rangée. Un contrôle qui se déplace avec le contenu défilant n'est plus un
     contrôle.
 
-    Le bouton de langue est émis sur QUATRE pages des six, et les deux absences
-    sont un RETRAIT ASSUMÉ, décidé le 2026-10-19 après mesure. `/projects/` et
+    Le bouton de langue est émis sur CINQ pages des sept (la 404, livrée le
+    2026-10-20 avec ses deux langues, le porte), et les deux absences sont un
+    RETRAIT ASSUMÉ, décidé le 2026-10-19 après mesure. `/projects/` et
     `/demos/` l'ont porté un temps (« défaut F ») : il annonçait l'anglais sans
     le livrer. Mesuré par un parseur HTML sur les artefacts publiés, texte
     visible hors nav :
@@ -284,8 +299,8 @@ def render_boutons(page: str) -> str:
 # ── Ordre de tabulation sous 1024 px : pourquoi AUCUN `order:` ──────────────
 #
 # Cette explication vit ICI, dans un commentaire Python que personne ne
-# télécharge, et les six feuilles de style n'en gardent qu'une ligne qui y
-# renvoie. Mesuré le 2026-10-19 : la version longue faisait 924 octets UTF-8
+# télécharge, et les feuilles de style de la barre n'en gardent qu'une ligne qui
+# y renvoie (cf. « LES SEPT ENDROITS » en fin de section). Mesuré le 2026-10-19 : la version longue faisait 924 octets UTF-8
 # (916 caractères) et était SERVIE à chaque visiteur sur chacune des six pages,
 # soit 5 544 octets de rationnel de conception payés par le réseau. La ligne
 # courte en fait 204 (202 caractères) : 1 224 octets en tout, −4 320, −78 %.
@@ -323,7 +338,8 @@ def render_boutons(page: str) -> str:
 #     1023 px     94 -> 132  (+38)    93 -> 129  (+36)
 #
 # `/graph/` est 3 à 4 px plus basse, et la cause est mesurée : son `body` porte
-# `line-height:1.6` quand les cinq autres portent `1.7`. À `font-size:11px`, une
+# `line-height:1.6` quand toutes les autres pages de la barre portent `1.7` (les
+# cinq du tableau, et la 404 depuis le 2026-10-20). À `font-size:11px`, une
 # entrée de nav y fait 17,6 px de hauteur de ligne contre 18,7 ailleurs, et la
 # marque 30,4 px contre 32,3 — mêmes `font-size` et mêmes marges internes (5 px)
 # de part et d'autre. La barre est `position:static` sous le seuil (décision
@@ -332,11 +348,15 @@ def render_boutons(page: str) -> str:
 #
 # COMMENT REPRODUIRE, car la méthode change le chiffre. La page doit être
 # CHARGÉE à la largeur visée. `test_nav_navigateur.py` suit une autre voie, à
-# dessein (un chargement puis 13 largeurs sans recharger = 6 chargements au lieu
-# de 78), et cette voie ne rend pas les mêmes hauteurs de barre qu'un chargement
-# à chaque largeur — quelques pixels d'écart à 390 px, mesuré le 2026-10-19. Ses
-# hauteurs ne sont donc pas comparables à ce tableau, et ce test ne juge pas la
-# hauteur de la barre.
+# dessein : pour la géométrie, un chargement par page, puis ses 13 largeurs sans
+# recharger — treize fois moins de chargements pour cette phase (le clavier, lui,
+# recharge à chacune de ses deux largeurs : 21 chargements pour 7 pages dans sa
+# fixture `mesures`, compté le 2026-10-20 ; le test de la bascule de langue de
+# la 404 en ajoute deux, un chargement et un rechargement, à 1280 px seulement).
+# Cette voie ne rend pas les mêmes hauteurs de
+# barre qu'un chargement à chaque largeur — quelques pixels d'écart à 390 px,
+# mesuré le 2026-10-19. Ses hauteurs ne sont donc pas comparables à ce tableau,
+# et ce test ne juge pas la hauteur de la barre.
 #
 # POURQUOI PAS l'autre branche, que la décision mobile proposait en premier —
 # déplacer `.nav-btns` AVANT `.nav-r` dans le balisage. Déplacés seuls, les
@@ -345,16 +365,20 @@ def render_boutons(page: str) -> str:
 # 42 sur 42 cas (7 largeurs × 6 pages), mesuré. Cette branche échange donc un
 # défaut contre un autre — la mise en page, ou l'ordre de tabulation.
 #
-# LES SIX ENDROITS qui renvoient ici : `index.html` (écrit à la main, arbitrage 1
-# du 2026-10-15) et les cinq littéraux de style de `build_projects`,
-# `build_demos`, `build_browse`, `build_highlights`, `build_graph`.
+# LES SEPT ENDROITS qui renvoient ici : `index.html` (écrit à la main, arbitrage 1
+# du 2026-10-15) et les six littéraux de style de `build_projects`,
+# `build_demos`, `build_browse`, `build_highlights`, `build_graph` et, depuis le
+# 2026-10-20, `build_404`. Les mesures ci-dessus datent du 2026-10-19 et portent
+# sur les six premiers ; la 404 copie la barre de `build_highlights` à
+# l'identique, et `test_nav_navigateur.py` la mesure avec les autres.
 
 
 def render_nav(page: str) -> str:
     """Le bloc `<nav>` complet de la page `page`, marque et boutons compris.
 
-    `page` vaut `"accueil"` ou le nom du répertoire servi (`"projects"`,
-    `"demos"`, `"explorer"`, `"highlights"`, `"graph"`). Une page inconnue est
+    `page` vaut `"accueil"`, le nom du répertoire servi (`"projects"`,
+    `"demos"`, `"explorer"`, `"highlights"`, `"graph"`) ou `"404"` pour la page
+    d'erreur. Une page inconnue est
     refusée : c'est elle qui décide quelle entrée est active, donc une faute de
     frappe produirait une barre sans entrée active, silencieusement.
     """

@@ -40,6 +40,7 @@ import pathlib
 import re
 import sys
 from html.parser import HTMLParser as _HTMLParser
+from urllib.parse import urljoin
 
 import pytest
 
@@ -76,9 +77,11 @@ EXCLUDED_DIRS = {".git", "tools", "node_modules"}
 # FRANÇAISE de l'article, alors que la version anglaise, elle, était couverte.
 # Une liste relue à l'œil ne trouve pas ça ; une liste confrontée au corpus, si.
 #
-# `content` (52 occurrences, balises meta) est délibérément EXCLU : il porte du
-# texte libre et des URL absolues (`og:image` pointe https://robin-denis.com/…),
-# donc l'y inclure fabriquerait des faux positifs sans couvrir un fichier local.
+# `content` (porté par les seules balises meta : 33 occurrences sur les pages
+# publiées, comptées le 2026-10-20 sur une copie vierge) est délibérément EXCLU :
+# il porte du texte libre et des URL absolues (`og:image` pointe
+# https://robin-denis.com/…), donc l'y inclure fabriquerait des faux positifs
+# sans couvrir un fichier local.
 URL_ATTR = re.compile(
     r'(?:href|data-href-en|data-href-fr|data-href|data-article-en|data-article-fr'
     r'|src|poster)\s*=\s*"([^"]*)"')
@@ -375,7 +378,8 @@ def test_le_scan_ecarte_les_references_internes_au_document():
 # Pourquoi le corpus réel ne pouvait pas fournir cette preuve : il ne contient
 # qu'UNE occurrence de `url(...)` en tout et pour tout, `url(%23n)` sur
 # l'accueil, qui désigne un filtre interne au SVG et non un fichier (compté :
-# `CSS_URL` rend 1 résultat sur les 15 pages publiées, `css_urls` en rend 0).
+# `CSS_URL` rend 1 résultat sur l'ensemble des pages publiées, `css_urls` en
+# rend 0 — recompté le 2026-10-20 sur les 15 pages d'une copie vierge).
 # Sur ce corpus-là, la branche est donc dormante — la mutation est sans effet
 # OBSERVABLE aujourd'hui, ce qui n'en fait pas une mutation bénigne : elle
 # retire au scanner une capacité que la première `url(assets/…)` écrite dans un
@@ -886,7 +890,10 @@ def _html_regenere() -> dict[str, str]:
     Population dérivée, aucune liste de pages écrite ici : les cinq sous-pages
     viennent de `_rendu_des_builders()` (table tenue par
     `test_la_table_des_generateurs_couvre_toutes_les_destinations`), l'accueil de
-    `build_site.build_html`.
+    `build_site.build_html`, la page d'erreur de `build_404` — dès que
+    `corpus_publie.page_d_erreur()` la trouve sur le disque, c'est-à-dire dès
+    qu'elle entre dans la population que le test ci-dessous confronte à cette
+    table.
 
     LIMITE NOMMÉE pour l'accueil : `build_html` INJECTE dans le fichier qu'on lui
     donne (régions `<!-- BUILD:x -->` et `/* BUILD:i18n_x */`, puis
@@ -899,6 +906,9 @@ def _html_regenere() -> dict[str, str]:
     out = {f"{page}/index.html": html
            for page, html in _rendu_des_builders().items()}
     out["index.html"] = build_site.build_html(_index_html(), _real_profile())
+    for rel in corpus_publie.page_d_erreur():
+        import build_404  # noqa: E401
+        out[rel] = build_404.build_404(write=False)
     return out
 
 
@@ -910,9 +920,13 @@ def test_la_table_des_artefacts_couvre_toutes_les_pages_de_la_nav():
     couvrir en entier : une page qui sortirait de la table perdrait son cas de
     test en même temps que la couverture qu'il apporte — c'est le défaut que
     `corpus_publie` documente en tête.
+
+    Le plancher égale la population mesurée : sept pages depuis le 2026-10-20
+    (l'accueil, les cinq sous-pages et la 404). Laissé à six, il laissait sortir
+    une page sans un mot.
     """
     nav = set(corpus_publie.pages_de_la_nav_partagee())
-    assert len(nav) >= 6, f"seules {len(nav)} page(s) de nav découvertes : {sorted(nav)}"
+    assert len(nav) >= 7, f"seules {len(nav)} page(s) de nav découvertes : {sorted(nav)}"
     assert set(_html_regenere()) == nav, (
         f"la table des artefacts régénérés {sorted(_html_regenere())} ne couvre pas "
         f"les pages de la nav partagée {sorted(nav)}")
@@ -969,7 +983,11 @@ def test_la_nav_partagee_mene_toujours_a_l_academy():
 
 
 def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises():
-    """La nav des six pages : MÊMES destinations, MÊME ordre, ancres comprises.
+    """La nav des pages qui la portent : MÊMES destinations, MÊME ordre, ancres comprises.
+
+    Sept pages depuis la page 404 du 2026-10-20 (cf.
+    `corpus_publie.pages_de_la_nav_partagee`) ; six avant, d'où les mesures
+    ci-dessous.
 
     `test_les_destinations_de_nav_viennent_bien_du_disque` compare deux lectures
     qui ne regardent que les répertoires : elles s'accordaient sur six noms
@@ -995,7 +1013,7 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
 
     Trois exigences, chacune fermant une des trois fuites mesurées :
 
-      1. les six pages déclarent la MÊME SÉQUENCE, pas le même ensemble.
+      1. toutes ces pages déclarent la MÊME SÉQUENCE, pas le même ensemble.
          L'union ne peut plus servir d'attendu — elle n'a pas d'ordre — donc la
          comparaison est deux à deux contre la séquence de l'accueil, la seule
          page écrite à la main. L'ordre des onze entrées n'était tenu par rien
@@ -1013,7 +1031,7 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
     les artefacts, plus `site_texts.json` pour son plancher. Un dépôt où
     `nav.py` disparaîtrait garde cette garde-ci.
 
-    `/` est exclu, et il faut le dire : les cinq sous-pages portent
+    `/` est exclu, et il faut le dire : les cinq sous-pages et la 404 portent
     `<a class="nav-brand" href="/">`, l'accueil un `<span class="nav-brand">`
     SANS href — il ne se lie pas à lui-même. `/` est donc le résidu
     irréductible de l'égalité, et le soustraire sans le nommer est la façon
@@ -1024,7 +1042,9 @@ def test_chaque_page_de_la_nav_declare_les_memes_destinations_ancres_comprises()
     ordonnees = corpus_publie.destinations_ordonnees_de_la_nav_par_page()
     par_page = {rel: tuple(d for d in dests if d != "/")
                 for rel, dests in ordonnees.items()}
-    assert len(par_page) >= 6, (
+    # Plancher égal à la population mesurée le 2026-10-20 : sept pages, la 404
+    # comprise. À six, une page sortie du groupe fermé passait ce plancher.
+    assert len(par_page) >= 7, (
         f"seules {len(par_page)} page(s) portent la nav partagée : {sorted(par_page)}")
     assert "index.html" in par_page, (
         "l'accueil ne porte plus la marque de la nav partagée — il sortait déjà "
@@ -1079,14 +1099,17 @@ def test_une_destination_non_reconnue_est_nommee_et_jamais_jetee(href, reconnue)
     rapporte plus ce que les pages déclarent, il rapporte ce qu'il sait lire.
 
     Pourquoi un test à entrées fabriquées plutôt qu'une mutation du corpus :
-    aucune page publiée ne porte aujourd'hui une de ces formes (mesuré, les 6
-    navs ne déclarent que `/x/`, `/#x` et `/`), donc la branche est DORMANTE, au
-    même titre que `poster` dans `URL_ATTR` ou la query de `resolve`. Et la
-    mutation qui en fabrique une rougit AVANT d'arriver jusqu'ici : écrire
-    `/graph` au lieu de `/graph/` sort `graph/` du groupe fermé de la nav, et
-    c'est le plancher de population du test ci-dessus qui parle (mesuré :
-    « seules 5 page(s) portent la nav partagée »). Le contrat se vérifie donc là
-    où le corpus est muet.
+    aucune page publiée ne porte une de ces formes (mesuré le 2026-10-20, les
+    sept navs ne déclarent que `/x/`, `/#x` et `/`), donc la branche est
+    DORMANTE, au même titre que `poster` dans `URL_ATTR` ou la query de
+    `resolve`. Et la mutation qui en fabrique une rougit AVANT d'arriver
+    jusqu'ici : écrire `/graph` au lieu de `/graph/` dans les sept navs sort
+    `graph/` du groupe fermé de la nav, et c'est le plancher de population du
+    test ci-dessus qui parle (mesuré le 2026-10-20 sur copie vierge : « seules 6
+    page(s) portent la nav partagée »). Ce plancher doit donc égaler la
+    population : laissé à six, la même mutation le franchissait et n'était
+    arrêtée qu'un cran plus loin, par le refus des formes non reconnues. Le
+    contrat se vérifie donc là où le corpus est muet.
 
     Les deux sens sont exercés : un témoin qui préfixerait TOUT passerait la
     moitié de ce test sans rien distinguer.
@@ -1784,11 +1807,14 @@ def test_le_sitemap_declare_exactement_les_pages_suivies_et_servies():
 def test_le_sitemap_ne_declare_aucune_page_que_git_ne_suit_pas():
     """Le piege mesure : `pages_publiees()` lit le DISQUE, pas git.
 
-    Sur le poste de l'Architecte elle rend 20 pages contre 14 dans un checkout
-    propre : les six de plus sont les maquettes internes de
-    `.superpowers/brainstorm/`, ignorees par `.gitignore` parce que ce depot est
-    PUBLIC. Un sitemap derive du disque les declarerait a un explorateur. Cette
-    garde refuse qu'une URL du sitemap designe un fichier que git ne suit pas.
+    Dans un checkout propre elle rend exactement les pages que git suit (15 le
+    2026-10-20, comptees sur une copie vierge) ; sur un poste, elle y ajoute
+    toute page HTML presente sans etre suivie. Sur celui de l'Architecte, ce
+    sont les maquettes internes de `.superpowers/brainstorm/`, ignorees par
+    `.gitignore` parce que ce depot est PUBLIC : l'ecart vaut leur nombre, et il
+    varie d'un poste a l'autre. Un sitemap derive du disque les declarerait a un
+    explorateur. Cette garde refuse qu'une URL du sitemap designe un fichier que
+    git ne suit pas.
     """
     bs = _sitemap_module()
     suivies = set(bs.pages_suivies())
@@ -1856,8 +1882,8 @@ def test_la_derivation_ecarte_bien_l_outillage_et_les_widgets():
     liste = bs.urls()
     h = bs.hote()
     assert f"https://{h}/" in liste
-    for widget in bs.PAS_DES_PAGES_D_ATTERRISSAGE:
-        assert bs.url_de(widget, h) not in liste, f"{widget} devait etre ecarte"
+    for ecartee in bs.PAS_DES_PAGES_D_ATTERRISSAGE:
+        assert bs.url_de(ecartee, h) not in liste, f"{ecartee} devait etre ecartee"
     assert bs.url_de("index.html", h) == f"https://{h}/"
     assert bs.url_de("projects/index.html", h) == f"https://{h}/projects/"
     assert bs.url_de("radar.html", h) == f"https://{h}/radar.html"
@@ -1890,3 +1916,645 @@ def test_le_sitemap_declare_les_racines_servies_par_un_autre_depot():
         for prefixe in servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT
         if u.startswith(f"https://{h}/{prefixe}") and u != f"https://{h}/{prefixe}")
     assert not profondes, f"URL internes d'un autre depot, inventees ici : {profondes}"
+
+
+# ---------------------------------------------------------------------------
+# La page 404
+#
+# GitHub Pages sert `404.html`, pris à la racine, à la place de TOUTE adresse
+# absente du site, à toute profondeur, avec le statut 404. Mesuré en ligne le
+# 2026-10-20, avant elle : `https://robin-denis.com/nexiste-pas` rendait la page
+# générique « Page not found · GitHub Pages » — ni nav, ni thème, ni retour.
+#
+# Ses gardes vivent ICI pour la raison que donne la section du sitemap : ce
+# fichier est le seul du corpus publié que joue la porte « Publier ». Celles qui
+# la tiennent COMME LES AUTRES pages de la nav (même séquence de destinations,
+# artefact égal à la sortie de son générateur, thème, langue, barre mesurée au
+# navigateur) ne sont pas réécrites ici : elle entre dans leur population par
+# `corpus_publie.page_d_erreur()`. Ne sont écrites ici que les propriétés qui lui
+# sont PROPRES.
+# ---------------------------------------------------------------------------
+
+
+def test_le_site_publie_sa_page_404():
+    """PLANCHER : la page existe, git la suit, et c'est celle que le corpus nomme.
+
+    Les gardes de corpus ne la jugent que si `corpus_publie.page_d_erreur()` la
+    trouve sur le disque : sans ce plancher, la supprimer les ferait toutes taire
+    d'un coup, en vert. Git est exigé EN PLUS du disque parce que GitHub Pages ne
+    sert que ce que git suit : un `404.html` non suivi passerait toutes les gardes
+    du poste et ne serait jamais servi.
+
+    Le nom est écrit ici en clair, et non relu dans `corpus_publie` : c'est le
+    second témoin de la convention de l'hébergeur. Si le corpus renommait sa
+    constante, l'égalité ci-dessous rougirait.
+    """
+    assert (ROOT / "404.html").is_file(), (
+        "404.html absent : toute adresse inconnue rend la page générique de GitHub "
+        "Pages, sans nav ni retour — relancez `py -3.13 tools/build_site.py`")
+    assert "404.html" in _sitemap_module().pages_suivies(), (
+        "404.html n'est pas suivie par git : GitHub Pages ne la servira pas")
+    assert corpus_publie.page_d_erreur() == ("404.html",), corpus_publie.page_d_erreur()
+
+
+class _DirectivesRobots(_HTMLParser):
+    """Les directives de `<meta name="robots" content="…">`, en minuscules."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.directives: set[str] = set()
+
+    def handle_starttag(self, tag, attrs):
+        if tag != "meta":
+            return
+        d = {k.lower(): (v or "") for k, v in attrs}
+        if d.get("name", "").strip().lower() == "robots":
+            self.directives |= {t.strip().lower()
+                                for t in d.get("content", "").split(",") if t.strip()}
+
+
+def _directives_robots(texte: str) -> set[str]:
+    p = _DirectivesRobots()
+    p.feed(texte)
+    return p.directives
+
+
+def test_la_page_404_demande_a_ne_pas_etre_indexee():
+    """`<meta name="robots" content="noindex">` : une page d'erreur n'est pas un résultat.
+
+    L'écarter du sitemap ne suffit pas : un moteur qui la rencontre par un lien
+    l'indexerait quand même. Le statut 404 ne suffit pas non plus, car l'adresse
+    `/404.html` elle-même répond 200 — mesuré le 2026-10-20 sur choosealicense.com,
+    un autre site GitHub Pages qui publie un `404.html` : `/404.html` rend 200, une
+    adresse absente rend 404, et les deux servent les mêmes 150 octets.
+    """
+    directives = _directives_robots((ROOT / "404.html").read_text(encoding="utf-8"))
+    assert "noindex" in directives, (
+        f"404.html ne demande pas à être écartée de l'index (directives robots : "
+        f"{sorted(directives)}) — une page « introuvable » proposée comme résultat")
+
+
+def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
+    """Un sitemap qui déclare une page `noindex` se contredit.
+
+    Il la propose à l'exploration pendant qu'elle demande à ne pas être indexée.
+    Tenu sur les DEUX lectures du sitemap, le fichier commité et la dérivation :
+    c'est cette garde qui donne son sens à l'écart de `404.html` dans
+    `build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE`. Retirer l'écart et régénérer le
+    sitemap ferait passer `test_toute_page_servie_est_declaree_ou_ecartee_sciemment`
+    — la page serait alors « déclarée » — et rougirait ici.
+
+    STRICTE, sans liste d'attente. À sa pose, le 2026-10-20, elle a trouvé quatre
+    contradictions déjà publiées : `analyzer`, `match`, `radar` et `simulator`
+    disent `noindex` depuis leur création, et le sitemap de #39 les déclarait.
+    Elles ont été tenues un temps dans une liste d'attente, puis tranchées le même
+    jour en respectant leur `noindex` : elles sont écartées dans
+    `PAS_DES_PAGES_D_ATTERRISSAGE`, avec leur raison, et la liste a disparu.
+    """
+    bs = _sitemap_module()
+    h = bs.hote()
+    refusees = sorted(
+        rel for rel in corpus_publie.pages_publiees()
+        if "noindex" in _directives_robots(
+            (ROOT / rel).read_text(encoding="utf-8", errors="replace")))
+    assert refusees, (
+        "aucune page publiée ne dit `noindex` : cette garde ne garderait rien "
+        "(la page 404, au moins, doit le dire)")
+    proposees = _urls_du_fichier() | set(bs.urls())
+    contradictions = sorted(rel for rel in refusees if bs.url_de(rel, h) in proposees)
+    assert not contradictions, (
+        f"pages qui refusent l'indexation et que le sitemap propose : {contradictions} "
+        "— les écarter dans build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE")
+
+
+# Les adresses absentes où la page est supposée servie, et ce que chacune piège
+# pour un chemin relatif : une profondeur, deux, une adresse à barre finale (la
+# base de résolution y est le dossier lui-même), cinq, et un dossier qui EXISTE —
+# servi à `/projects/nexiste`, un relatif `projects/` viserait `/projects/projects/`.
+ADRESSES_ABSENTES = ("/x", "/a/b", "/a/b/c/", "/a/b/c/d/e", "/projects/nexiste")
+
+# L'hôte n'entre pas dans la propriété mesurée : `.invalid` est réservé (RFC 2606)
+# et ne peut désigner aucun site réel.
+_HOTE_DE_MESURE = "https://site.invalid"
+
+# Attributs dont la valeur est une URL que le navigateur résout. Ceux que le champ
+# du scanner (`URL_ATTR`) reconnaît s'y ajoutent par comportement (cf.
+# `_porte_une_url`) — dont les `data-href-*` et `data-article-*` du site, que les
+# bascules de langue recopient dans `href`.
+_ATTRIBUTS_URL = frozenset({
+    "href", "src", "srcset", "imagesrcset", "action", "formaction", "poster",
+    "cite", "data", "ping", "itemtype", "manifest", "background", "longdesc",
+    "xlink:href",
+})
+_LISTES_SRCSET = frozenset({"srcset", "imagesrcset"})   # « url descripteur, url descripteur »
+_LISTES_D_URL = frozenset({"ping", "itemtype"})         # URL séparées par des espaces
+_IMPORT_CSS = re.compile(r"""@import\s+(?:url\()?\s*["']?([^"')\s;]+)""")
+
+
+def _porte_une_url(attribut: str) -> bool:
+    return attribut in _ATTRIBUTS_URL or bool(URL_ATTR.findall(f'<x {attribut}="v">'))
+
+
+class _CollecteurDUrl(_HTMLParser):
+    """Toute URL écrite dans un attribut, QUEL QUE SOIT le guillemet.
+
+    Un parseur, et non `URL_ATTR` : l'expression régulière du scanner ne lit que
+    les valeurs entre guillemets doubles. `href='projects/'` lui échappe, et c'est
+    exactement la forme qu'une édition à la main pourrait introduire.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.urls: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        for nom, valeur in attrs:
+            nom = nom.lower()
+            if valeur is None or not _porte_une_url(nom):
+                continue
+            if nom in _LISTES_SRCSET:
+                self.urls += [m.split()[0] for m in valeur.split(",") if m.split()]
+            elif nom in _LISTES_D_URL:
+                self.urls += valeur.split()
+            else:
+                self.urls.append(valeur.strip())
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+
+
+def urls_ecrites(texte: str) -> list[str]:
+    """Les URL que la page fait résoudre au navigateur : attributs, puis CSS."""
+    c = _CollecteurDUrl()
+    c.feed(texte)
+    return c.urls + css_urls(texte) + [u.strip() for u in _IMPORT_CSS.findall(texte)]
+
+
+def chemins_qui_dependent_de_l_adresse(texte: str) -> dict[str, list[str]]:
+    """{URL écrite: ses cibles distinctes}, pour chaque URL dont la cible CHANGE
+    selon l'adresse à laquelle la page est servie.
+
+    La propriété, et non son indice. « Commence par `/` » en est un : il refuse à
+    tort `https://…`, `data:…` ou `mailto:…`, et ne dit pas pourquoi. La propriété
+    est que la cible ne dépende pas de l'adresse servie — mesurée par `urljoin`,
+    la résolution de la RFC 3986 que porte la bibliothèque standard, aux adresses
+    de `ADRESSES_ABSENTES`.
+
+    Écartées parce qu'elles désignent le document lui-même où qu'il soit servi :
+    les ancres pures (`#haut`). Une valeur VIDE n'est pas écartée : elle vise
+    l'adresse servie, donc une page différente à chaque profondeur.
+    """
+    fautes: dict[str, list[str]] = {}
+    for u in urls_ecrites(texte):
+        if u.startswith("#"):
+            continue
+        cibles = sorted({urljoin(_HOTE_DE_MESURE + a, u) for a in ADRESSES_ABSENTES})
+        if len(cibles) > 1:
+            fautes[u] = cibles
+    return fautes
+
+
+@pytest.mark.parametrize("html, attendues", [
+    pytest.param('<a href="projects/">p</a>', {"projects/"}, id="lien-relatif"),
+    pytest.param('<link rel="stylesheet" href="style.css">', {"style.css"},
+                 id="feuille-relative"),
+    pytest.param("<a href='../x/'>x</a>", {"../x/"},
+                 id="guillemet-simple-que-la-regex-ne-voit-pas"),
+    pytest.param('<img srcset="a.png 1x, /b.png 2x" src="/c.png" alt="">', {"a.png"},
+                 id="srcset"),
+    pytest.param("<style>@font-face{src:url(fonts/x.woff2)}</style>", {"fonts/x.woff2"},
+                 id="police-en-css"),
+    pytest.param("<div style=\"background:url('img/x.png')\"></div>", {"img/x.png"},
+                 id="style-en-ligne"),
+    pytest.param('<style>@import "theme.css";</style>', {"theme.css"}, id="import-css"),
+    pytest.param('<script src="js/app.js"></script>', {"js/app.js"}, id="script-relatif"),
+    pytest.param('<a href="">ici</a>', {""}, id="href-vide"),
+    pytest.param(
+        '<a href="/projects/">a</a><a href="/#contact">b</a><a href="#haut">c</a>'
+        '<link href="https://fonts.googleapis.com/css2?family=DM+Sans" rel="stylesheet">'
+        '<script src="//cdn.example/x.js"></script><a href="mailto:x@y.z">m</a>'
+        "<link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'></svg>\">",
+        set(), id="page-saine"),
+])
+def test_la_sonde_de_profondeur_nomme_tout_chemin_relatif_et_rien_d_autre(html, attendues):
+    """La sonde ci-dessus, prouvée sur des cas FABRIQUÉS, dans les deux sens.
+
+    Sans ces cas, une sonde cassée (qui ne lirait rien, ou jugerait tout
+    indépendant) rendrait la garde de la page 404 verte en ne mesurant rien. Le
+    dernier cas est l'autre sens : les formes légitimes — absolue, ancre de
+    l'accueil, ancre pure, URL complète, URL sans schéma, `mailto:`, `data:` — ne
+    doivent pas être nommées.
+    """
+    assert set(chemins_qui_dependent_de_l_adresse(html)) == attendues
+
+
+def test_aucun_chemin_de_la_page_404_ne_depend_de_l_adresse_servie():
+    """LE piège propre à une 404 : elle est servie à TOUTE profondeur.
+
+    Servie à `/a/b/c/nexiste`, une page qui écrit `projects/` envoie le visiteur
+    vers `/a/b/c/projects/` — une autre 404 — et une feuille `style.css` ne se
+    charge pas. Le scan anti-404 de ce fichier ne peut pas le voir : il résout
+    chaque page depuis SON emplacement sur le disque, et `404.html` vit à la
+    racine, où un chemin relatif se résout juste.
+
+    Contre-vacuité, sans nombre écrit à la main : la sonde doit voir chaque `href`
+    de la nav de la page, relevés par une SECONDE lecture (l'expression régulière
+    du corpus sur le bloc `<nav>`), et cette nav doit porter au moins autant de
+    destinations, la marque mise à part, que `site_texts.json` déclare de clés
+    `nav_*`.
+
+    LIMITE NOMMÉE : une URL construite par le JavaScript de la page échappe à
+    cette lecture ; seule une mesure au navigateur la verrait. Celle du
+    2026-10-20 (Chromium 145, page servie par un serveur qui rend `404.html`
+    avec le statut 404 à toute adresse absente, comme GitHub Pages) : aux cinq
+    adresses de `ADRESSES_ABSENTES`, deux thèmes, deux langues, 390 et 1280 px,
+    soit 40 chargements, aucune requête en 404 hors le document lui-même.
+    """
+    texte = (ROOT / "404.html").read_text(encoding="utf-8")
+    vues = set(urls_ecrites(texte))
+    de_la_nav = [h.strip() for bloc in corpus_publie._BLOC_NAV.findall(texte)
+                 if corpus_publie._NAV_PARTAGEE in bloc
+                 for h in corpus_publie._HREF.findall(bloc)]
+    attendu = len(corpus_publie.cles_nav_de_site_texts())
+    assert len(set(de_la_nav) - {"/"}) >= attendu, (
+        f"la nav de 404.html porte {len(set(de_la_nav) - {'/'})} destination(s) hors "
+        f"marque, pour {attendu} clés `nav_*` dans site_texts.json : {de_la_nav}")
+    assert set(de_la_nav) <= vues, (
+        f"la sonde ne voit pas des href de la nav : {sorted(set(de_la_nav) - vues)} "
+        "— elle ne mesure plus ce qu'elle prétend")
+    fautes = chemins_qui_dependent_de_l_adresse(texte)
+    assert not fautes, (
+        "404.html écrit des chemins dont la cible dépend de l'adresse servie — à "
+        "une profondeur, ils mènent à une autre 404 ou ne chargent pas : "
+        + " ; ".join(f"{u!r} -> {c}" for u, c in fautes.items()))
+
+
+# ── Le thème posé dans <head> : la promesse de `build_404`, gardée ──────────
+#
+# `build_404` annonce que le thème mémorisé est posé AVANT que le corps n'existe,
+# pour qu'un visiteur en thème clair ne voie jamais un premier rendu sombre. Le
+# relecteur adverse du 2026-10-20 l'a mesuré vrai, puis a montré que rien ne le
+# gardait : sur une copie vierge, le script du thème déplacé en fin de `<body>`
+# (générateur et artefact régénéré) laissait la porte complète à deux drapeaux
+# verte, 1724 passed, 6 skipped. La garde ci-dessous lit la STRUCTURE du
+# document : où vit le script qui lit `getItem('theme')`, et s'il s'exécute à
+# l'endroit où il est écrit.
+#
+# Seule la 404 fait cette promesse. Les six autres pages qui restaurent le thème
+# le font dans `<body>` (mesuré le 2026-10-20 avec la sonde ci-dessous, six sur
+# six) et n'annoncent rien d'autre ; les juger ici exigerait d'elles ce qu'elles ne
+# prétendent pas, et rougirait le jour où l'une d'elles ferait mieux.
+
+# Types de `<script>` qu'un navigateur exécute comme script CLASSIQUE, donc à
+# l'endroit où il est écrit. `type="module"` est différé jusqu'à la fin de
+# l'analyse, même écrit dans `<head>` : il ne pose plus rien avant le corps.
+_TYPES_CLASSIQUES = frozenset({"", "text/javascript", "application/javascript"})
+
+
+class _ScriptsDuDocument(_HTMLParser):
+    """Chaque `<script>` du document : dans `<head>` ou non, ses attributs, son texte."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._dans_head = False
+        self._courant: dict | None = None
+        self.scripts: list[dict] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "head":
+            self._dans_head = True
+        elif tag == "body":
+            self._dans_head = False
+        elif tag == "script":
+            self._courant = {"dans_head": self._dans_head, "texte": "",
+                             "attrs": {k.lower(): (v or "") for k, v in attrs}}
+
+    def handle_endtag(self, tag):
+        if tag == "head":
+            self._dans_head = False
+        elif tag == "script" and self._courant is not None:
+            self.scripts.append(self._courant)
+            self._courant = None
+
+    def handle_data(self, data):
+        if self._courant is not None:
+            self._courant["texte"] += data
+
+
+def scripts_qui_lisent_le_theme(texte: str) -> list[dict]:
+    """Les `<script>` dont le texte lit le thème mémorisé, dans l'ordre du document.
+
+    Le marqueur est celui de `corpus_publie.pages_a_boot()`, le témoin du
+    démarrage du thème : les deux lectures désignent le même script.
+    """
+    p = _ScriptsDuDocument()
+    p.feed(texte)
+    p.close()
+    return [s for s in p.scripts if corpus_publie._LECTURE_THEME in s["texte"]]
+
+
+def s_execute_ou_il_est_ecrit(script: dict) -> bool:
+    """Script en ligne et classique : le navigateur l'exécute en le rencontrant.
+
+    Un `src` le ferait attendre son téléchargement ; `type="module"` le diffère
+    après l'analyse du document. `defer` et `async` n'ont aucun effet sur un
+    script classique en ligne, et ne sont donc pas regardés.
+    """
+    a = script["attrs"]
+    return "src" not in a and a.get("type", "").strip().lower() in _TYPES_CLASSIQUES
+
+
+@pytest.mark.parametrize("html, attendu", [
+    pytest.param("<html><head><script>t=localStorage.getItem('theme')</script></head>"
+                 "<body></body></html>", [(True, True)], id="dans-head"),
+    pytest.param("<html><head></head><body><p>x</p>"
+                 "<script>t=localStorage.getItem('theme')</script></body></html>",
+                 [(False, True)], id="en-fin-de-body"),
+    pytest.param("<html><head><script type=\"module\">t=localStorage.getItem('theme')"
+                 "</script></head><body></body></html>", [(True, False)], id="module-differe"),
+    pytest.param("<html><head><script src=\"/theme.js\"></script></head><body>"
+                 "<script>var x = 1;</script></body></html>", [], id="aucun-lecteur"),
+])
+def test_la_sonde_du_theme_situe_le_script_et_son_execution(html, attendu):
+    """La sonde ci-dessous, prouvée sur des cas FABRIQUÉS, dans les deux sens.
+
+    Une sonde qui croirait tout script dans `<head>`, ou tout script exécuté sur
+    place, rendrait la garde de la 404 verte en ne mesurant rien.
+    """
+    vus = [(s["dans_head"], s_execute_ou_il_est_ecrit(s))
+           for s in scripts_qui_lisent_le_theme(html)]
+    assert vus == attendu
+
+
+def test_la_page_404_pose_le_theme_dans_head_avant_le_corps():
+    """Le thème mémorisé est appliqué par un script de `<head>`, exécuté sur place.
+
+    C'est ce qui le pose AVANT le premier rendu, par construction : le corps
+    n'existe pas encore quand ce script tourne. Trois exigences :
+
+      1. UN SEUL script lit le thème (le harnais du thème,
+         `theme_boot_harness.extract_script`, exige déjà qu'un seul le fasse) ;
+      2. il est dans `<head>` ;
+      3. il s'exécute où il est écrit — en ligne, classique, ni `src` ni module —
+         et il ÉCRIT `data-theme` : lire sans appliquer ne poserait rien.
+
+    Jugée sur l'artefact publié : l'égalité de l'artefact et de la sortie de
+    `build_404` est tenue par `test_l_artefact_publie_est_la_sortie_de_son_generateur`,
+    donc un générateur muté sans régénération rougit là, et un générateur muté
+    puis régénéré rougit ici.
+    """
+    texte = (ROOT / corpus_publie.PAGE_D_ERREUR).read_text(encoding="utf-8")
+    lecteurs = scripts_qui_lisent_le_theme(texte)
+    assert len(lecteurs) == 1, (
+        f"404.html porte {len(lecteurs)} script(s) qui lisent le thème : la garde "
+        "attend exactement celui de <head>")
+    script = lecteurs[0]
+    assert script["dans_head"], (
+        "le script qui lit le thème n'est plus dans <head> : le corps de la 404 peut "
+        "être peint avant que le thème mémorisé soit posé — un premier rendu sombre "
+        "pour un visiteur en thème clair, ce que build_404 dit éviter")
+    assert s_execute_ou_il_est_ecrit(script), (
+        f"le script du thème est dans <head> mais ne s'exécute pas sur place "
+        f"(attributs : {script['attrs']}) : il ne pose plus le thème avant le corps")
+    assert "'data-theme'" in script["texte"], (
+        "le script de <head> lit le thème sans écrire `data-theme` : il ne l'applique pas")
+
+
+# ── Chaque texte visible de la 404 est traduit : la promesse de `build_404`, gardée ──
+#
+# `build_404` annonce que la page livre ses deux langues : chaque texte visible
+# porte `data-fr` et `data-en`. Jusqu'au 2026-10-20, seul le seuil de majorité de
+# `test_lang_switch_behaviour.py::test_la_langue_annoncee_est_celle_du_contenu`
+# (plus de la moitié du texte traduisible) la tenait : le relecteur adverse a
+# retiré `data-fr`/`data-en` d'un seul texte, « Adresse demandée », et la porte
+# complète est restée verte — ce texte restait en français sous `lang="en"`.
+#
+# La garde ci-dessous est PRÉCISE : tout texte visible hors nav doit avoir un
+# élément ancêtre (lui-même compris) qui porte les deux attributs, puisque
+# `applyBrowseLang` remplace le `textContent` de chaque élément `[data-fr][data-en]`.
+# Les textes qui n'en ont pas sont nommés ci-dessous, chacun avec sa raison.
+#
+# Hors champ, et pourquoi :
+#   * la nav : ses entrées sont jugées ailleurs, avec celles des quatre autres
+#     pages qui portent le bouton de langue, par
+#     `test_nav_unifiee.py::test_chaque_entree_de_nav_est_traduite_sur_les_pages_au_bouton_de_langue`
+#     (chaque entrée porte les attributs que la bascule de sa page lit). La
+#     marque « R. Denis » est un nom propre, le bouton « FR » / « EN » affiche le
+#     code de la langue courante (le script le réécrit) et l'emoji du thème est
+#     un symbole. Le `title` des deux boutons (« Langue », « Thème ») n'est
+#     traduit nulle part, et aucune garde ne le tient ;
+#   * le chemin demandé (`<code id="chemin">`) : vide dans le fichier, le script
+#     y écrit après le chargement l'adresse telle que le visiteur l'a suivie —
+#     rien à traduire, et rien qu'une lecture statique puisse voir.
+#
+# Une exception est portée par l'ÉLÉMENT, pas par le texte seul : elle n'excuse
+# un texte nu que s'il est MASQUÉ aux lecteurs d'écran (`aria-hidden="true"` sur
+# l'élément qui le porte ou sur un de ses ancêtres, ce qui retire tout le
+# sous-arbre de l'arbre d'accessibilité). Jusqu'au 2026-10-20 elle était indexée
+# par le texte, et sa raison n'était pas vérifiée : la relecture adverse a retiré
+# `aria-hidden` du code « 404 », puis ajouté un second « 404 » nu, et les deux
+# mutations passaient vertes.
+EXCEPTIONS_DE_TRADUCTION_404 = {
+    "404": "le code d'erreur HTTP, identique dans les deux langues, et masqué aux "
+           "lecteurs d'écran : ils ne l'annoncent pas en français sous lang=\"en\"",
+}
+
+# Attributs dont le texte est montré ou annoncé : `applyBrowseLang` ne réécrit
+# que `textContent`, donc un tel attribut resterait en français sous `lang="en"`.
+_ATTRIBUTS_DE_TEXTE = frozenset({"title", "alt", "aria-label", "placeholder"})
+
+# Éléments sans balise fermante en HTML : ils n'entrent pas dans la pile.
+_ELEMENTS_VIDES = frozenset({"area", "base", "br", "col", "embed", "hr", "img",
+                             "input", "link", "meta", "source", "track", "wbr"})
+
+
+class _TextesDuDocument(_HTMLParser):
+    """Chaque texte du document, hors nav, et ce qui décide s'il est traduit.
+
+    Rapporte, sans rien décider :
+      * `textes` : (texte, traduit, masqué) pour chaque texte visible hors nav,
+        `<title>` compris — `traduit` vaut vrai si un élément ancêtre, lui-même
+        compris, porte `data-fr` ET `data-en` ; `masqué`, si l'un d'eux porte
+        `aria-hidden="true"` ;
+      * `porteurs` : (balise, data-fr, data-en, texte écrit) pour chaque élément
+        porteur hors nav ;
+      * `attributs` : (balise, attribut, valeur) pour chaque attribut de texte
+        annoncé hors nav.
+    Le texte de `<script>`, `<style>` et `<template>` n'est pas visible.
+    """
+
+    _MUETS = frozenset({"script", "style", "template"})
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._pile: list[dict] = []
+        self.textes: list[tuple[str, bool, bool]] = []
+        self.porteurs: list[tuple[str, str, str, str]] = []
+        self.attributs: list[tuple[str, str, str]] = []
+
+    def _dans(self, balises) -> bool:
+        return any(e["tag"] in balises for e in self._pile)
+
+    def handle_starttag(self, tag, attrs):
+        d = {k.lower(): (v or "") for k, v in attrs}
+        dans_nav = self._dans({"nav"}) or tag == "nav"
+        if not dans_nav:
+            self.attributs += [(tag, a, d[a]) for a in sorted(_ATTRIBUTS_DE_TEXTE & set(d))]
+        if tag in _ELEMENTS_VIDES:
+            return
+        self._pile.append({"tag": tag, "attrs": d, "texte": "",
+                           "porteur": "data-fr" in d and "data-en" in d})
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in _ELEMENTS_VIDES:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag):
+        for i in range(len(self._pile) - 1, -1, -1):
+            if self._pile[i]["tag"] == tag:
+                e = self._pile[i]
+                del self._pile[i:]
+                if e["porteur"] and not self._dans({"nav"}) and tag != "nav":
+                    self.porteurs.append((tag, e["attrs"]["data-fr"],
+                                          e["attrs"]["data-en"], e["texte"]))
+                return
+
+    def handle_data(self, data):
+        for e in self._pile:
+            e["texte"] += data
+        if not data.strip() or self._dans(self._MUETS | {"nav"}):
+            return
+        self.textes.append((data.strip(), any(e["porteur"] for e in self._pile),
+                            any(e["attrs"].get("aria-hidden", "").strip().lower() == "true"
+                                for e in self._pile)))
+
+
+def textes_de_la_page(texte: str) -> _TextesDuDocument:
+    p = _TextesDuDocument()
+    p.feed(texte)
+    p.close()
+    return p
+
+
+# Les blancs qu'un navigateur replie dans un texte rendu sous `white-space:normal`
+# (CSS Text 3) : espace, tabulation, saut de ligne, retour chariot. Toute suite
+# devient UN espace, et ceux des bords disparaissent. L'espace insécable (U+00A0)
+# n'en est PAS : le navigateur le garde, alors que `str.split()` le replierait et
+# rendrait égaux deux textes qui ne s'affichent pas pareil. Aucune règle de la 404
+# ne pose `white-space:pre*` (mesuré le 2026-10-20 : seul `nowrap`, sur la
+# marque, qui replie aussi).
+_BLANCS_REPLIES = re.compile(r"[ \t\n\r]+")
+
+
+def blancs_comme_le_navigateur(texte: str) -> str:
+    """Le texte tel qu'un navigateur le rend : blancs repliés, bords retirés."""
+    return _BLANCS_REPLIES.sub(" ", texte).strip(" ")
+
+
+@pytest.mark.parametrize("ecrit, rendu", [
+    pytest.param("Cette adresse :\n    le lien", "Cette adresse : le lien",
+                 id="retour-et-indentation"),
+    pytest.param("\t A  B \r\n", "A B", id="blancs-aux-bords-et-au-milieu"),
+    pytest.param("A\N{NO-BREAK SPACE}:", "A\N{NO-BREAK SPACE}:", id="insecable-non-replie"),
+])
+def test_les_blancs_se_replient_comme_dans_le_navigateur(ecrit, rendu):
+    """La normalisation de la garde ci-dessous, prouvée sur des cas fabriqués.
+
+    Elle doit rendre égaux deux textes qui s'affichent pareil (texte coupé sur
+    deux lignes), et ceux-là seulement : l'espace insécable reste un caractère.
+    """
+    assert blancs_comme_le_navigateur(ecrit) == rendu
+
+
+@pytest.mark.parametrize("html, non_traduits, masques, attributs", [
+    pytest.param("<main><p>Bonjour</p></main>", ["Bonjour"], [], [], id="texte-nu"),
+    pytest.param('<main><p data-fr="A" data-en="B">A</p></main>', [], [], [], id="porteur"),
+    pytest.param('<main><p data-fr="A">A</p></main>', ["A"], [], [], id="une-seule-langue"),
+    pytest.param('<main><p data-fr="A" data-en="B"><span>A</span></p></main>', [], [], [],
+                 id="ancetre-porteur"),
+    pytest.param('<p data-fr="A" data-en="B">A</p><p>Seul</p>', ["Seul"], [], [],
+                 id="frere-d-un-porteur"),
+    pytest.param("<nav><a>Accueil</a></nav><main></main>", [], [], [], id="nav-hors-champ"),
+    pytest.param("<main><script>var t = 'texte';</script><style>p{}</style></main>",
+                 [], [], [], id="script-et-style-muets"),
+    pytest.param('<main><img alt="photo"><a title="Aide" data-fr="x" data-en="y">x</a></main>',
+                 [], [], [("img", "alt", "photo"), ("a", "title", "Aide")],
+                 id="attributs-annonces"),
+    pytest.param("<head><title>Titre</title></head><body></body>", ["Titre"], [], [],
+                 id="titre-nu"),
+    pytest.param('<main><p aria-hidden="true">404</p><p>404</p></main>', ["404", "404"],
+                 ["404"], [], id="masque-par-l-element-et-son-jumeau-nu"),
+    pytest.param('<main><div aria-hidden="true"><p>404</p></div></main>', ["404"], ["404"],
+                 [], id="masque-par-un-ancetre"),
+    pytest.param('<main><p aria-hidden="false">404</p></main>', ["404"], [], [],
+                 id="aria-hidden-false-ne-masque-pas"),
+])
+def test_la_sonde_des_textes_nomme_tout_texte_non_traduit_et_rien_d_autre(
+        html, non_traduits, masques, attributs):
+    """La sonde ci-dessous, prouvée sur des cas FABRIQUÉS, dans les deux sens.
+
+    Sans ces cas, une sonde qui croirait tout texte traduit (ou ne verrait aucun
+    texte) rendrait la garde de la 404 verte en ne mesurant rien ; une sonde qui
+    lirait la nav ou le JavaScript la ferait mordre à faux. Les trois derniers
+    cas tiennent ce qui porte l'exception : un texte n'est masqué que si
+    l'élément qui le porte, ou un ancêtre, dit `aria-hidden="true"`.
+    """
+    p = textes_de_la_page(html)
+    assert [t for t, traduit, _ in p.textes if not traduit] == non_traduits
+    assert [t for t, traduit, masque in p.textes if not traduit and masque] == masques
+    assert p.attributs == attributs
+
+
+def test_chaque_texte_visible_de_la_404_est_traduit_sauf_exception_nommee():
+    """Tout texte visible hors nav porte `data-fr` et `data-en`, `<title>` compris.
+
+    Trois exigences, et la liste d'exceptions tenue dans les deux sens :
+
+      1. aucun texte visible hors nav sans élément porteur, hormis un texte de
+         `EXCEPTIONS_DE_TRADUCTION_404` MASQUÉ aux lecteurs d'écran
+         (`aria-hidden="true"` sur son élément ou un ancêtre) — et chaque
+         exception couvre encore un tel texte de la page, sinon elle couvrirait
+         un texte qui n'existe plus ;
+      2. le texte ÉCRIT d'un porteur est sa version française : la page est
+         servie en français, et un écart changerait le texte au retour en FR.
+         Les deux sont comparés tels que le navigateur les rend
+         (`blancs_comme_le_navigateur`) : un texte coupé sur deux lignes
+         s'affiche comme sur une seule, et la garde rougissait sur ce
+         reformatage (relecture adverse du 2026-10-20) ;
+      3. aucun attribut de texte annoncé (`title`, `alt`, `aria-label`,
+         `placeholder`) hors nav : la bascule ne les traduit pas.
+
+    Contre-vacuité : la sonde doit voir le titre parmi les porteurs, et au moins
+    un porteur dans le corps.
+    """
+    texte = (ROOT / corpus_publie.PAGE_D_ERREUR).read_text(encoding="utf-8")
+    p = textes_de_la_page(texte)
+    balises = {balise for balise, *_ in p.porteurs}
+    assert "title" in balises and balises - {"title"}, (
+        f"la sonde ne voit pas les porteurs attendus (titre et corps) : {p.porteurs}")
+
+    nus = [(t, masque) for t, traduit, masque in p.textes if not traduit]
+    non_couverts = sorted(t for t, masque in nus
+                          if not (masque and t in EXCEPTIONS_DE_TRADUCTION_404))
+    assert not non_couverts, (
+        f"textes visibles de 404.html sans `data-fr`/`data-en` : {non_couverts} — "
+        "ils restent en français quand le visiteur choisit l'anglais. Les traduire, "
+        "ou, s'ils n'ont rien à traduire, les nommer dans EXCEPTIONS_DE_TRADUCTION_404 "
+        "avec leur raison ; une exception n'excuse qu'un texte masqué aux lecteurs "
+        "d'écran (aria-hidden=\"true\" sur son élément ou un ancêtre), et ceux-ci ne "
+        f"le sont pas : {sorted(t for t, m in nus if t in EXCEPTIONS_DE_TRADUCTION_404 and not m)}")
+    perimees = sorted(set(EXCEPTIONS_DE_TRADUCTION_404) - {t for t, masque in nus if masque})
+    assert not perimees, (
+        f"exceptions qui ne couvrent plus aucun texte nu et masqué de 404.html : "
+        f"{perimees} — les retirer de EXCEPTIONS_DE_TRADUCTION_404")
+
+    ecarts = [(balise, fr, blancs_comme_le_navigateur(ecrit))
+              for balise, fr, _, ecrit in p.porteurs
+              if blancs_comme_le_navigateur(ecrit) != blancs_comme_le_navigateur(fr)]
+    assert not ecarts, (
+        f"porteurs dont le texte écrit n'est pas la version française : {ecarts}")
+
+    assert not p.attributs, (
+        f"attributs de texte annoncés hors nav, que la bascule ne traduit pas : "
+        f"{p.attributs}")

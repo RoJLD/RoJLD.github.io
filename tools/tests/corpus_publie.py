@@ -370,17 +370,59 @@ def _normaliser_destination(rel: str, href: str) -> str:
     return f"/{m.group(1)}/" if m else NON_RECONNUE + href
 
 
+# ── La page d'erreur de l'hébergeur : atteinte par AUCUN lien, et par toutes les adresses ──
+#
+# GitHub Pages sert `404.html`, pris à la racine du dépôt, à la place de TOUTE
+# adresse absente du site, à toute profondeur : `/x`, `/a/b/c/d/e` et
+# `/projects/nexiste` reçoivent ce même fichier, avec le statut 404.
+#
+# Son nom n'est pas un choix de ce dépôt : c'est la convention de l'hébergeur. Il
+# est donc écrit ici en clair, comme `index.html` l'est dans
+# `test_nav_unifiee.PAGES`, et pour la même raison — rien ne peut la DÉCOUVRIR.
+# Aucun lien n'y mène, c'est ce qui la définit : ni la topologie de la nav
+# (`_groupe_ferme_de_la_nav`, qui n'itère que des répertoires) ni la résolution
+# des `href` (`pages_atteintes_par_la_nav`) ne la voient.
+#
+# Mesuré en ligne le 2026-10-20, avant elle : `https://robin-denis.com/nexiste-pas`
+# rendait 404 et la page générique « Page not found · GitHub Pages », sans la nav
+# du site, sans son thème, sans retour.
+PAGE_D_ERREUR = "404.html"
+
+
+def page_d_erreur() -> tuple[str, ...]:
+    """`("404.html",)` si la page d'erreur est sur le disque, `()` sinon.
+
+    Vide tant qu'elle n'existe pas : une garde de corpus ne peut pas juger une
+    page absente. Le PLANCHER — elle doit exister, et git doit la suivre, faute
+    de quoi GitHub Pages ne la sert pas — vit ailleurs, dans
+    `test_liens_internes.py::test_le_site_publie_sa_page_404`, qui lit le disque
+    et `git ls-files` sans passer par ce module.
+    """
+    return (PAGE_D_ERREUR,) if (ROOT / PAGE_D_ERREUR).is_file() else ()
+
+
 @functools.lru_cache(maxsize=1)
 def pages_de_la_nav_partagee() -> tuple[str, ...]:
-    """Les pages QUI PORTENT la nav partagée — l'accueil compris.
+    """Les pages QUI PORTENT la nav partagée — l'accueil et la page d'erreur compris.
 
-    Population dérivée de deux témoins déjà en place, aucun nom écrit ici :
+    Population dérivée de deux témoins déjà en place :
       * `sections_par_topologie_de_la_nav()` — les répertoires du groupe fermé ;
       * `pages_atteintes_par_la_nav()` — les cibles des `href` de la nav,
         résolues sur le disque. C'est elle qui fait entrer `index.html` : toutes
         les sous-pages pointent la racine par leur marque
         (`<a class="nav-brand" href="/">`), donc l'accueil EST un membre — mais
         aucun calcul fondé sur les répertoires ne pouvait le voir.
+
+    Plus UN nom, celui de l'hébergeur : la page d'erreur (cf. `PAGE_D_ERREUR`).
+    Aucun des deux témoins ne peut la voir, et c'est pourtant la page dont la nav
+    compte le plus — la seule issue d'un visiteur arrivé par un lien périmé. Elle
+    entre ici dès qu'elle existe, et toutes les gardes qui itèrent cette
+    population la jugent alors comme les autres : même séquence de destinations,
+    artefact égal à la sortie de son générateur, langue annoncée égale à la
+    langue livrée, barre mesurée au navigateur. Elle n'y entre PAS parce qu'elle
+    porte la marque : si elle la perdait, elle resterait dans la population et la
+    garde d'égalité des destinations la nommerait (nav vide), au lieu de la
+    laisser sortir du champ en silence.
 
     Les deux pages d'articles sont hors population, comme `/life-architect/`
     l'était : elles portent la marque mais une nav d'une seule entrée (retour à
@@ -390,6 +432,7 @@ def pages_de_la_nav_partagee() -> tuple[str, ...]:
     sections = {f"{d}/index.html" for d in sections_par_topologie_de_la_nav()}
     if "index.html" in pages_atteintes_par_la_nav():
         sections.add("index.html")
+    sections.update(page_d_erreur())
     return tuple(sorted(sections))
 
 
@@ -499,7 +542,10 @@ def pages_atteintes_par_la_nav() -> tuple[str, ...]:
 
     Redondance délibérée : chaque page de nav pointe les autres, donc perdre la
     nav d'UNE page ne fait pas disparaître sa cible du témoin — elle reste vue
-    depuis les sept autres.
+    depuis toutes les autres pages dont la nav la pointe. Compté le 2026-10-20 :
+    chaque sous-page depuis six autres (l'accueil, la 404 et les quatre autres
+    sous-pages), l'accueil depuis huit (les cinq sous-pages, la 404 et les deux
+    pages d'articles, dont la nav n'a que ce retour).
     """
     cibles: set[str] = set()
     for rel in pages_publiees():
@@ -514,6 +560,25 @@ def pages_atteintes_par_la_nav() -> tuple[str, ...]:
                 if cible and (ROOT / cible).is_file() and cible.endswith(".html"):
                     cibles.add(cible)
     return tuple(sorted(cibles))
+
+
+@functools.lru_cache(maxsize=1)
+def pages_atteintes() -> tuple[str, ...]:
+    """Pages qu'un visiteur ATTEINT : d'un clic de nav, ou par une adresse absente.
+
+    `pages_atteintes_par_la_nav()` plus la page d'erreur (`page_d_erreur()`).
+    Celle-ci n'est la cible d'aucun lien, mais un visiteur y arrive bel et bien —
+    par tout lien périmé — et le thème qu'il a choisi doit l'y suivre comme sur
+    les autres pages.
+
+    Pourquoi un second témoin plutôt que d'élargir le premier : le premier dit
+    « résolu depuis un `href` de nav », et c'est faux de la page d'erreur. Sans
+    celui-ci, le témoin de la nav et celui du démarrage du thème
+    (`pages_a_boot`) divergeraient d'une page dès qu'elle restaure le thème —
+    et la seule façon de les remettre d'accord serait de lui RETIRER le thème :
+    la garde exigerait la régression.
+    """
+    return tuple(sorted(set(pages_atteintes_par_la_nav()) | set(page_d_erreur())))
 
 
 @functools.lru_cache(maxsize=1)
@@ -552,7 +617,8 @@ def destinations_nav() -> tuple[str, ...]:
 # La seule sortie est de faire DÉRIVER l'attente. Elle vient désormais de trois
 # signaux disjoints du site publié, qui doivent coïncider :
 #
-#   `pages_atteintes_par_la_nav()`      les `href` de la nav, résolus sur disque
+#   `pages_atteintes()`                 les `href` de la nav, résolus sur disque,
+#                                       plus la page d'erreur (cf. `pages_atteintes`)
 #   `pages_a_boot()`                    `getItem('theme')` — le script de démarrage
 #   `pages_qui_persistent_le_theme()`   `setItem('theme'`  — le basculeur
 #

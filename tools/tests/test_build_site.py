@@ -443,7 +443,8 @@ def test_carte_replie_sur_le_fr_si_traduction_absente(monkeypatch):
 
 def test_articles_generes_avant_index():
     """`render_blog` teste l'existence de la page EN sur disque : si les articles
-    étaient générés APRÈS index.html (comme les six autres builders), une
+    étaient générés APRÈS index.html (comme tous les autres builders de
+    `build()`, huit le 2026-10-20), une
     construction sur clone frais figerait des liens FR que seule une seconde
     construction corrigerait. L'ordre est donc une contrainte, pas un détail."""
     import inspect, build_site
@@ -509,6 +510,41 @@ def test_sources_manquantes_signalees_en_production(capsys, monkeypatch):
     sortie = capsys.readouterr().out
     assert "source d'article absente" in sortie
     assert "fantome [en]" in sortie
+
+
+def test_le_build_regenere_la_page_404_sans_ecrire_quand_on_le_lui_interdit(monkeypatch):
+    """`build()` appelle `build_404`, et lui transmet `write`.
+
+    Le CÂBLAGE est ce qui est gardé ici, pas le rendu. La porte « Publier » du
+    cockpit lance `tools/build_site.py` et rien d'autre : un fichier dérivé qui
+    n'a pas d'écrivain dans cette porte dérive (leçon du 2026-10-15, la même qui
+    a fait brancher `build_sitemap` ici). Et un `write=True` câblé en dur ferait
+    écrire `404.html` à chaque test qui appelle `build(write=False)`.
+    """
+    import build_404
+    appels = []
+    monkeypatch.setattr(build_404, "build_404",
+                        lambda *a, **k: appels.append((a, k)) or "")
+    bs.build(write=False)
+    assert appels == [((), {"write": False})], (
+        f"build() n'appelle pas build_404(write=False) une fois et une seule : {appels}")
+
+
+def test_echec_du_builder_404_remonte(monkeypatch):
+    """Zero Masking : un échec du générateur de la 404 arrête la construction.
+
+    Avalé, il laisserait la porte « Publier » verte avec un `404.html` périmé —
+    une nav qui ne serait plus celle des autres pages, sur la seule page d'un
+    visiteur qui a déjà perdu son chemin.
+    """
+    import build_404
+
+    def _boum(*a, **k):
+        raise RuntimeError("boum")
+
+    monkeypatch.setattr(build_404, "build_404", _boum)
+    with pytest.raises(bs.BuildError, match="404"):
+        bs.build(write=False)
 
 
 def test_les_trois_surfaces_portent_le_href_bilingue():
