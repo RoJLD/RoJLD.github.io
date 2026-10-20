@@ -471,7 +471,8 @@ def test_aucune_erreur_js_sur_les_pages_mesurees(mesures):
 # n'en faut aucun. Mesuré le 2026-10-20 à 1280 px, dans les six états : 11
 # entrées de nav, 6 autres textes, 0 caché.
 #
-# Six états, chacun dans un contexte de navigateur NEUF au départ.
+# Six états, en trois contextes de navigateur, chacun NEUF (sans choix
+# mémorisé) au départ.
 #   * Quatre sur une même page : au chargement (français), après un clic
 #     (anglais), après un second clic (français), puis la page RECHARGÉE après
 #     un troisième clic, qui mémorise l'anglais. Le rechargement prouve que la
@@ -492,7 +493,38 @@ def test_aucune_erreur_js_sur_les_pages_mesurees(mesures):
 # Le texte comparé est `textContent`, pas `innerText` : la nav est en
 # `text-transform:uppercase`, et `innerText` rendrait « EXPERIENCE ».
 #
+# Prouvé le 2026-10-20 sur copies vierges de 99d7266 et de 9d05d53 (git
+# archive, générateur muté, site régénéré par `tools/build_site.py` : seuls le
+# générateur muté et la page qu'il écrit changent), ce fichier et six fichiers
+# de langue et de 404 joués à deux drapeaux, témoin à 716 passed sur les deux
+# commits :
+#   * la 404 écrit et lit `'EN'` — le mutant de la relecture adverse, qui
+#     laissait la porte complète verte quand seul le rechargement jugeait ce
+#     chemin : `choisi-sur-accueil-en`, `choisi-sur-explorer-en` et le sens
+#     inverse rougissent (3 failed) ; `rechargement-en` reste vert, la page
+#     relisant ce qu'elle a elle-même écrit ;
+#   * la 404 écrit `'EN'` et relit sans casse : le sens inverse seul (1 failed) ;
+#   * bascule restreinte au titre, au h1 et à la nav : les quatre états anglais
+#     (4 failed), fautes nommées sur le paragraphe, « Adresse demandée », le
+#     bouton de retour et le raccourci « Projets » ;
+#   * libellé du bouton figé sur « FR » : les quatre états anglais (4 failed) ;
+#   * `dataset.En`, bascule inerte, bascule restreinte à `main` (les trois
+#     mutations de la relecture adverse, en tête de section) : les quatre états
+#     anglais chacune (4 failed ; 19, 13 et 8 fautes nommées) ;
+#   * « Adresse demandée » laissée cachée : les six états (6 failed, `['span']`) ;
+#   * le paragraphe privé de ses deux attributs : les six états (5 textes au lieu
+#     de 6), plus la garde statique de `test_liens_internes.py` (7 failed) ;
+#   * /explorer/ qui mémorise sans basculer (`tools/build_browse.py` muté) :
+#     `choisi-sur-explorer-en` seul, et le message accuse /explorer/ (1 failed) ;
+#   * innocentes, vertes (716 passed) : `getAttribute` au lieu de `dataset`,
+#     `forEach` réécrit en `for...of`, le ternaire du libellé inversé, la
+#     relecture au chargement réécrite en ternaire.
+#
 # Hors champ, et dit pour ne pas être cru gardé :
+#   * un texte IDENTIQUE dans les deux langues (« Highlights », « Academy »,
+#     « Blog », « Contact ») : sa bascule ne change rien à l'écran, aucune
+#     comparaison ne la voit — sous la bascule restreinte ci-dessus, les
+#     raccourcis « Highlights » et « Contact » ne sont pas nommés en faute ;
 #   * le MOMENT où la langue mémorisée est posée (avant ou après le premier
 #     rendu) : relevé, avec sa limite, dans le docstring de `tools/build_404.py`,
 #     et gardé par rien ;
