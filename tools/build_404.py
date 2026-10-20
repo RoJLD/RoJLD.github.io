@@ -25,10 +25,15 @@ CE QUI DISTINGUE CETTE PAGE DES AUTRES, et pourquoi :
     ligne et classique, et écrit `data-theme`) :
     `test_liens_internes.py::test_la_page_404_pose_le_theme_dans_head_avant_le_corps`.
   * LES DEUX LANGUES SONT LIVRÉES, donc le bouton de langue est là. Chaque texte
-    visible porte `data-fr` et `data-en`, `<title>` compris, et la bascule écrit
+    visible hors nav porte `data-fr` et `data-en`, `<title>` compris — sauf le
+    code « 404 », identique dans les deux langues et masqué aux lecteurs d'écran
+    (la nav est celle de `nav.py`, tenue par ses gardes) — et la bascule écrit
     `lang` sur le document en même temps qu'elle remplace les textes : la langue
     annoncée est celle du contenu (WCAG 3.1.1, l'erreur que #40 a corrigée sur
-    `/projects/` et `/demos/`). Garde :
+    `/projects/` et `/demos/`). Gardes : chaque texte, exceptions nommées avec
+    leur raison,
+    `test_liens_internes.py::test_chaque_texte_visible_de_la_404_est_traduit_sauf_exception_nommee` ;
+    la langue annoncée,
     `test_lang_switch_behaviour.py::test_la_langue_annoncee_est_celle_du_contenu`,
     qui juge cette page dès qu'elle existe.
   * `noindex`, et HORS DU SITEMAP (`build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE`) :

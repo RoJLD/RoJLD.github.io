@@ -2336,3 +2336,179 @@ def test_la_page_404_pose_le_theme_dans_head_avant_le_corps():
         f"(attributs : {script['attrs']}) : il ne pose plus le thème avant le corps")
     assert "'data-theme'" in script["texte"], (
         "le script de <head> lit le thème sans écrire `data-theme` : il ne l'applique pas")
+
+
+# ── Chaque texte visible de la 404 est traduit : la promesse de `build_404`, gardée ──
+#
+# `build_404` annonce que la page livre ses deux langues : chaque texte visible
+# porte `data-fr` et `data-en`. Jusqu'au 2026-10-20, seul le seuil de majorité de
+# `test_lang_switch_behaviour.py::test_la_langue_annoncee_est_celle_du_contenu`
+# (plus de la moitié du texte traduisible) la tenait : le relecteur adverse a
+# retiré `data-fr`/`data-en` d'un seul texte, « Adresse demandée », et la porte
+# complète est restée verte — ce texte restait en français sous `lang="en"`.
+#
+# La garde ci-dessous est PRÉCISE : tout texte visible hors nav doit avoir un
+# élément ancêtre (lui-même compris) qui porte les deux attributs, puisque
+# `applyBrowseLang` remplace le `textContent` de chaque élément `[data-fr][data-en]`.
+# Les textes qui n'en ont pas sont nommés ci-dessous, chacun avec sa raison.
+#
+# Hors champ, et pourquoi :
+#   * la nav : ses entrées viennent de `tools/nav.py` et sont tenues par ses
+#     propres gardes ; la marque « R. Denis » est un nom propre, le bouton « FR »
+#     / « EN » affiche le code de la langue courante (le script le réécrit) et
+#     l'emoji du thème est un symbole ;
+#   * le chemin demandé (`<code id="chemin">`) : vide dans le fichier, le script
+#     y écrit après le chargement l'adresse telle que le visiteur l'a suivie —
+#     rien à traduire, et rien qu'une lecture statique puisse voir.
+EXCEPTIONS_DE_TRADUCTION_404 = {
+    "404": "le code d'erreur HTTP, identique dans les deux langues ; l'élément porte "
+           "`aria-hidden`, un lecteur d'écran ne le lit pas",
+}
+
+# Attributs dont le texte est montré ou annoncé : `applyBrowseLang` ne réécrit
+# que `textContent`, donc un tel attribut resterait en français sous `lang="en"`.
+_ATTRIBUTS_DE_TEXTE = frozenset({"title", "alt", "aria-label", "placeholder"})
+
+# Éléments sans balise fermante en HTML : ils n'entrent pas dans la pile.
+_ELEMENTS_VIDES = frozenset({"area", "base", "br", "col", "embed", "hr", "img",
+                             "input", "link", "meta", "source", "track", "wbr"})
+
+
+class _TextesDuDocument(_HTMLParser):
+    """Chaque texte du document, hors nav, et ce qui décide s'il est traduit.
+
+    Rapporte, sans rien décider :
+      * `textes` : (texte, traduit) pour chaque texte visible hors nav, `<title>`
+        compris — `traduit` vaut vrai si un élément ancêtre, lui-même compris,
+        porte `data-fr` ET `data-en` ;
+      * `porteurs` : (balise, data-fr, data-en, texte écrit) pour chaque élément
+        porteur hors nav ;
+      * `attributs` : (balise, attribut, valeur) pour chaque attribut de texte
+        annoncé hors nav.
+    Le texte de `<script>`, `<style>` et `<template>` n'est pas visible.
+    """
+
+    _MUETS = frozenset({"script", "style", "template"})
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._pile: list[dict] = []
+        self.textes: list[tuple[str, bool]] = []
+        self.porteurs: list[tuple[str, str, str, str]] = []
+        self.attributs: list[tuple[str, str, str]] = []
+
+    def _dans(self, balises) -> bool:
+        return any(e["tag"] in balises for e in self._pile)
+
+    def handle_starttag(self, tag, attrs):
+        d = {k.lower(): (v or "") for k, v in attrs}
+        dans_nav = self._dans({"nav"}) or tag == "nav"
+        if not dans_nav:
+            self.attributs += [(tag, a, d[a]) for a in sorted(_ATTRIBUTS_DE_TEXTE & set(d))]
+        if tag in _ELEMENTS_VIDES:
+            return
+        self._pile.append({"tag": tag, "attrs": d, "texte": "",
+                           "porteur": "data-fr" in d and "data-en" in d})
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in _ELEMENTS_VIDES:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag):
+        for i in range(len(self._pile) - 1, -1, -1):
+            if self._pile[i]["tag"] == tag:
+                e = self._pile[i]
+                del self._pile[i:]
+                if e["porteur"] and not self._dans({"nav"}) and tag != "nav":
+                    self.porteurs.append((tag, e["attrs"]["data-fr"],
+                                          e["attrs"]["data-en"], e["texte"]))
+                return
+
+    def handle_data(self, data):
+        for e in self._pile:
+            e["texte"] += data
+        if not data.strip() or self._dans(self._MUETS | {"nav"}):
+            return
+        self.textes.append((data.strip(), any(e["porteur"] for e in self._pile)))
+
+
+def textes_de_la_page(texte: str) -> _TextesDuDocument:
+    p = _TextesDuDocument()
+    p.feed(texte)
+    p.close()
+    return p
+
+
+@pytest.mark.parametrize("html, non_traduits, attributs", [
+    pytest.param("<main><p>Bonjour</p></main>", ["Bonjour"], [], id="texte-nu"),
+    pytest.param('<main><p data-fr="A" data-en="B">A</p></main>', [], [], id="porteur"),
+    pytest.param('<main><p data-fr="A">A</p></main>', ["A"], [], id="une-seule-langue"),
+    pytest.param('<main><p data-fr="A" data-en="B"><span>A</span></p></main>', [], [],
+                 id="ancetre-porteur"),
+    pytest.param('<p data-fr="A" data-en="B">A</p><p>Seul</p>', ["Seul"], [],
+                 id="frere-d-un-porteur"),
+    pytest.param("<nav><a>Accueil</a></nav><main></main>", [], [], id="nav-hors-champ"),
+    pytest.param("<main><script>var t = 'texte';</script><style>p{}</style></main>",
+                 [], [], id="script-et-style-muets"),
+    pytest.param('<main><img alt="photo"><a title="Aide" data-fr="x" data-en="y">x</a></main>',
+                 [], [("img", "alt", "photo"), ("a", "title", "Aide")],
+                 id="attributs-annonces"),
+    pytest.param("<head><title>Titre</title></head><body></body>", ["Titre"], [],
+                 id="titre-nu"),
+])
+def test_la_sonde_des_textes_nomme_tout_texte_non_traduit_et_rien_d_autre(
+        html, non_traduits, attributs):
+    """La sonde ci-dessous, prouvée sur des cas FABRIQUÉS, dans les deux sens.
+
+    Sans ces cas, une sonde qui croirait tout texte traduit (ou ne verrait aucun
+    texte) rendrait la garde de la 404 verte en ne mesurant rien ; une sonde qui
+    lirait la nav ou le JavaScript la ferait mordre à faux.
+    """
+    p = textes_de_la_page(html)
+    assert [t for t, traduit in p.textes if not traduit] == non_traduits
+    assert p.attributs == attributs
+
+
+def test_chaque_texte_visible_de_la_404_est_traduit_sauf_exception_nommee():
+    """Tout texte visible hors nav porte `data-fr` et `data-en`, `<title>` compris.
+
+    Trois exigences, et la liste d'exceptions tenue dans les deux sens :
+
+      1. aucun texte visible hors nav sans élément porteur, hormis
+         `EXCEPTIONS_DE_TRADUCTION_404` — et chaque exception correspond encore
+         à un texte de la page, sinon elle couvrirait un texte qui n'existe plus ;
+      2. le texte ÉCRIT d'un porteur est sa version française : la page est
+         servie en français, et un écart changerait le texte au retour en FR ;
+      3. aucun attribut de texte annoncé (`title`, `alt`, `aria-label`,
+         `placeholder`) hors nav : la bascule ne les traduit pas.
+
+    Contre-vacuité : la sonde doit voir le titre parmi les porteurs, et au moins
+    un porteur dans le corps.
+    """
+    texte = (ROOT / corpus_publie.PAGE_D_ERREUR).read_text(encoding="utf-8")
+    p = textes_de_la_page(texte)
+    balises = {balise for balise, *_ in p.porteurs}
+    assert "title" in balises and balises - {"title"}, (
+        f"la sonde ne voit pas les porteurs attendus (titre et corps) : {p.porteurs}")
+
+    nus = [t for t, traduit in p.textes if not traduit]
+    non_couverts = sorted(set(nus) - set(EXCEPTIONS_DE_TRADUCTION_404))
+    assert not non_couverts, (
+        f"textes visibles de 404.html sans `data-fr`/`data-en` : {non_couverts} — "
+        "ils restent en français quand le visiteur choisit l'anglais. Les traduire, "
+        "ou, s'ils n'ont rien à traduire, les nommer dans EXCEPTIONS_DE_TRADUCTION_404 "
+        "avec leur raison")
+    perimees = sorted(set(EXCEPTIONS_DE_TRADUCTION_404) - set(nus))
+    assert not perimees, (
+        f"exceptions qui ne couvrent plus aucun texte nu de 404.html : {perimees} — "
+        "les retirer de EXCEPTIONS_DE_TRADUCTION_404")
+
+    ecarts = [(balise, fr, ecrit.strip()) for balise, fr, _, ecrit in p.porteurs
+              if ecrit.strip() != fr.strip()]
+    assert not ecarts, (
+        f"porteurs dont le texte écrit n'est pas la version française : {ecarts}")
+
+    assert not p.attributs, (
+        f"attributs de texte annoncés hors nav, que la bascule ne traduit pas : "
+        f"{p.attributs}")
