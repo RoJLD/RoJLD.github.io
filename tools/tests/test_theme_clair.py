@@ -117,8 +117,9 @@ def test_les_trois_temoins_du_theme_disent_la_meme_chose():
     nav, boot, persist = (set(PAGES_ATTEIGNABLES), set(PAGES_A_BOOT),
                           set(PAGES_QUI_PERSISTENT))
     assert nav == boot, (
-        f"pages de la nav qui ne restaurent plus le thème : {sorted(nav - boot)} ; "
-        f"pages qui le restaurent sans être dans la nav : {sorted(boot - nav)}")
+        f"pages atteintes (par la nav, ou par une adresse absente pour la page "
+        f"d'erreur) qui ne restaurent plus le thème : {sorted(nav - boot)} ; "
+        f"pages qui le restaurent sans être atteintes : {sorted(boot - nav)}")
     assert boot == persist, (
         f"pages qui restaurent sans mémoriser : {sorted(boot - persist)} ; "
         f"pages qui mémorisent sans restaurer (choix perdu au rechargement) : "

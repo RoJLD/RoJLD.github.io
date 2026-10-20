@@ -31,6 +31,22 @@ CE QUI DISTINGUE CETTE PAGE DES AUTRES, et pourquoi :
   * `noindex`, et HORS DU SITEMAP (`build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE`) :
     une page qui dit « introuvable » ne doit pas être proposée comme résultat.
 
+MESURÉ AU NAVIGATEUR le 2026-10-20 (Chromium 145), la page servie par un serveur
+qui imite GitHub Pages — `404.html` rendue avec le statut 404 à toute adresse
+absente — à `/x`, `/a/b`, `/a/b/c/`, `/a/b/c/d/e` et `/projects/nexiste`, en
+thème sombre et clair, en français et en anglais, à 390 et 1280 px, soit 40
+chargements : les 11 destinations de la nav résolues comme celles de l'accueil
+et toutes atteignables au pointeur, aucune requête en 404 hors le document,
+aucune erreur JavaScript, aucun débordement horizontal ; `data-theme` posé entre
+24 et 167 ms, le premier rendu entre 172 et 1 896 ms ; `lang` et les textes
+anglais posés avant le premier rendu dans les 20 chargements en anglais. Ce
+dernier point n'a PAS la garantie du thème : la bascule de langue vit en fin de
+`<body>`, comme sur les autres pages. Sur trois passages de la même mesure, 10,
+1 puis 9 chargements anglais sur 20 ont vu un premier rappel
+`requestAnimationFrame` AVANT la bascule ; aucune image n'était peinte à ce
+moment-là (`first-paint` est venu après elle dans les 20 cas), mais c'est une
+observation, pas une construction.
+
 Ce que cette page ne touche PAS : la 404 de `/academy/`. GitHub Pages sert
 `/academy/` et tout ce qui est dessous depuis le dépôt-projet RoJLD/academy
 (cf. `tools/servi_ailleurs.py`), qui a sa propre `404.html` — une copie de son

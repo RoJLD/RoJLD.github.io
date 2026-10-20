@@ -2167,7 +2167,11 @@ def test_aucun_chemin_de_la_page_404_ne_depend_de_l_adresse_servie():
     `nav_*`.
 
     LIMITE NOMMÉE : une URL construite par le JavaScript de la page échappe à
-    cette lecture ; seule une mesure au navigateur la verrait.
+    cette lecture ; seule une mesure au navigateur la verrait. Celle du
+    2026-10-20 (Chromium 145, page servie par un serveur qui rend `404.html`
+    avec le statut 404 à toute adresse absente, comme GitHub Pages) : aux cinq
+    adresses de `ADRESSES_ABSENTES`, deux thèmes, deux langues, 390 et 1280 px,
+    soit 40 chargements, aucune requête en 404 hors le document lui-même.
     """
     texte = (ROOT / "404.html").read_text(encoding="utf-8")
     vues = set(urls_ecrites(texte))
