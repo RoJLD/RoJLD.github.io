@@ -153,9 +153,9 @@ def _url(rel: str) -> str:
 
     Un fichier à la racine qui n'est pas `index.html` garde son nom. L'écriture
     précédente ne connaissait que des `index.html` et rendait `/404.html/` pour la
-    page d'erreur (mesuré le 2026-10-20) : une adresse à barre finale qu'aucun
-    serveur ne sert comme le fichier — la vérification des octets servis aurait
-    échoué pour une raison étrangère à la page.
+    page d'erreur, et le `SimpleHTTPRequestHandler` de ce fichier répond 404 à
+    `/404.html/` et 200 à `/404.html` (mesuré le 2026-10-20) : la vérification
+    des octets servis aurait échoué pour une raison étrangère à la page.
     """
     if rel == "index.html":
         return "/"
