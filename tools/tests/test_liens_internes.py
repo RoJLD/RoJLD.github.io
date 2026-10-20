@@ -40,6 +40,7 @@ import pathlib
 import re
 import sys
 from html.parser import HTMLParser as _HTMLParser
+from urllib.parse import urljoin
 
 import pytest
 
@@ -886,7 +887,10 @@ def _html_regenere() -> dict[str, str]:
     Population dérivée, aucune liste de pages écrite ici : les cinq sous-pages
     viennent de `_rendu_des_builders()` (table tenue par
     `test_la_table_des_generateurs_couvre_toutes_les_destinations`), l'accueil de
-    `build_site.build_html`.
+    `build_site.build_html`, la page d'erreur de `build_404` — dès que
+    `corpus_publie.page_d_erreur()` la trouve sur le disque, c'est-à-dire dès
+    qu'elle entre dans la population que le test ci-dessous confronte à cette
+    table.
 
     LIMITE NOMMÉE pour l'accueil : `build_html` INJECTE dans le fichier qu'on lui
     donne (régions `<!-- BUILD:x -->` et `/* BUILD:i18n_x */`, puis
@@ -899,6 +903,9 @@ def _html_regenere() -> dict[str, str]:
     out = {f"{page}/index.html": html
            for page, html in _rendu_des_builders().items()}
     out["index.html"] = build_site.build_html(_index_html(), _real_profile())
+    for rel in corpus_publie.page_d_erreur():
+        import build_404  # noqa: E401
+        out[rel] = build_404.build_404(write=False)
     return out
 
 
@@ -1890,3 +1897,263 @@ def test_le_sitemap_declare_les_racines_servies_par_un_autre_depot():
         for prefixe in servi_ailleurs.SERVI_PAR_UN_AUTRE_DEPOT
         if u.startswith(f"https://{h}/{prefixe}") and u != f"https://{h}/{prefixe}")
     assert not profondes, f"URL internes d'un autre depot, inventees ici : {profondes}"
+
+
+# ---------------------------------------------------------------------------
+# La page 404
+#
+# GitHub Pages sert `404.html`, pris à la racine, à la place de TOUTE adresse
+# absente du site, à toute profondeur, avec le statut 404. Mesuré en ligne le
+# 2026-10-20, avant elle : `https://robin-denis.com/nexiste-pas` rendait la page
+# générique « Page not found · GitHub Pages » — ni nav, ni thème, ni retour.
+#
+# Ses gardes vivent ICI pour la raison que donne la section du sitemap : ce
+# fichier est le seul du corpus publié que joue la porte « Publier ». Celles qui
+# la tiennent COMME LES AUTRES pages de la nav (même séquence de destinations,
+# artefact égal à la sortie de son générateur, thème, langue, barre mesurée au
+# navigateur) ne sont pas réécrites ici : elle entre dans leur population par
+# `corpus_publie.page_d_erreur()`. Ne sont écrites ici que les propriétés qui lui
+# sont PROPRES.
+# ---------------------------------------------------------------------------
+
+
+def test_le_site_publie_sa_page_404():
+    """PLANCHER : la page existe, git la suit, et c'est celle que le corpus nomme.
+
+    Les gardes de corpus ne la jugent que si `corpus_publie.page_d_erreur()` la
+    trouve sur le disque : sans ce plancher, la supprimer les ferait toutes taire
+    d'un coup, en vert. Git est exigé EN PLUS du disque parce que GitHub Pages ne
+    sert que ce que git suit : un `404.html` non suivi passerait toutes les gardes
+    du poste et ne serait jamais servi.
+
+    Le nom est écrit ici en clair, et non relu dans `corpus_publie` : c'est le
+    second témoin de la convention de l'hébergeur. Si le corpus renommait sa
+    constante, l'égalité ci-dessous rougirait.
+    """
+    assert (ROOT / "404.html").is_file(), (
+        "404.html absent : toute adresse inconnue rend la page générique de GitHub "
+        "Pages, sans nav ni retour — relancez `py -3.13 tools/build_site.py`")
+    assert "404.html" in _sitemap_module().pages_suivies(), (
+        "404.html n'est pas suivie par git : GitHub Pages ne la servira pas")
+    assert corpus_publie.page_d_erreur() == ("404.html",), corpus_publie.page_d_erreur()
+
+
+class _DirectivesRobots(_HTMLParser):
+    """Les directives de `<meta name="robots" content="…">`, en minuscules."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.directives: set[str] = set()
+
+    def handle_starttag(self, tag, attrs):
+        if tag != "meta":
+            return
+        d = {k.lower(): (v or "") for k, v in attrs}
+        if d.get("name", "").strip().lower() == "robots":
+            self.directives |= {t.strip().lower()
+                                for t in d.get("content", "").split(",") if t.strip()}
+
+
+def _directives_robots(texte: str) -> set[str]:
+    p = _DirectivesRobots()
+    p.feed(texte)
+    return p.directives
+
+
+def test_la_page_404_demande_a_ne_pas_etre_indexee():
+    """`<meta name="robots" content="noindex">` : une page d'erreur n'est pas un résultat.
+
+    L'écarter du sitemap ne suffit pas : un moteur qui la rencontre par un lien
+    l'indexerait quand même. Le statut 404 ne suffit pas non plus, car l'adresse
+    `/404.html` elle-même répond 200 — mesuré le 2026-10-20 sur choosealicense.com,
+    un autre site GitHub Pages qui publie un `404.html` : `/404.html` rend 200, une
+    adresse absente rend 404, et les deux servent les mêmes 150 octets.
+    """
+    directives = _directives_robots((ROOT / "404.html").read_text(encoding="utf-8"))
+    assert "noindex" in directives, (
+        f"404.html ne demande pas à être écartée de l'index (directives robots : "
+        f"{sorted(directives)}) — une page « introuvable » proposée comme résultat")
+
+
+def test_aucune_page_qui_refuse_l_indexation_n_est_declaree_au_sitemap():
+    """Un sitemap qui déclare une page `noindex` se contredit.
+
+    Il la propose à l'exploration pendant qu'elle demande à ne pas être indexée.
+    Tenu sur les DEUX lectures du sitemap, le fichier commité et la dérivation :
+    c'est cette garde qui donne son sens à l'écart de `404.html` dans
+    `build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE`. Retirer l'écart et régénérer le
+    sitemap ferait passer `test_toute_page_servie_est_declaree_ou_ecartee_sciemment`
+    — la page serait alors « déclarée » — et rougirait ici.
+    """
+    bs = _sitemap_module()
+    h = bs.hote()
+    refusees = sorted(
+        rel for rel in corpus_publie.pages_publiees()
+        if "noindex" in _directives_robots(
+            (ROOT / rel).read_text(encoding="utf-8", errors="replace")))
+    assert refusees, (
+        "aucune page publiée ne dit `noindex` : cette garde ne garderait rien "
+        "(la page 404, au moins, doit le dire)")
+    proposees = _urls_du_fichier() | set(bs.urls())
+    contradictions = sorted(rel for rel in refusees if bs.url_de(rel, h) in proposees)
+    assert not contradictions, (
+        f"pages qui refusent l'indexation et que le sitemap propose : {contradictions} "
+        "— les écarter dans build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE")
+
+
+# Les adresses absentes où la page est supposée servie, et ce que chacune piège
+# pour un chemin relatif : une profondeur, deux, une adresse à barre finale (la
+# base de résolution y est le dossier lui-même), cinq, et un dossier qui EXISTE —
+# servi à `/projects/nexiste`, un relatif `projects/` viserait `/projects/projects/`.
+ADRESSES_ABSENTES = ("/x", "/a/b", "/a/b/c/", "/a/b/c/d/e", "/projects/nexiste")
+
+# L'hôte n'entre pas dans la propriété mesurée : `.invalid` est réservé (RFC 2606)
+# et ne peut désigner aucun site réel.
+_HOTE_DE_MESURE = "https://site.invalid"
+
+# Attributs dont la valeur est une URL que le navigateur résout. Ceux que le champ
+# du scanner (`URL_ATTR`) reconnaît s'y ajoutent par comportement (cf.
+# `_porte_une_url`) — dont les `data-href-*` et `data-article-*` du site, que les
+# bascules de langue recopient dans `href`.
+_ATTRIBUTS_URL = frozenset({
+    "href", "src", "srcset", "imagesrcset", "action", "formaction", "poster",
+    "cite", "data", "ping", "itemtype", "manifest", "background", "longdesc",
+    "xlink:href",
+})
+_LISTES_SRCSET = frozenset({"srcset", "imagesrcset"})   # « url descripteur, url descripteur »
+_LISTES_D_URL = frozenset({"ping", "itemtype"})         # URL séparées par des espaces
+_IMPORT_CSS = re.compile(r"""@import\s+(?:url\()?\s*["']?([^"')\s;]+)""")
+
+
+def _porte_une_url(attribut: str) -> bool:
+    return attribut in _ATTRIBUTS_URL or bool(URL_ATTR.findall(f'<x {attribut}="v">'))
+
+
+class _CollecteurDUrl(_HTMLParser):
+    """Toute URL écrite dans un attribut, QUEL QUE SOIT le guillemet.
+
+    Un parseur, et non `URL_ATTR` : l'expression régulière du scanner ne lit que
+    les valeurs entre guillemets doubles. `href='projects/'` lui échappe, et c'est
+    exactement la forme qu'une édition à la main pourrait introduire.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.urls: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        for nom, valeur in attrs:
+            nom = nom.lower()
+            if valeur is None or not _porte_une_url(nom):
+                continue
+            if nom in _LISTES_SRCSET:
+                self.urls += [m.split()[0] for m in valeur.split(",") if m.split()]
+            elif nom in _LISTES_D_URL:
+                self.urls += valeur.split()
+            else:
+                self.urls.append(valeur.strip())
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+
+
+def urls_ecrites(texte: str) -> list[str]:
+    """Les URL que la page fait résoudre au navigateur : attributs, puis CSS."""
+    c = _CollecteurDUrl()
+    c.feed(texte)
+    return c.urls + css_urls(texte) + [u.strip() for u in _IMPORT_CSS.findall(texte)]
+
+
+def chemins_qui_dependent_de_l_adresse(texte: str) -> dict[str, list[str]]:
+    """{URL écrite: ses cibles distinctes}, pour chaque URL dont la cible CHANGE
+    selon l'adresse à laquelle la page est servie.
+
+    La propriété, et non son indice. « Commence par `/` » en est un : il refuse à
+    tort `https://…`, `data:…` ou `mailto:…`, et ne dit pas pourquoi. La propriété
+    est que la cible ne dépende pas de l'adresse servie — mesurée par `urljoin`,
+    la résolution de la RFC 3986 que porte la bibliothèque standard, aux adresses
+    de `ADRESSES_ABSENTES`.
+
+    Écartées parce qu'elles désignent le document lui-même où qu'il soit servi :
+    les ancres pures (`#haut`). Une valeur VIDE n'est pas écartée : elle vise
+    l'adresse servie, donc une page différente à chaque profondeur.
+    """
+    fautes: dict[str, list[str]] = {}
+    for u in urls_ecrites(texte):
+        if u.startswith("#"):
+            continue
+        cibles = sorted({urljoin(_HOTE_DE_MESURE + a, u) for a in ADRESSES_ABSENTES})
+        if len(cibles) > 1:
+            fautes[u] = cibles
+    return fautes
+
+
+@pytest.mark.parametrize("html, attendues", [
+    pytest.param('<a href="projects/">p</a>', {"projects/"}, id="lien-relatif"),
+    pytest.param('<link rel="stylesheet" href="style.css">', {"style.css"},
+                 id="feuille-relative"),
+    pytest.param("<a href='../x/'>x</a>", {"../x/"},
+                 id="guillemet-simple-que-la-regex-ne-voit-pas"),
+    pytest.param('<img srcset="a.png 1x, /b.png 2x" src="/c.png" alt="">', {"a.png"},
+                 id="srcset"),
+    pytest.param("<style>@font-face{src:url(fonts/x.woff2)}</style>", {"fonts/x.woff2"},
+                 id="police-en-css"),
+    pytest.param("<div style=\"background:url('img/x.png')\"></div>", {"img/x.png"},
+                 id="style-en-ligne"),
+    pytest.param('<style>@import "theme.css";</style>', {"theme.css"}, id="import-css"),
+    pytest.param('<script src="js/app.js"></script>', {"js/app.js"}, id="script-relatif"),
+    pytest.param('<a href="">ici</a>', {""}, id="href-vide"),
+    pytest.param(
+        '<a href="/projects/">a</a><a href="/#contact">b</a><a href="#haut">c</a>'
+        '<link href="https://fonts.googleapis.com/css2?family=DM+Sans" rel="stylesheet">'
+        '<script src="//cdn.example/x.js"></script><a href="mailto:x@y.z">m</a>'
+        "<link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'></svg>\">",
+        set(), id="page-saine"),
+])
+def test_la_sonde_de_profondeur_nomme_tout_chemin_relatif_et_rien_d_autre(html, attendues):
+    """La sonde ci-dessus, prouvée sur des cas FABRIQUÉS, dans les deux sens.
+
+    Sans ces cas, une sonde cassée (qui ne lirait rien, ou jugerait tout
+    indépendant) rendrait la garde de la page 404 verte en ne mesurant rien. Le
+    dernier cas est l'autre sens : les formes légitimes — absolue, ancre de
+    l'accueil, ancre pure, URL complète, URL sans schéma, `mailto:`, `data:` — ne
+    doivent pas être nommées.
+    """
+    assert set(chemins_qui_dependent_de_l_adresse(html)) == attendues
+
+
+def test_aucun_chemin_de_la_page_404_ne_depend_de_l_adresse_servie():
+    """LE piège propre à une 404 : elle est servie à TOUTE profondeur.
+
+    Servie à `/a/b/c/nexiste`, une page qui écrit `projects/` envoie le visiteur
+    vers `/a/b/c/projects/` — une autre 404 — et une feuille `style.css` ne se
+    charge pas. Le scan anti-404 de ce fichier ne peut pas le voir : il résout
+    chaque page depuis SON emplacement sur le disque, et `404.html` vit à la
+    racine, où un chemin relatif se résout juste.
+
+    Contre-vacuité, sans nombre écrit à la main : la sonde doit voir chaque `href`
+    de la nav de la page, relevés par une SECONDE lecture (l'expression régulière
+    du corpus sur le bloc `<nav>`), et cette nav doit porter au moins autant de
+    destinations, la marque mise à part, que `site_texts.json` déclare de clés
+    `nav_*`.
+
+    LIMITE NOMMÉE : une URL construite par le JavaScript de la page échappe à
+    cette lecture ; seule une mesure au navigateur la verrait.
+    """
+    texte = (ROOT / "404.html").read_text(encoding="utf-8")
+    vues = set(urls_ecrites(texte))
+    de_la_nav = [h.strip() for bloc in corpus_publie._BLOC_NAV.findall(texte)
+                 if corpus_publie._NAV_PARTAGEE in bloc
+                 for h in corpus_publie._HREF.findall(bloc)]
+    attendu = len(corpus_publie.cles_nav_de_site_texts())
+    assert len(set(de_la_nav) - {"/"}) >= attendu, (
+        f"la nav de 404.html porte {len(set(de_la_nav) - {'/'})} destination(s) hors "
+        f"marque, pour {attendu} clés `nav_*` dans site_texts.json : {de_la_nav}")
+    assert set(de_la_nav) <= vues, (
+        f"la sonde ne voit pas des href de la nav : {sorted(set(de_la_nav) - vues)} "
+        "— elle ne mesure plus ce qu'elle prétend")
+    fautes = chemins_qui_dependent_de_l_adresse(texte)
+    assert not fautes, (
+        "404.html écrit des chemins dont la cible dépend de l'adresse servie — à "
+        "une profondeur, ils mènent à une autre 404 ou ne chargent pas : "
+        + " ; ".join(f"{u!r} -> {c}" for u, c in fautes.items()))

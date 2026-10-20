@@ -511,6 +511,41 @@ def test_sources_manquantes_signalees_en_production(capsys, monkeypatch):
     assert "fantome [en]" in sortie
 
 
+def test_le_build_regenere_la_page_404_sans_ecrire_quand_on_le_lui_interdit(monkeypatch):
+    """`build()` appelle `build_404`, et lui transmet `write`.
+
+    Le CÂBLAGE est ce qui est gardé ici, pas le rendu. La porte « Publier » du
+    cockpit lance `tools/build_site.py` et rien d'autre : un fichier dérivé qui
+    n'a pas d'écrivain dans cette porte dérive (leçon du 2026-10-15, la même qui
+    a fait brancher `build_sitemap` ici). Et un `write=True` câblé en dur ferait
+    écrire `404.html` à chaque test qui appelle `build(write=False)`.
+    """
+    import build_404
+    appels = []
+    monkeypatch.setattr(build_404, "build_404",
+                        lambda *a, **k: appels.append((a, k)) or "")
+    bs.build(write=False)
+    assert appels == [((), {"write": False})], (
+        f"build() n'appelle pas build_404(write=False) une fois et une seule : {appels}")
+
+
+def test_echec_du_builder_404_remonte(monkeypatch):
+    """Zero Masking : un échec du générateur de la 404 arrête la construction.
+
+    Avalé, il laisserait la porte « Publier » verte avec un `404.html` périmé —
+    une nav qui ne serait plus celle des autres pages, sur la seule page d'un
+    visiteur qui a déjà perdu son chemin.
+    """
+    import build_404
+
+    def _boum(*a, **k):
+        raise RuntimeError("boum")
+
+    monkeypatch.setattr(build_404, "build_404", _boum)
+    with pytest.raises(bs.BuildError, match="404"):
+        bs.build(write=False)
+
+
 def test_les_trois_surfaces_portent_le_href_bilingue():
     """I5. index #blog, explorer et highlights annoncent tous l'article et ont tous
     une bascule FR/EN. N'en câbler qu'une laisse les deux autres traduire le titre

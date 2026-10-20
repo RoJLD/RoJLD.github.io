@@ -43,8 +43,15 @@ import nav  # noqa: E402
 # `index.html` vit à la racine. C'est précisément l'angle mort qui a laissé sa
 # nav diverger des cinq autres. `test_la_table_des_pages_couvre_exactement_nav_py`
 # ci-dessous empêche cette table de rétrécir ou de dériver de `nav.py`.
+#
+# La page d'erreur (`404.html`, servie par GitHub Pages à toute adresse absente)
+# vit elle aussi à la racine et n'est la cible d'aucun lien : elle vient de
+# `corpus_publie.page_d_erreur()`, qui la nomme par la convention de l'hébergeur.
+# Son nom de page pour `nav.py` est son nom servi sans extension, comme celui
+# d'un répertoire est son nom.
 PAGES = {"index.html": "accueil"}
 PAGES.update({f"{d}/index.html": d for d in corpus_publie.destinations_nav()})
+PAGES.update({rel: pathlib.PurePosixPath(rel).stem for rel in corpus_publie.page_d_erreur()})
 
 _BLOC_NAV = re.compile(r"<nav\b.*?</nav>", re.S)
 _HREF = re.compile(r'href="([^"]*)"')

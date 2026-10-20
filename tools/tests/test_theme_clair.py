@@ -82,7 +82,13 @@ PAGES_GENEREES = corpus_publie.destinations_nav()
 # Déplacer une attente ne la garde pas : une liste que son unique lecteur compare
 # à elle-même ne peut pas diverger. Elle DÉRIVE donc, de trois signaux disjoints
 # du site publié qui doivent coïncider (cf. `test_les_trois_temoins_du_theme_...`).
-PAGES_ATTEIGNABLES = corpus_publie.pages_atteintes_par_la_nav()
+#
+# Le premier signal est « les pages qu'un visiteur ATTEINT » : d'un clic de nav,
+# ou — pour la page d'erreur, cible d'aucun lien — par n'importe quelle adresse
+# absente (cf. `corpus_publie.pages_atteintes`). Le thème choisi doit y survivre
+# aussi : un visiteur en thème clair qui suit un lien périmé ne doit pas tomber
+# sur une page noire.
+PAGES_ATTEIGNABLES = corpus_publie.pages_atteintes()
 PAGES_QUI_PERSISTENT = corpus_publie.pages_qui_persistent_le_theme()
 
 
@@ -92,8 +98,9 @@ def test_les_trois_temoins_du_theme_disent_la_meme_chose():
     Trois lectures indépendantes du site publié, qui n'ont aucune ligne de code
     ni aucun marqueur en commun :
 
-      * `pages_atteintes_par_la_nav()` — les `href` des blocs `<nav>`, résolus
-        sur le disque comme le ferait un navigateur. Ne regarde pas le thème.
+      * `pages_atteintes()` — les `href` des blocs `<nav>`, résolus sur le
+        disque comme le ferait un navigateur, plus la page d'erreur que
+        l'hébergeur sert à toute adresse absente. Ne regarde pas le thème.
       * `pages_a_boot()` — `getItem('theme')`, le script de démarrage.
       * `pages_qui_persistent_le_theme()` — `setItem('theme'`, le basculeur.
 
@@ -481,6 +488,7 @@ BASCULEUR = {
     "highlights/index.html": "tgTheme",
     "graph/index.html": "tgTheme",
     "demos/index.html": "tgTheme",
+    "404.html": "tgTheme",
 }
 
 # Le contrôle qui déclenche la bascule, tel qu'il est ÉCRIT dans la page servie.

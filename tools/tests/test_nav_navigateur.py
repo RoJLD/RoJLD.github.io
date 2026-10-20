@@ -146,8 +146,19 @@ _JS_ACTIF = r"""
 
 
 def _url(rel: str) -> str:
-    """`projects/index.html` -> `/projects/`, `index.html` -> `/`."""
-    return "/" if rel == "index.html" else "/" + rel.rsplit("/", 1)[0] + "/"
+    """`projects/index.html` -> `/projects/`, `index.html` -> `/`, `404.html` -> `/404.html`.
+
+    Un fichier à la racine qui n'est pas `index.html` garde son nom. L'écriture
+    précédente ne connaissait que des `index.html` et rendait `/404.html/` pour la
+    page d'erreur (mesuré le 2026-10-20) : une adresse à barre finale qu'aucun
+    serveur ne sert comme le fichier — la vérification des octets servis aurait
+    échoué pour une raison étrangère à la page.
+    """
+    if rel == "index.html":
+        return "/"
+    if rel.endswith("/index.html"):
+        return "/" + rel[: -len("index.html")]
+    return "/" + rel
 
 
 def rangees_visuelles(boites: list[dict]) -> list[int]:
