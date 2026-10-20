@@ -40,10 +40,13 @@ CE QUI DISTINGUE CETTE PAGE DES AUTRES, et pourquoi :
     la langue annoncée,
     `test_lang_switch_behaviour.py::test_la_langue_annoncee_est_celle_du_contenu`,
     qui juge cette page dès qu'elle existe. Ces gardes lisent des attributs ; la
-    bascule elle-même — clic sur le bouton, puis `lang`, titre, h1 et entrées de
-    nav relus dans Chromium, à l'aller, au retour, et au rechargement sur le
-    choix mémorisé — est exécutée par
-    `test_nav_navigateur.py::test_la_bascule_de_langue_de_la_404_traduit_titre_h1_et_nav`.
+    bascule elle-même — clic sur le bouton, puis `lang`, titre, libellé du
+    bouton et chaque texte traduit visible relus dans Chromium, à l'aller, au
+    retour, au rechargement, et à l'ouverture après un choix fait au clic sur
+    l'accueil ou sur /explorer/ — est exécutée par
+    `test_nav_navigateur.py::test_la_404_rend_chaque_texte_traduit_dans_la_langue_choisie` ;
+    le sens inverse (le choix fait ici, relu par /explorer/) par
+    `test_nav_navigateur.py::test_le_choix_fait_sur_la_404_est_compris_par_les_autres_pages`.
   * `noindex`, et HORS DU SITEMAP (`build_sitemap.PAS_DES_PAGES_D_ATTERRISSAGE`) :
     une page qui dit « introuvable » ne doit pas être proposée comme résultat.
 

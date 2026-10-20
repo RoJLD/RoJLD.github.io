@@ -44,8 +44,9 @@ DÉCOUVERTE par `corpus_publie`, aucune liste de pages écrite ici) :
                             1024 px, 25 à 27 au-dessus — les plus basses sur
                             `/graph/`, dont le `body` porte `line-height:1.6`.
 
-Et, sur la seule page 404, sur le même serveur : LA BASCULE DE LANGUE EXÉCUTÉE,
-au clic puis au rechargement (dernière section du fichier). Les autres gardes
+Et, sur la page 404, sur le même serveur : LA BASCULE DE LANGUE EXÉCUTÉE, au
+clic sur la 404 elle-même, au rechargement, et après un choix fait au clic sur
+l'accueil ou sur /explorer/ (dernière section du fichier). Les autres gardes
 de langue de la 404 sont statiques : jusqu'au 2026-10-20, aucune ne cliquait le
 bouton.
 
@@ -75,6 +76,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import build_404  # noqa: E402
 import corpus_publie  # noqa: E402
 import nav  # noqa: E402
 import oracle_playwright  # noqa: E402
@@ -461,55 +463,85 @@ def test_aucune_erreur_js_sur_les_pages_mesurees(mesures):
 # Le test clique le bouton comme un visiteur — `page.click("#langBtn")`, avec les
 # vérifications d'actionnabilité de Playwright (visible, stable, atteint par le
 # pointeur), et non un appel direct de `toggleLang()` — puis lit le DOM RENDU :
-# `lang` sur `<html>`, `document.title`, le h1 et chaque entrée visible de la
-# nav, chacun égal à la valeur `data-en` ou `data-fr` qu'il porte, et cette
-# valeur non vide. Quatre états, dans un contexte de navigateur neuf : au
-# chargement (français), après un clic (anglais), après un second clic
-# (français), puis la page RECHARGÉE après un troisième clic, qui mémorise
-# l'anglais. Ce dernier est le chemin du visiteur qui a choisi l'anglais
-# ailleurs et arrive ici par un lien mort : il ne clique pas, la page doit
-# relire son choix (`getItem('lang')` en fin de corps). Mesuré le 2026-10-20 sur
-# copie vierge : avec cette relecture rendue inerte (`=== 'EN'`), les trois
-# premiers états restaient verts. Le texte comparé est `textContent`, pas
-# `innerText` : la nav est en `text-transform:uppercase`, et `innerText`
-# rendrait « EXPERIENCE ».
+# `lang` sur `<html>`, `document.title`, le libellé du bouton de langue (« FR »
+# ou « EN »), et CHAQUE texte traduit visible de la page — le h1, les entrées de
+# la nav, le paragraphe, « Adresse demandée », le bouton de retour et les
+# raccourcis —, chacun égal à la valeur `data-en` ou `data-fr` qu'il porte, et
+# cette valeur non vide. Un texte traduit invisible ne serait jugé par rien : il
+# n'en faut aucun. Mesuré le 2026-10-20 à 1280 px, dans les six états : 11
+# entrées de nav, 6 autres textes, 0 caché.
 #
-# Prouvé le 2026-10-20 sur copies vierges, générateur muté puis site régénéré,
-# ce fichier et les six fichiers de langue et de 404 joués à deux drapeaux :
-# chacune des trois mutations ci-dessus rougit `premier-clic-en` et
-# `rechargement-en`, et rien d'autre (2 failed, 711 passed) ; la relecture
-# inerte rougit `rechargement-en` seul ; deux attributs permutés (`<title>`,
-# h1) ou la bascule reformatée (sept lignes devenues douze, mêmes
-# instructions) restent verts (713 passed).
+# Six états, chacun dans un contexte de navigateur NEUF au départ.
+#   * Quatre sur une même page : au chargement (français), après un clic
+#     (anglais), après un second clic (français), puis la page RECHARGÉE après
+#     un troisième clic, qui mémorise l'anglais. Le rechargement prouve que la
+#     404 relit ce qu'ELLE a écrit, et rien de plus.
+#   * Deux autres, où le choix est fait AILLEURS : un clic sur le bouton de
+#     l'accueil, puis — dans un autre contexte — sur celui de /explorer/, et la
+#     404 ouverte ensuite dans le même contexte, sans aucun clic sur elle.
+#     C'est le chemin principal d'une page d'erreur : on n'y clique pas le
+#     bouton, on y arrive avec sa langue déjà choisie, et la page doit relire
+#     ce choix (`getItem('lang')` en fin de corps) sous la clé et dans la casse
+#     où les autres pages l'écrivent (`localStorage`, `'lang'`, `'en'`). La
+#     page d'origine est relue avant et après son clic : si elle n'a pas
+#     basculé, le message l'accuse, elle, au lieu de la 404.
+# Et le sens inverse, testé à part : après `rechargement-en`, le même contexte
+# ouvre /explorer/, qui doit être en anglais (`lang="en"`, bouton « EN ») — ce
+# que la 404 écrit, les autres pages le comprennent.
+#
+# Le texte comparé est `textContent`, pas `innerText` : la nav est en
+# `text-transform:uppercase`, et `innerText` rendrait « EXPERIENCE ».
 #
 # Hors champ, et dit pour ne pas être cru gardé :
 #   * le MOMENT où la langue mémorisée est posée (avant ou après le premier
 #     rendu) : relevé, avec sa limite, dans le docstring de `tools/build_404.py`,
 #     et gardé par rien ;
-#   * le reste du texte de la page (le paragraphe, « Adresse demandée », les
-#     raccourcis) : ses attributs sont tenus par `test_liens_internes.py`, mais
-#     ce test ne le relit pas après la bascule ;
-#   * les autres pages au bouton de langue : leur bascule n'est pas exécutée
-#     ici (celle de /explorer/ et /highlights/ l'est dans node, sur le seul
-#     `href` des cartes, par `test_lang_switch_behaviour.py`).
+#   * une seule largeur, 1280 px ;
+#   * le `title` des deux boutons (« Langue », « Thème »), qu'aucune bascule ne
+#     réécrit (cf. `tools/build_404.py`) ;
+#   * les autres pages au bouton de langue : leur bascule n'est exécutée ici que
+#     pour ce qu'elle ÉCRIT (l'accueil et /explorer/, `lang` relu avant et après
+#     le clic) et pour ce que /explorer/ LIT du choix de la 404 ; leurs textes
+#     ne sont pas relus (ceux de /explorer/ et /highlights/ le sont dans node,
+#     sur le seul `href` des cartes, par `test_lang_switch_behaviour.py`) ;
+#     /graph/ et /highlights/ ne servent pas de page d'origine.
 
 _JS_LANGUE = r"""
 () => {
   const lire = (el) => ({texte: el.textContent,
                          fr: el.getAttribute('data-fr'),
                          en: el.getAttribute('data-en')});
+  const visible = (el) => el.checkVisibility({visibilityProperty: true});
+  // Désignation d'un élément dans un message de faute : balise, id, classes.
+  const quoi = (el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '')
+    + Array.from(el.classList).map(c => '.' + c).join('');
   const titre = document.querySelector('title');
+  const bouton = document.getElementById('langBtn');
+  const traduits = Array.from(document.body.querySelectorAll('[data-fr][data-en]'));
   return {
     lang: document.documentElement.getAttribute('lang'),
     titre: {texte: document.title,
             fr: titre ? titre.getAttribute('data-fr') : null,
             en: titre ? titre.getAttribute('data-en') : null},
+    bouton: bouton ? bouton.textContent : null,
     h1: Array.from(document.querySelectorAll('h1')).map(lire),
     entrees: Array.from(document.querySelectorAll('.nav-r a'))
-      .filter(el => el.checkVisibility({visibilityProperty: true}))
-      .map(lire),
+      .filter(visible).map(lire),
+    // Tout AUTRE texte traduit du corps, visible : le paragraphe, « Adresse
+    // demandée », le bouton de retour et les raccourcis.
+    autres: traduits.filter(el => !el.matches('h1, .nav-r a') && visible(el))
+      .map(el => Object.assign(lire(el), {quoi: quoi(el)})),
+    // Un texte traduit invisible n'est jugé par rien : il doit n'y en avoir aucun.
+    caches: traduits.filter(el => !visible(el)).map(quoi),
   };
 }
+"""
+
+# La langue que la page affiche, relue sur une AUTRE page que la 404 (sens
+# inverse : le choix fait sur la 404 doit être compris ailleurs).
+_JS_LANGUE_AILLEURS = r"""
+() => ({lang: document.documentElement.getAttribute('lang'),
+        bouton: (document.getElementById('langBtn') || {}).textContent || null})
 """
 
 # Les blancs que le navigateur replie sous `white-space:normal` — la même
@@ -523,44 +555,68 @@ def _rendu(texte: str | None) -> str:
     return _BLANCS_REPLIES.sub(" ", texte or "").strip(" ")
 
 
+# Les pages où le visiteur choisit l'anglais AVANT d'arriver sur la 404, dans
+# l'ordre où la fixture les parcourt : l'accueil, où l'on entre, puis la page
+# d'exploration. Toutes deux portent le bouton de langue et écrivent le choix
+# sous la même clé que la 404 (`localStorage`, `'lang'`, `'en'` ou `'fr'`).
+_PAGES_OU_L_ON_CHOISIT = ("/", "/explorer/")
+
 # (identifiant, langue attendue, ce qui a précédé le relevé) — dans l'ordre où
-# la fixture les produit, sur une seule page.
+# la fixture les produit. Les quatre premiers sur une même page ; chacun des
+# deux derniers dans son propre contexte de navigateur, neuf.
 _ETATS_DE_LA_BASCULE = (
     ("chargement-fr", "fr", "au chargement, sans choix mémorisé"),
-    ("premier-clic-en", "en", "après un clic sur le bouton de langue"),
+    ("premier-clic-en", "en", "après un clic sur son bouton de langue"),
     ("second-clic-fr", "fr", "après un second clic"),
     ("rechargement-en", "en",
      "rechargée après un troisième clic, qui a mémorisé l'anglais"),
-)
+) + tuple(
+    (f"choisi-sur-{'accueil' if origine == '/' else origine.strip('/')}-en", "en",
+     f"ouverte après un clic sur le bouton de langue de {origine}")
+    for origine in _PAGES_OU_L_ON_CHOISIT)
+
+# Le sens inverse : après `rechargement-en`, le même contexte ouvre cette page.
+_PAGE_QUI_RELIT_LE_CHOIX_DE_LA_404 = "/explorer/"
 
 
 @pytest.fixture(scope="module")
 def bascule_de_la_404(site_servi):
-    """Les quatre états de la 404, relevés sur une même page (cf. ci-dessus).
+    """Les six états de la 404, et la page qui relit son choix (cf. ci-dessus).
 
-    Un contexte de navigateur NEUF, donc aucun choix de langue mémorisé : la
-    page part en français, et ce sont les clics qui la font changer. Les
-    erreurs JavaScript sont relevées à chaque état : une bascule qui jette
-    après avoir écrit `lang` laisserait un état à moitié fait.
+    Chaque contexte de navigateur est NEUF, donc sans choix de langue mémorisé :
+    une page part en français, et ce sont les clics qui la font changer. Les
+    erreurs JavaScript sont relevées à chaque état, celles de la page d'origine
+    comprises : une bascule qui jette après avoir écrit `lang` laisserait un
+    état à moitié fait.
     """
     from playwright.sync_api import sync_playwright
 
     etats: dict[str, dict] = {}
-    erreurs: list[str] = []
+    adresse_404 = site_servi + _url(corpus_publie.PAGE_D_ERREUR)
+
+    def ouvrir_404(page) -> None:
+        reponse = page.goto(adresse_404, wait_until="load")
+        assert reponse is not None and reponse.status == 200, (
+            f"/{corpus_publie.PAGE_D_ERREUR} n'est pas servie "
+            f"({reponse.status if reponse else 'aucune réponse'})")
+
     with sync_playwright() as pw:
         navigateur = pw.chromium.launch()
-        contexte = navigateur.new_context(viewport={"width": 1280, "height": 900})
-        page = contexte.new_page()
-        page.on("pageerror", lambda e: erreurs.append(str(e)))
+
+        def contexte_neuf():
+            contexte = navigateur.new_context(viewport={"width": 1280, "height": 900})
+            page = contexte.new_page()
+            erreurs: list[str] = []
+            page.on("pageerror", lambda e: erreurs.append(str(e)))
+            return contexte, page, erreurs
+
+        # 1. La bascule de la 404 elle-même : trois clics, puis un rechargement.
+        contexte, page, erreurs = contexte_neuf()
 
         def relever(nom: str) -> None:
             etats[nom] = dict(page.evaluate(_JS_LANGUE), erreurs=list(erreurs))
 
-        reponse = page.goto(site_servi + _url(corpus_publie.PAGE_D_ERREUR),
-                            wait_until="load")
-        assert reponse is not None and reponse.status == 200, (
-            f"/{corpus_publie.PAGE_D_ERREUR} n'est pas servie "
-            f"({reponse.status if reponse else 'aucune réponse'})")
+        ouvrir_404(page)
         relever("chargement-fr")
         page.click("#langBtn")
         relever("premier-clic-en")
@@ -569,36 +625,75 @@ def bascule_de_la_404(site_servi):
         page.click("#langBtn")
         page.reload(wait_until="load")
         relever("rechargement-en")
+        # Sens inverse, même contexte : le choix que la 404 vient de mémoriser.
+        page.goto(site_servi + _PAGE_QUI_RELIT_LE_CHOIX_DE_LA_404, wait_until="load")
+        etats["relu-ailleurs"] = dict(page.evaluate(_JS_LANGUE_AILLEURS),
+                                      erreurs=list(erreurs))
         contexte.close()
+
+        # 2. Le choix fait AILLEURS : un clic sur le bouton d'une autre page,
+        #    puis la 404 ouverte dans le même contexte, sans aucun clic sur elle.
+        for (nom, _, _), origine in zip(_ETATS_DE_LA_BASCULE[4:],
+                                        _PAGES_OU_L_ON_CHOISIT):
+            contexte, page, erreurs = contexte_neuf()
+            page.goto(site_servi + origine, wait_until="load")
+            avant = page.evaluate(_JS_LANGUE_AILLEURS)
+            page.click("#langBtn")
+            apres = page.evaluate(_JS_LANGUE_AILLEURS)
+            ouvrir_404(page)
+            relever(nom)
+            etats[nom]["origine"] = {"page": origine, "avant": avant, "apres": apres}
+            contexte.close()
         navigateur.close()
     return etats
 
 
 @pytest.mark.parametrize("nom, langue, quand",
                          [pytest.param(*e, id=e[0]) for e in _ETATS_DE_LA_BASCULE])
-def test_la_bascule_de_langue_de_la_404_traduit_titre_h1_et_nav(nom, langue, quand,
-                                                                bascule_de_la_404):
-    """La page DIT la langue choisie et l'AFFICHE, à l'aller comme au retour.
+def test_la_404_rend_chaque_texte_traduit_dans_la_langue_choisie(nom, langue, quand,
+                                                                 bascule_de_la_404):
+    """La page DIT la langue choisie et l'AFFICHE, où que ce choix ait été fait.
 
     WCAG 3.1.1 (niveau A) : la langue annoncée doit être celle du contenu.
     `build_404.py` le promet (« LES DEUX LANGUES SONT LIVRÉES ») ; les gardes
-    statiques vérifient les attributs, celle-ci vérifie ce qu'ils deviennent.
-    Chaque faute est nommée : (élément, texte rendu, texte attendu).
+    statiques vérifient les attributs, celle-ci vérifie ce qu'ils deviennent :
+    `lang`, le titre, le libellé du bouton de langue, et chaque texte traduit
+    visible (h1, nav, paragraphe, « Adresse demandée », bouton de retour,
+    raccourcis). Chaque faute est nommée : (élément, texte rendu, texte attendu).
     """
     etat = bascule_de_la_404[nom]
     attr = f"data-{langue}"
     assert not etat["erreurs"], f"/404.html {quand} : erreur(s) JavaScript {etat['erreurs']}"
+    origine = etat.get("origine")
+    if origine is not None:
+        # La page d'origine doit avoir basculé, sinon c'est ELLE qui est en faute,
+        # et la 404 serait accusée à sa place.
+        assert (origine["avant"]["lang"], origine["apres"]["lang"]) == ("fr", "en"), (
+            f"{origine['page']} : `lang` {origine['avant']['lang']!r} avant le clic "
+            f"et {origine['apres']['lang']!r} après — le choix n'y a pas été fait, "
+            "la 404 n'est pas jugée")
     assert etat["h1"], f"/404.html {quand} : plus de h1"
     assert len(etat["entrees"]) == len(nav.ENTREES), (
         f"/404.html {quand} : {len(etat['entrees'])} entrée(s) de nav visible(s) "
         f"pour {len(nav.ENTREES)} dans `nav.ENTREES` — le test ne jugerait pas "
         "toute la nav")
+    assert not etat["caches"], (
+        f"/404.html {quand} : texte(s) traduit(s) invisible(s) {etat['caches']} — "
+        "aucun ne serait jugé")
+    assert len(etat["autres"]) >= 3 + len(build_404.RACCOURCIS), (
+        f"/404.html {quand} : {len(etat['autres'])} texte(s) traduit(s) hors h1 et "
+        f"nav ({[a['quoi'] for a in etat['autres']]}) — il en faut au moins "
+        f"{3 + len(build_404.RACCOURCIS)} : le paragraphe, « Adresse demandée », "
+        f"le bouton de retour et les {len(build_404.RACCOURCIS)} raccourcis")
     fautes = []
     if etat["lang"] != langue:
         fautes.append(("<html lang>", etat["lang"], langue))
+    if (etat["bouton"] or "").strip() != langue.upper():
+        fautes.append(("#langBtn", etat["bouton"], langue.upper()))
     juges = ([("<title>", etat["titre"])]
              + [("h1", h) for h in etat["h1"]]
-             + [("nav", e) for e in etat["entrees"]])
+             + [("nav", e) for e in etat["entrees"]]
+             + [(a["quoi"], a) for a in etat["autres"]])
     for quoi, el in juges:
         attendu, rendu = _rendu(el[langue]), _rendu(el["texte"])
         if not attendu:
@@ -608,3 +703,19 @@ def test_la_bascule_de_langue_de_la_404_traduit_titre_h1_et_nav(nom, langue, qua
     assert not fautes, (
         f"/404.html {quand}, langue attendue {langue!r} — "
         f"{len(fautes)} faute(s) : {fautes}")
+
+
+def test_le_choix_fait_sur_la_404_est_compris_par_les_autres_pages(bascule_de_la_404):
+    """Le sens inverse du même contrat : la 404 écrit ce que les autres pages lisent.
+
+    Après `rechargement-en`, le même contexte ouvre /explorer/, sans clic : elle
+    doit être en anglais, `lang="en"` et son bouton sur « EN ». Une 404 qui
+    écrirait `'EN'` et relirait sans casse resterait verte sur les six états
+    ci-dessus, et enverrait /explorer/ en `lang="EN"`.
+    """
+    relu = bascule_de_la_404["relu-ailleurs"]
+    page = _PAGE_QUI_RELIT_LE_CHOIX_DE_LA_404
+    assert not relu["erreurs"], f"{page} : erreur(s) JavaScript {relu['erreurs']}"
+    assert (relu["lang"], (relu["bouton"] or "").strip()) == ("en", "EN"), (
+        f"{page} ouverte après l'anglais choisi sur la 404 : `lang` "
+        f"{relu['lang']!r}, bouton {relu['bouton']!r} — attendu 'en' et 'EN'")
