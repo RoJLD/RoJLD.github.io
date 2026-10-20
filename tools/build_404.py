@@ -26,8 +26,12 @@ CE QUI DISTINGUE CETTE PAGE DES AUTRES, et pourquoi :
     `test_liens_internes.py::test_la_page_404_pose_le_theme_dans_head_avant_le_corps`.
   * LES DEUX LANGUES SONT LIVRÉES, donc le bouton de langue est là. Chaque texte
     visible hors nav porte `data-fr` et `data-en`, `<title>` compris — sauf le
-    code « 404 », identique dans les deux langues et masqué aux lecteurs d'écran
-    (la nav est celle de `nav.py`, tenue par ses gardes) — et la bascule écrit
+    code « 404 », identique dans les deux langues et masqué aux lecteurs d'écran.
+    Les entrées de la nav, rendues par `nav.py`, sont jugées avec celles des
+    autres pages au bouton de langue :
+    `test_nav_unifiee.py::test_chaque_entree_de_nav_est_traduite_sur_les_pages_au_bouton_de_langue`.
+    Le `title` des deux boutons de la nav (« Langue », « Thème ») reste en
+    français, et aucune garde ne le tient. La bascule écrit
     `lang` sur le document en même temps qu'elle remplace les textes : la langue
     annoncée est celle du contenu (WCAG 3.1.1, l'erreur que #40 a corrigée sur
     `/projects/` et `/demos/`). Gardes : chaque texte, exceptions nommées avec

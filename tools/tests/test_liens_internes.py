@@ -2335,10 +2335,14 @@ def test_la_page_404_pose_le_theme_dans_head_avant_le_corps():
 # Les textes qui n'en ont pas sont nommés ci-dessous, chacun avec sa raison.
 #
 # Hors champ, et pourquoi :
-#   * la nav : ses entrées viennent de `tools/nav.py` et sont tenues par ses
-#     propres gardes ; la marque « R. Denis » est un nom propre, le bouton « FR »
-#     / « EN » affiche le code de la langue courante (le script le réécrit) et
-#     l'emoji du thème est un symbole ;
+#   * la nav : ses entrées sont jugées ailleurs, avec celles des quatre autres
+#     pages qui portent le bouton de langue, par
+#     `test_nav_unifiee.py::test_chaque_entree_de_nav_est_traduite_sur_les_pages_au_bouton_de_langue`
+#     (chaque entrée porte les attributs que la bascule de sa page lit). La
+#     marque « R. Denis » est un nom propre, le bouton « FR » / « EN » affiche le
+#     code de la langue courante (le script le réécrit) et l'emoji du thème est
+#     un symbole. Le `title` des deux boutons (« Langue », « Thème ») n'est
+#     traduit nulle part, et aucune garde ne le tient ;
 #   * le chemin demandé (`<code id="chemin">`) : vide dans le fichier, le script
 #     y écrit après le chargement l'adresse telle que le visiteur l'a suivie —
 #     rien à traduire, et rien qu'une lecture statique puisse voir.
